@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import confetti from "canvas-confetti"
 
 interface Topic {
   id: string
@@ -28,6 +29,105 @@ interface Flashcard {
   topic_id: string
   question: string
   answer: string
+}
+
+// Efeitos visuais customizados para feedback
+if (typeof window !== "undefined") {
+  const styleId = "flashcard-effects-style"
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style")
+    style.id = styleId
+    style.innerHTML = `
+      .flashcard-gradient-bg {
+        background: linear-gradient(to bottom, #FF8800 0%, #FF4000 100%);
+        color: #fff;
+        border-radius: 1rem;
+        border: 1.5px solid rgba(255, 136, 0, 0.5);
+        box-shadow: 0 4px 24px 0 rgba(255,123,0,0.10);
+      }
+      .card-correct-effect {
+        background: linear-gradient(to bottom, #43e97b 0%, #38f9d7 100%) !important;
+        color: #fff !important;
+        border-radius: 1rem;
+        border: 1.5px solid rgba(67, 233, 123, 0.5);
+        box-shadow: 0 4px 24px 0 rgba(67,233,123,0.10);
+        position: relative;
+        z-index: 1;
+      }
+      .card-incorrect-effect {
+        background: linear-gradient(to bottom, #ff5858 0%, #f857a6 100%) !important;
+        color: #fff !important;
+        border-radius: 1rem;
+        border: 1.5px solid rgba(255, 88, 88, 0.5);
+        box-shadow: 0 4px 24px 0 rgba(255,88,88,0.10);
+        animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+      }
+      @keyframes shake {
+        0% { transform: translateX(0); }
+        10%, 90% { transform: translateX(-6px); }
+        20%, 80% { transform: translateX(8px); }
+        30%, 50%, 70% { transform: translateX(-12px); }
+        40%, 60% { transform: translateX(12px); }
+        100% { transform: translateX(0); }
+      }
+      .show-answer-btn {
+        background: #fff;
+        color: #FF4000;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px 0 rgba(255,64,0,0.08);
+        transition: background 0.2s, color 0.2s;
+      }
+      .show-answer-btn:hover {
+        background: #ffe0b2;
+        color: #ff8800;
+      }
+      .btn-errei {
+        background: #e53935 !important;
+        color: #fff !important;
+        font-weight: 600;
+        border-radius: 0.5rem;
+      }
+      .btn-errei:hover {
+        background: #b71c1c !important;
+      }
+      .btn-acertou {
+        background: #43a047 !important;
+        color: #fff !important;
+        font-weight: 600;
+        border-radius: 0.5rem;
+      }
+      .btn-acertou:hover {
+        background: #1b5e20 !important;
+      }
+      .flashcard-flip {
+        perspective: 1200px;
+      }
+      .flashcard-flip-inner {
+        transition: transform 0.6s cubic-bezier(.4,2,.6,1);
+        transform-style: preserve-3d;
+        position: relative;
+      }
+      .flashcard-flip.show-answer .flashcard-flip-inner {
+        transform: rotateY(180deg);
+      }
+      .flashcard-flip-front, .flashcard-flip-back {
+        backface-visibility: hidden;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0; left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .flashcard-flip-back {
+        transform: rotateY(180deg);
+      }
+    `
+    document.head.appendChild(style)
+  }
 }
 
 export default function FlashcardsPage() {
@@ -87,6 +187,20 @@ export default function FlashcardsPage() {
     if (!selectedTopic) return
 
     setLastAnswer(isCorrect)
+
+    // Efeito de confete ao acertar
+    if (isCorrect) {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.6 },
+        zIndex: 9999,
+      })
+    }
+    // Vibração ao errar (mobile)
+    if (!isCorrect && typeof window !== "undefined" && window.navigator.vibrate) {
+      window.navigator.vibrate([40, 30, 40])
+    }
 
     // Atualizar estatísticas da sessão
     setSessionStats((prev) => ({
@@ -151,8 +265,9 @@ export default function FlashcardsPage() {
     const currentCard = flashcards[currentCardIndex]
     const progress = ((currentCardIndex + 1) / flashcards.length) * 100
     let cardFeedbackClass = ""
-    if (lastAnswer === true) cardFeedbackClass = "bg-green-100 border-green-400 animate-pulse"
-    if (lastAnswer === false) cardFeedbackClass = "bg-red-100 border-red-400 animate-pulse"
+    // Remover fundo colorido, manter apenas classes para efeitos visuais
+    if (lastAnswer === true) cardFeedbackClass = "card-correct-effect"
+    if (lastAnswer === false) cardFeedbackClass = "card-incorrect-effect"
 
     return (
       <DashboardShell>
@@ -215,35 +330,45 @@ export default function FlashcardsPage() {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <Card className={`max-w-2xl mx-auto transition-all duration-500 border-2 ${cardFeedbackClass}`}>
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">{showAnswer ? "Resposta" : "Pergunta"}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="min-h-[200px] flex items-center justify-center p-6">
-              <p className="text-lg leading-relaxed">{showAnswer ? currentCard.answer : currentCard.question}</p>
-            </div>
-
-            <div className="flex gap-4 justify-center mt-6">
-              {!showAnswer ? (
-                <Button onClick={() => setShowAnswer(true)} size="lg" disabled={lastAnswer !== null}>
-                  Mostrar Resposta
-                </Button>
-              ) : (
-                <>
-                  <Button onClick={() => handleAnswer(false)} variant="destructive" size="lg" disabled={lastAnswer !== null}>
+        <div className="flashcard-flip w-full max-w-2xl mx-auto" style={{height: 360}}>
+          <div className={`flashcard-flip-inner ${showAnswer ? "show-answer" : ""}`} style={{height: 360}}>
+            <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass} flashcard-flip-front`}>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Pergunta</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="min-h-[200px] flex items-center justify-center p-6">
+                  <p className="text-lg leading-relaxed">{currentCard.question}</p>
+                </div>
+                <div className="flex gap-4 justify-center mt-6">
+                  <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={lastAnswer !== null}>
+                    Mostrar Resposta
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass} flashcard-flip-back`}>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Resposta</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="min-h-[200px] flex items-center justify-center p-6">
+                  <p className="text-lg leading-relaxed">{currentCard.answer}</p>
+                </div>
+                <div className="flex gap-4 justify-center mt-6">
+                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={lastAnswer !== null}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Errei
                   </Button>
-                  <Button onClick={() => handleAnswer(true)} variant="default" size="lg" disabled={lastAnswer !== null}>
+                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={lastAnswer !== null}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Acertei
                   </Button>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </DashboardShell>
     )
   }
