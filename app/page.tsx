@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Sparkles, BookOpenText, Trophy, Clock, BrainCircuit, Edit, Mic, ArrowRight } from "lucide-react"
 import { getRank, getNextRankInfo } from "@/lib/ranking"
-import { getTotalScore, getTopicProgress } from "@/actions"
+import { getTotalScore, getTopicProgress, getAllTopics } from "@/actions"
 import Link from "next/link"
 
 export default async function DashboardPage() {
@@ -12,6 +12,7 @@ export default async function DashboardPage() {
   const currentRank = getRank(totalScore)
   const nextRankInfo = getNextRankInfo(totalScore)
   const topicProgress = await getTopicProgress()
+  const topics = await getAllTopics()
 
   // Calcular total de flashcards e progresso geral
   const totalFlashcardsCompleted = Object.values(topicProgress).reduce(
@@ -20,6 +21,11 @@ export default async function DashboardPage() {
   )
   const totalCorrect = Object.values(topicProgress).reduce((sum, topic) => sum + topic.correct, 0)
   const overallProgress = totalFlashcardsCompleted > 0 ? (totalCorrect / totalFlashcardsCompleted) * 100 : 0
+
+  // Buscar total de flashcards por tópico (simulação, ideal: query SQL)
+  // Exemplo: const flashcardCounts = { "ortografia": 50, ... }
+  // Aqui, para demo, vamos simular 50 para todos
+  const flashcardCounts = Object.fromEntries(topics.map(t => [t.id, 50]))
 
   return (
     <DashboardShell>
@@ -150,16 +156,30 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
-            {Object.keys(topicProgress).length > 0 ? (
-              Object.entries(topicProgress).map(([topicId, stats]) => {
+            {topics.length > 0 ? (
+              topics.map((topic) => {
+                const stats = (topicProgress as Record<string, {correct:number, incorrect:number}>)[topic.id] || { correct: 0, incorrect: 0 }
                 const total = stats.correct + stats.incorrect
-                const percentage = total > 0 ? (stats.correct / total) * 100 : 0
-                const topicName = flashcardTopics.find((t) => t.id === topicId)?.name || topicId
+                const totalCards = flashcardCounts[topic.id] || 0
+                const percentage = totalCards > 0 ? (total / totalCards) * 100 : 0
                 return (
-                  <div key={topicId} className="flex items-center gap-4">
-                    <span className="w-32 text-sm font-medium text-white">{topicName}</span>
-                    <Progress value={percentage} className="flex-1 bg-white/20 dashboard-progress" />
-                    <span className="text-sm text-white/70">{percentage.toFixed(0)}%</span>
+                  <div key={topic.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <span className="w-40 text-sm font-medium text-white truncate">{topic.name}</span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <div className="relative w-full h-5 bg-white/20 rounded-full overflow-hidden border border-white/30">
+                        <div
+                          className="absolute left-0 top-0 h-full bg-white/60 rounded-full"
+                          style={{ width: `${percentage}%`, transition: 'width 0.5s' }}
+                        ></div>
+                        <div
+                          className="absolute left-0 top-0 h-full bg-[#FF4000] rounded-full"
+                          style={{ width: `${(stats.correct / (totalCards || 1)) * 100}%`, transition: 'width 0.5s' }}
+                        ></div>
+                      </div>
+                      <span className="text-xs text-white/90 min-w-[60px] text-right">
+                        {total}/{totalCards} ({Math.round((total / (totalCards || 1)) * 100)}%)
+                      </span>
+                    </div>
                   </div>
                 )
               })
@@ -221,21 +241,3 @@ export default async function DashboardPage() {
     </DashboardShell>
   )
 }
-
-// Dummy data for flashcardTopics (needed for topic names in dashboard)
-const flashcardTopics = [
-  { id: "fonetica-fonologia", name: "Fonetica e Fonologia", cards: [] },
-  { id: "ortografia", name: "Ortografia", cards: [] },
-  { id: "acentuacao-grafica", name: "Acentuação Gráfica", cards: [] },
-  { id: "morfologia-classes", name: "Morfologia: Classes de Palavras", cards: [] },
-  { id: "morfologia-flexao", name: "Morfologia: Flexão", cards: [] },
-  { id: "sintaxe-termos-essenciais", name: "Sintaxe: Termos Essenciais", cards: [] },
-  { id: "sintaxe-termos-integrantes", name: "Sintaxe: Termos Integrantes", cards: [] },
-  { id: "sintaxe-termos-acessorios", name: "Sintaxe: Termos Acessórios", cards: [] },
-  { id: "sintaxe-periodo-composto", name: "Sintaxe: Período Composto", cards: [] },
-  { id: "concordancia", name: "Concordância Verbal e Nominal", cards: [] },
-  { id: "regencia", name: "Regência Verbal e Nominal", cards: [] },
-  { id: "crase", name: "Crase", cards: [] },
-  { id: "colocacao-pronominal", name: "Colocação Pronominal", cards: [] },
-  { id: "semantica-estilistica", name: "Semântica e Estilística", cards: [] },
-]

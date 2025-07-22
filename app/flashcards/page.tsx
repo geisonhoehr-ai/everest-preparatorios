@@ -391,13 +391,7 @@ export default function FlashcardsPage() {
           </div>
         </div>
         {/* Botão para gerar mais flashcards com IA */}
-        {currentCardIndex === flashcards.length - 1 && (
-          <div className="flex justify-center mt-8">
-            <Button variant="secondary" className="w-full max-w-xs" onClick={() => alert('Em breve: geração de flashcards com IA!')}>
-              Gerar mais flashcards deste tópico com IA
-            </Button>
-          </div>
-        )}
+        {/* Removido conforme solicitado */}
       </DashboardShell>
     )
   }
