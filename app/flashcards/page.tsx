@@ -71,16 +71,16 @@ if (typeof window !== "undefined") {
         100% { transform: translateX(0); }
       }
       .show-answer-btn {
-        background: #fff;
-        color: #FF4000;
+        background: #ffe0b2;
+        color: #FF8800;
         font-weight: 600;
         border-radius: 0.5rem;
         box-shadow: 0 2px 8px 0 rgba(255,64,0,0.08);
         transition: background 0.2s, color 0.2s;
       }
       .show-answer-btn:hover {
-        background: #ffe0b2;
-        color: #ff8800;
+        background: #43a047;
+        color: #fff;
       }
       .btn-errei {
         background: #e53935 !important;
@@ -146,6 +146,7 @@ export default function FlashcardsPage() {
   const [lastAnswer, setLastAnswer] = useState<null | boolean>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [availableCounts, setAvailableCounts] = useState<{ [topicId: string]: number }>({})
+  const [refreshProgress, setRefreshProgress] = useState(0)
 
   useEffect(() => {
     loadTopics()
@@ -164,6 +165,13 @@ export default function FlashcardsPage() {
     }
     if (topics.length > 0) fetchCounts()
   }, [topics])
+
+  // Atualizar progresso ao finalizar sessão
+  useEffect(() => {
+    if (refreshProgress > 0) {
+      loadTopics()
+    }
+  }, [refreshProgress])
 
   const loadTopics = async () => {
     try {
@@ -239,10 +247,8 @@ export default function FlashcardsPage() {
     // Mostrar feedback visual por 1s antes de avançar
     setTimeout(() => {
       setLastAnswer(null)
-      setIsTransitioning(true)
       setShowAnswer(false)
       setTimeout(() => {
-        setIsTransitioning(false)
         if (currentCardIndex < flashcards.length - 1) {
           setCurrentCardIndex((prev) => prev + 1)
         } else {
@@ -254,8 +260,9 @@ export default function FlashcardsPage() {
           setShowFinishModal(true)
           setStudyMode("select")
           setSelectedTopic(null)
+          setRefreshProgress((v) => v + 1) // Forçar refresh do progresso
         }
-      }, 200)
+      }, 200) // Pequeno delay para resetar o flip antes de trocar o card
     }, 900)
   }
 
@@ -362,7 +369,7 @@ export default function FlashcardsPage() {
                   <p className="text-lg leading-relaxed">{currentCard.question}</p>
                 </div>
                 <div className="flex gap-4 justify-center mt-6">
-                  <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={isTransitioning || lastAnswer !== null}>
+                  <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={lastAnswer !== null}>
                     Mostrar Resposta
                   </Button>
                 </div>
@@ -377,11 +384,11 @@ export default function FlashcardsPage() {
                   <p className="text-lg leading-relaxed">{currentCard.answer}</p>
                 </div>
                 <div className="flex gap-4 justify-center mt-6">
-                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={isTransitioning || lastAnswer !== null}>
+                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={lastAnswer !== null}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Errei
                   </Button>
-                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={isTransitioning || lastAnswer !== null}>
+                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={lastAnswer !== null}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Acertei
                   </Button>

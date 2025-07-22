@@ -32,7 +32,7 @@ export default function LoginPage() {
           .eq("user_uuid", session.user.id)
           .single()
         if (profileError || !profile || !profile.user_role) {
-          router.push("/role-selection")
+          router.push("/") // Redireciona para o dashboard
         } else {
           router.push("/")
         }

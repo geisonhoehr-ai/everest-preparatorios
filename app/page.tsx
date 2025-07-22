@@ -27,6 +27,25 @@ export default async function DashboardPage() {
   // Aqui, para demo, vamos simular 50 para todos
   const flashcardCounts = Object.fromEntries(topics.map(t => [t.id, 50]))
 
+  // Paleta de cores para as barras de progresso
+  const progressColors = [
+    '#FF6B6B', // vermelho
+    '#FFD93D', // amarelo
+    '#6BCB77', // verde
+    '#4D96FF', // azul
+    '#FF922B', // laranja
+    '#845EC2', // roxo
+    '#F9C80E', // dourado
+    '#F86624', // laranja escuro
+    '#43E97B', // verde claro
+    '#38F9D7', // azul claro
+    '#FF61A6', // rosa
+    '#2D4059', // azul escuro
+    '#EA5455', // vermelho escuro
+    '#FFB400', // amarelo escuro
+    '#00C9A7', // turquesa
+  ]
+
   return (
     <DashboardShell>
       <div className="flex items-center justify-between space-y-2">
@@ -157,23 +176,20 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             {topics.length > 0 ? (
-              topics.map((topic) => {
+              topics.map((topic, idx) => {
                 const stats = (topicProgress as Record<string, {correct:number, incorrect:number}>)[topic.id] || { correct: 0, incorrect: 0 }
                 const total = stats.correct + stats.incorrect
                 const totalCards = flashcardCounts[topic.id] || 0
                 const percentage = totalCards > 0 ? (total / totalCards) * 100 : 0
+                const color = progressColors[idx % progressColors.length]
                 return (
                   <div key={topic.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <span className="w-40 text-sm font-medium text-white truncate">{topic.name}</span>
                     <div className="flex-1 flex items-center gap-2">
-                      <div className="relative w-full h-5 bg-white/20 rounded-full overflow-hidden border border-white/30">
+                      <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden border border-white/30">
                         <div
-                          className="absolute left-0 top-0 h-full bg-white/60 rounded-full"
-                          style={{ width: `${percentage}%`, transition: 'width 0.5s' }}
-                        ></div>
-                        <div
-                          className="absolute left-0 top-0 h-full bg-[#FF4000] rounded-full"
-                          style={{ width: `${(stats.correct / (totalCards || 1)) * 100}%`, transition: 'width 0.5s' }}
+                          className="absolute left-0 top-0 h-full rounded-full"
+                          style={{ width: `${percentage}%`, background: color, transition: 'width 0.5s' }}
                         ></div>
                       </div>
                       <span className="text-xs text-white/90 min-w-[60px] text-right">
