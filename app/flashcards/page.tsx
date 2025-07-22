@@ -144,10 +144,26 @@ export default function FlashcardsPage() {
   const [lastSessionStats, setLastSessionStats] = useState({ correct: 0, incorrect: 0 })
   const [wrongCards, setWrongCards] = useState<Flashcard[]>([])
   const [lastAnswer, setLastAnswer] = useState<null | boolean>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [availableCounts, setAvailableCounts] = useState<{ [topicId: string]: number }>({})
 
   useEffect(() => {
     loadTopics()
   }, [])
+
+  // Buscar quantidade de flashcards disponíveis por tópico
+  useEffect(() => {
+    async function fetchCounts() {
+      const counts: { [topicId: string]: number } = {}
+      for (const topic of topics) {
+        // Busca todos os flashcards do tópico (limit alto só para contar)
+        const cards = await getFlashcardsForReview(topic.id, 9999)
+        counts[topic.id] = cards.length
+      }
+      setAvailableCounts(counts)
+    }
+    if (topics.length > 0) fetchCounts()
+  }, [topics])
 
   const loadTopics = async () => {
     try {
@@ -223,19 +239,23 @@ export default function FlashcardsPage() {
     // Mostrar feedback visual por 1s antes de avançar
     setTimeout(() => {
       setLastAnswer(null)
-      if (currentCardIndex < flashcards.length - 1) {
-        setCurrentCardIndex((prev) => prev + 1)
-        setShowAnswer(false)
-      } else {
-        // Sessão finalizada
-        setLastSessionStats({
-          correct: sessionStats.correct + (isCorrect ? 1 : 0),
-          incorrect: sessionStats.incorrect + (isCorrect ? 0 : 1),
-        })
-        setShowFinishModal(true)
-        setStudyMode("select")
-        setSelectedTopic(null)
-      }
+      setIsTransitioning(true)
+      setShowAnswer(false)
+      setTimeout(() => {
+        setIsTransitioning(false)
+        if (currentCardIndex < flashcards.length - 1) {
+          setCurrentCardIndex((prev) => prev + 1)
+        } else {
+          // Sessão finalizada
+          setLastSessionStats({
+            correct: sessionStats.correct + (isCorrect ? 1 : 0),
+            incorrect: sessionStats.incorrect + (isCorrect ? 0 : 1),
+          })
+          setShowFinishModal(true)
+          setStudyMode("select")
+          setSelectedTopic(null)
+        }
+      }, 200)
     }, 900)
   }
 
@@ -306,12 +326,13 @@ export default function FlashcardsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center sm:items-start">
             <h1 className="text-3xl font-bold tracking-tight">Estudando Flashcards</h1>
             <p className="text-muted-foreground">Tópico: {topics.find((t) => t.id === selectedTopic)?.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">Disponíveis: {availableCounts[selectedTopic ?? ""] ?? "..."}</p>
           </div>
-          <Button variant="outline" onClick={resetSession}>
+          <Button variant="outline" onClick={resetSession} className="w-full sm:w-auto mt-2 sm:mt-0">
             <RotateCcw className="mr-2 h-4 w-4" />
             Voltar aos Tópicos
           </Button>
@@ -330,8 +351,8 @@ export default function FlashcardsPage() {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <div className="flashcard-flip w-full max-w-2xl mx-auto" style={{height: 360}}>
-          <div className={`flashcard-flip-inner ${showAnswer ? "show-answer" : ""}`} style={{height: 360}}>
+        <div className={`flashcard-flip w-full max-w-2xl mx-auto${showAnswer ? " show-answer" : ""}`} style={{height: 360}}>
+          <div className="flashcard-flip-inner" style={{height: 360}}>
             <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass} flashcard-flip-front`}>
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">Pergunta</CardTitle>
@@ -341,7 +362,7 @@ export default function FlashcardsPage() {
                   <p className="text-lg leading-relaxed">{currentCard.question}</p>
                 </div>
                 <div className="flex gap-4 justify-center mt-6">
-                  <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={lastAnswer !== null}>
+                  <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={isTransitioning || lastAnswer !== null}>
                     Mostrar Resposta
                   </Button>
                 </div>
@@ -356,11 +377,11 @@ export default function FlashcardsPage() {
                   <p className="text-lg leading-relaxed">{currentCard.answer}</p>
                 </div>
                 <div className="flex gap-4 justify-center mt-6">
-                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={lastAnswer !== null}>
+                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={isTransitioning || lastAnswer !== null}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Errei
                   </Button>
-                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={lastAnswer !== null}>
+                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={isTransitioning || lastAnswer !== null}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Acertei
                   </Button>
@@ -369,6 +390,14 @@ export default function FlashcardsPage() {
             </Card>
           </div>
         </div>
+        {/* Botão para gerar mais flashcards com IA */}
+        {currentCardIndex === flashcards.length - 1 && (
+          <div className="flex justify-center mt-8">
+            <Button variant="secondary" className="w-full max-w-xs" onClick={() => alert('Em breve: geração de flashcards com IA!')}>
+              Gerar mais flashcards deste tópico com IA
+            </Button>
+          </div>
+        )}
       </DashboardShell>
     )
   }
@@ -376,39 +405,38 @@ export default function FlashcardsPage() {
   return (
     <DashboardShell>
       {/* Seletor de quantidade de flashcards */}
-      <div className="flex items-center justify-between space-y-2">
-        <div>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">Flashcards</h1>
           <p className="text-muted-foreground">Escolha um tópico para começar a estudar com flashcards</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <span className="text-sm">Quantidade:</span>
-          <select
-            className="border rounded px-2 py-1 bg-background"
+          <input
+            type="number"
+            min={1}
+            max={availableCounts[selectedTopic ?? ""] || 999}
+            className="border rounded px-2 py-1 bg-background w-20"
             value={selectedQuantity}
             onChange={e => setSelectedQuantity(Number(e.target.value))}
             disabled={isLoading}
-          >
-            {[10, 20, 30, 40, 50].map(q => (
-              <option key={q} value={q}>{q}</option>
-            ))}
-          </select>
+          />
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
         {topics.map((topic) => (
-          <Card key={topic.id} className="hover:shadow-lg transition-shadow">
+          <Card key={topic.id} className="hover:shadow-lg transition-shadow min-h-[220px] flex flex-col justify-between">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <BookOpenText className="h-8 w-8 text-primary" />
-                <Badge variant="secondary">Disponível</Badge>
+                <Badge variant="secondary">{availableCounts[topic.id] !== undefined ? `${availableCounts[topic.id]} cards` : "..."}</Badge>
               </div>
               <CardTitle className="text-lg">{topic.name}</CardTitle>
               <CardDescription>Estude este tópico com flashcards interativos</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button onClick={() => startStudySession(topic.id)} className="w-full" disabled={isLoading}>
+            <CardContent className="flex-1 flex flex-col justify-end">
+              <Button onClick={() => startStudySession(topic.id)} className="w-full mt-2" disabled={isLoading}>
                 <Play className="mr-2 h-4 w-4" />
                 Começar Estudo
               </Button>
