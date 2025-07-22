@@ -9,6 +9,14 @@ import { Progress } from "@/components/ui/progress"
 import { BookOpenText, Play, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react"
 import { getAllTopics, getFlashcardsForReview, updateTopicProgress } from "@/actions"
 import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 interface Topic {
   id: string
@@ -31,6 +39,11 @@ export default function FlashcardsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [studyMode, setStudyMode] = useState<"select" | "study">("select")
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 })
+  const [selectedQuantity, setSelectedQuantity] = useState(20)
+  const [showFinishModal, setShowFinishModal] = useState(false)
+  const [lastSessionStats, setLastSessionStats] = useState({ correct: 0, incorrect: 0 })
+  const [wrongCards, setWrongCards] = useState<Flashcard[]>([])
+  const [lastAnswer, setLastAnswer] = useState<null | boolean>(null)
 
   useEffect(() => {
     loadTopics()
@@ -50,7 +63,7 @@ export default function FlashcardsPage() {
   const startStudySession = async (topicId: string) => {
     setIsLoading(true)
     try {
-      const cards = await getFlashcardsForReview(topicId, 20)
+      const cards = await getFlashcardsForReview(topicId, selectedQuantity)
       if (cards.length > 0) {
         setFlashcards(cards)
         setSelectedTopic(topicId)
@@ -58,6 +71,7 @@ export default function FlashcardsPage() {
         setShowAnswer(false)
         setStudyMode("study")
         setSessionStats({ correct: 0, incorrect: 0 })
+        setWrongCards([])
       } else {
         alert("Nenhum flashcard disponível para este tópico no momento.")
       }
@@ -72,11 +86,18 @@ export default function FlashcardsPage() {
   const handleAnswer = async (isCorrect: boolean) => {
     if (!selectedTopic) return
 
+    setLastAnswer(isCorrect)
+
     // Atualizar estatísticas da sessão
     setSessionStats((prev) => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
     }))
+
+    // Guardar cards errados para revisão
+    if (!isCorrect) {
+      setWrongCards((prev) => [...prev, flashcards[currentCardIndex]])
+    }
 
     // Atualizar progresso no banco
     try {
@@ -85,18 +106,23 @@ export default function FlashcardsPage() {
       console.error("Erro ao atualizar progresso:", error)
     }
 
-    // Próximo card ou finalizar sessão
-    if (currentCardIndex < flashcards.length - 1) {
-      setCurrentCardIndex((prev) => prev + 1)
-      setShowAnswer(false)
-    } else {
-      // Sessão finalizada
-      alert(
-        `Sessão finalizada!\nAcertos: ${sessionStats.correct + (isCorrect ? 1 : 0)}\nErros: ${sessionStats.incorrect + (isCorrect ? 0 : 1)}`,
-      )
-      setStudyMode("select")
-      setSelectedTopic(null)
-    }
+    // Mostrar feedback visual por 1s antes de avançar
+    setTimeout(() => {
+      setLastAnswer(null)
+      if (currentCardIndex < flashcards.length - 1) {
+        setCurrentCardIndex((prev) => prev + 1)
+        setShowAnswer(false)
+      } else {
+        // Sessão finalizada
+        setLastSessionStats({
+          correct: sessionStats.correct + (isCorrect ? 1 : 0),
+          incorrect: sessionStats.incorrect + (isCorrect ? 0 : 1),
+        })
+        setShowFinishModal(true)
+        setStudyMode("select")
+        setSelectedTopic(null)
+      }
+    }, 900)
   }
 
   const resetSession = () => {
@@ -105,6 +131,7 @@ export default function FlashcardsPage() {
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+    setWrongCards([])
   }
 
   if (isLoading) {
@@ -123,9 +150,47 @@ export default function FlashcardsPage() {
   if (studyMode === "study" && flashcards.length > 0) {
     const currentCard = flashcards[currentCardIndex]
     const progress = ((currentCardIndex + 1) / flashcards.length) * 100
+    let cardFeedbackClass = ""
+    if (lastAnswer === true) cardFeedbackClass = "bg-green-100 border-green-400 animate-pulse"
+    if (lastAnswer === false) cardFeedbackClass = "bg-red-100 border-red-400 animate-pulse"
 
     return (
       <DashboardShell>
+        {/* Modal de conclusão */}
+        <Dialog open={showFinishModal} onOpenChange={setShowFinishModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Sessão Finalizada!</DialogTitle>
+              <DialogDescription>
+                Você concluiu a sessão de flashcards.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="text-center my-4">
+              <p className="text-lg font-semibold mb-2">Estatísticas:</p>
+              <div className="flex justify-center gap-6 mb-2">
+                <span className="text-green-600 font-bold">Acertos: {lastSessionStats.correct}</span>
+                <span className="text-red-600 font-bold">Erros: {lastSessionStats.incorrect}</span>
+              </div>
+              <p className="mb-2">Taxa de acerto: {lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%</p>
+              {wrongCards.length > 0 && (
+                <Button variant="destructive" onClick={() => {
+                  setFlashcards(wrongCards)
+                  setCurrentCardIndex(0)
+                  setShowAnswer(false)
+                  setSessionStats({ correct: 0, incorrect: 0 })
+                  setWrongCards([])
+                  setShowFinishModal(false)
+                  setStudyMode("study")
+                }}>
+                  Revisar apenas os errados ({wrongCards.length})
+                </Button>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowFinishModal(false)}>Fechar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Estudando Flashcards</h1>
@@ -150,7 +215,7 @@ export default function FlashcardsPage() {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <Card className="max-w-2xl mx-auto">
+        <Card className={`max-w-2xl mx-auto transition-all duration-500 border-2 ${cardFeedbackClass}`}>
           <CardHeader className="text-center">
             <CardTitle className="text-xl">{showAnswer ? "Resposta" : "Pergunta"}</CardTitle>
           </CardHeader>
@@ -161,16 +226,16 @@ export default function FlashcardsPage() {
 
             <div className="flex gap-4 justify-center mt-6">
               {!showAnswer ? (
-                <Button onClick={() => setShowAnswer(true)} size="lg">
+                <Button onClick={() => setShowAnswer(true)} size="lg" disabled={lastAnswer !== null}>
                   Mostrar Resposta
                 </Button>
               ) : (
                 <>
-                  <Button onClick={() => handleAnswer(false)} variant="destructive" size="lg">
+                  <Button onClick={() => handleAnswer(false)} variant="destructive" size="lg" disabled={lastAnswer !== null}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Errei
                   </Button>
-                  <Button onClick={() => handleAnswer(true)} variant="default" size="lg">
+                  <Button onClick={() => handleAnswer(true)} variant="default" size="lg" disabled={lastAnswer !== null}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Acertei
                   </Button>
@@ -185,10 +250,24 @@ export default function FlashcardsPage() {
 
   return (
     <DashboardShell>
+      {/* Seletor de quantidade de flashcards */}
       <div className="flex items-center justify-between space-y-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Flashcards</h1>
           <p className="text-muted-foreground">Escolha um tópico para começar a estudar com flashcards</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Quantidade:</span>
+          <select
+            className="border rounded px-2 py-1 bg-background"
+            value={selectedQuantity}
+            onChange={e => setSelectedQuantity(Number(e.target.value))}
+            disabled={isLoading}
+          >
+            {[10, 20, 30, 40, 50].map(q => (
+              <option key={q} value={q}>{q}</option>
+            ))}
+          </select>
         </div>
       </div>
 
