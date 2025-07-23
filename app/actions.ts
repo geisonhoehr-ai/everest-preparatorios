@@ -442,7 +442,7 @@ export async function getAllSubjects() {
 
 export async function getTopicsBySubject(subjectId: number) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase.from("topics").select("id, name").eq("subject_id", subjectId).order("name")
+  const { data, error } = await supabase.from("topics").select("id, name, subject_id").eq("subject_id", subjectId).order("name")
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar tópicos por matéria:", error)
     return []
