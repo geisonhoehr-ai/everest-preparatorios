@@ -152,16 +152,19 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     async function fetchSubjects() {
-      const data = await getAllSubjects()
-      setSubjects(data)
+      const data = await getAllSubjects();
+      console.log('Subjects:', data);
+      setSubjects(data);
+      setIsLoading(false); // <-- Garante que o loading termina
     }
-    fetchSubjects()
-  }, [])
+    fetchSubjects();
+  }, []);
 
   useEffect(() => {
     async function fetchTopics() {
       if (selectedSubject) {
         const data = await getTopicsBySubject(selectedSubject)
+        console.log('Topics:', data) // <-- Diagnóstico
         setTopics(data)
       }
     }
@@ -311,7 +314,7 @@ export default function FlashcardsPage() {
         <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject) => (
-            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedSubject(subject.id)}>
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-b from-[#FF8800] to-[#FF4000] text-white border-none" onClick={() => setSelectedSubject(subject.id)}>
               <CardHeader>
                 <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
               </CardHeader>

@@ -122,7 +122,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <CardDescription className="mb-4">Revise e memorize o conteúdo com eficiência.</CardDescription>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full bg-[#FF4000] text-white border-none hover:brightness-110">
                 <Link href="/flashcards">
                   Começar a Estudar <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <CardDescription className="mb-4">Teste seus conhecimentos com simulados e questões.</CardDescription>
-              <Button asChild className="w-full bg-transparent" variant="outline">
+              <Button asChild className="w-full bg-[#FF4000] text-white border-none hover:brightness-110">
                 <Link href="/quiz">
                   Explorar Quizzes <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <CardDescription className="mb-4">Pratique sua escrita e receba feedback.</CardDescription>
-              <Button asChild className="w-full bg-transparent" variant="outline">
+              <Button asChild className="w-full bg-[#FF4000] text-white border-none hover:brightness-110">
                 <Link href="/redacao">
                   Escrever Redação <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <CardDescription className="mb-4">Aprofunde-se em temas com áudios exclusivos.</CardDescription>
-              <Button asChild className="w-full bg-transparent" variant="outline">
+              <Button asChild className="w-full bg-[#FF4000] text-white border-none hover:brightness-110">
                 <Link href="/podcast">
                   Ouvir Podcasts <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
         {/* Card de Progresso Português */}
         <Card className="bg-white dark:bg-[#18181b] border-primary/50 text-zinc-900 dark:text-white orange-card">
           <CardHeader>
-            <CardTitle className="text-zinc-900 dark:text-white">Progresso em Português</CardTitle>
+            <CardTitle className="text-zinc-900 dark:text-white">Progresso em Flashcards - Português</CardTitle>
             <CardDescription className="text-zinc-700 dark:text-zinc-300">
               Seu progresso em tópicos de Português.
             </CardDescription>
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
         {/* Card de Progresso Regulamentos */}
         <Card className="bg-white dark:bg-[#18181b] border-primary/50 text-zinc-900 dark:text-white orange-card">
           <CardHeader>
-            <CardTitle className="text-zinc-900 dark:text-white">Progresso em Regulamentos</CardTitle>
+            <CardTitle className="text-zinc-900 dark:text-white">Progresso em Flashcards - Regulamentos</CardTitle>
             <CardDescription className="text-zinc-700 dark:text-zinc-300">
               Seu progresso em tópicos de Regulamentos.
             </CardDescription>

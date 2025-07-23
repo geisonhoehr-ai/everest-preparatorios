@@ -51,11 +51,13 @@ export default function QuizPage() {
 
   useEffect(() => {
     async function fetchSubjects() {
-      const data = await getAllSubjects()
-      setSubjects(data)
+      const data = await getAllSubjects();
+      console.log('Subjects:', data);
+      setSubjects(data);
+      setIsLoading(false); // <-- Garante que o loading termina
     }
-    fetchSubjects()
-  }, [])
+    fetchSubjects();
+  }, []);
 
   useEffect(() => {
     async function fetchTopics() {
@@ -322,7 +324,7 @@ export default function QuizPage() {
         <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject) => (
-            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedSubject(subject.id)}>
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-b from-[#FF8800] to-[#FF4000] text-white border-none" onClick={() => setSelectedSubject(subject.id)}>
               <CardHeader>
                 <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
               </CardHeader>
@@ -333,16 +335,29 @@ export default function QuizPage() {
     )
   }
 
-  if (!selectedTopic) {
+  // Remover etapa intermediária de seleção de tópico
+  if (mode === "topics") {
     return (
       <DashboardShell>
         <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha o Tópico</h1>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
           {topics.map((topic) => (
-            <Card key={topic.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedTopic(topic.id)}>
+            <Card key={topic.id} className="hover:shadow-lg transition-shadow min-h-[220px] flex flex-col justify-between">
               <CardHeader>
-                <CardTitle className="text-xl text-center">{topic.name}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <BrainCircuit className="h-8 w-8 text-primary" />
+                  {/* Opcional: mostrar quantidade de quizzes se disponível */}
+                  {/* <Badge variant="secondary">{quizCounts[topic.id] !== undefined ? `${quizCounts[topic.id]} quizzes` : "..."}</Badge> */}
+                </div>
+                <CardTitle className="text-lg">{topic.name}</CardTitle>
+                <CardDescription>Faça quizzes sobre este tópico</CardDescription>
               </CardHeader>
+              <CardContent className="flex-1 flex flex-col justify-end">
+                <Button onClick={() => loadQuizzes(topic.id)} className="w-full mt-2 bg-gradient-to-b from-[#FF8800] to-[#FF4000] text-white border-none hover:brightness-110">
+                  <Play className="mr-2 h-4 w-4" />
+                  Ver Quizzes
+                </Button>
+              </CardContent>
             </Card>
           ))}
         </div>

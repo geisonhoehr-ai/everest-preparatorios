@@ -119,12 +119,51 @@ export async function updateScore(newScore: number) {
   return { success: true }
 }
 
-// Função para atualizar progresso do tópico
-export async function updateTopicProgress(topicId: string, type: "correct" | "incorrect") {
-  const supabase = await getSupabaseClient()
-  // Implementação da atualização de progresso
-  revalidatePath("/")
-  return { success: true }
+// Função utilitária para atribuir conquista
+async function grantAchievement(user_uuid: string, achievement_key: string) {
+  const supabase = await getSupabaseClient();
+  await supabase.from("user_achievements").upsert({
+    user_uuid,
+    achievement_key,
+  });
+}
+
+// Função para atualizar progresso do tópico e atribuir conquistas
+export async function updateTopicProgress(topicId: string, type: "correct" | "incorrect", user_uuid: string) {
+  const supabase = await getSupabaseClient();
+  // Atualize o progresso normalmente (exemplo fictício)
+  // ... sua lógica de progresso ...
+
+  // 1. Medalha: Primeira revisão de flashcard
+  await grantAchievement(user_uuid, "first_flashcard");
+
+  // 2. Medalha: 100 flashcards revisados
+  // (Exemplo: conte o total de revisões do usuário)
+  const { count } = await supabase
+    .from("user_flashcard_progress")
+    .select("id", { count: "exact", head: true })
+    .eq("user_uuid", user_uuid);
+  if ((count || 0) >= 100) {
+    await grantAchievement(user_uuid, "100_flashcards");
+  }
+
+  // 3. Medalha: Todos os tópicos de Português completos
+  // (Exemplo: verifique se todos os tópicos de subject_id = 1 têm progresso)
+  const { data: ptTopics } = await supabase.from("topics").select("id").eq("subject_id", 1);
+  const { data: ptProgress } = await supabase.from("user_flashcard_progress").select("topic_id").eq("user_uuid", user_uuid);
+  if (ptTopics && ptProgress && ptTopics.every(t => ptProgress.some(p => p.topic_id === t.id))) {
+    await grantAchievement(user_uuid, "all_topics_portugues");
+  }
+
+  // 4. Medalha: Todos os tópicos de Regulamentos completos
+  const { data: regTopics } = await supabase.from("topics").select("id").eq("subject_id", 2);
+  const { data: regProgress } = await supabase.from("user_flashcard_progress").select("topic_id").eq("user_uuid", user_uuid);
+  if (regTopics && regProgress && regTopics.every(t => regProgress.some(p => p.topic_id === t.id))) {
+    await grantAchievement(user_uuid, "all_topics_regulamentos");
+  }
+
+  revalidatePath("/");
+  return { success: true };
 }
 
 // Função para obter flashcards para revisão
@@ -209,18 +248,25 @@ export async function getQuizQuestions(quizId: number) {
   return data || []
 }
 
-// Função para submeter resultado do quiz
+// Função para submeter resultado do quiz e atribuir conquistas
 export async function submitQuizResult(
   quizId: number,
   score: number,
   correct: number,
   incorrect: number,
   total: number,
+  user_uuid: string
 ) {
-  const supabase = await getSupabaseClient()
-  // Implementação da submissão
-  revalidatePath("/")
-  return { success: true }
+  const supabase = await getSupabaseClient();
+  // ... sua lógica de submissão ...
+
+  // Medalha: Quiz perfeito (100% de acerto)
+  if (correct === total && total > 0) {
+    await grantAchievement(user_uuid, "perfect_quiz");
+  }
+
+  revalidatePath("/");
+  return { success: true };
 }
 
 // Função para obter redações do usuário
