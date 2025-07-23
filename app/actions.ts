@@ -440,7 +440,7 @@ export async function getAllSubjects() {
   return data || []
 }
 
-export async function getTopicsBySubject(subjectId) {
+export async function getTopicsBySubject(subjectId: number) {
   const supabase = await getSupabase()
   const { data, error } = await supabase.from("topics").select("id, name, subject_id").eq("subject_id", subjectId).order("name")
   if (error) {
