@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw } from "lucide-react"
-import { getAllTopics, getQuizzesByTopic, getQuizQuestions, submitQuizResult } from "@/actions"
+import { getAllTopics, getQuizzesByTopic, getQuizQuestions, submitQuizResult, getAllSubjects, getTopicsBySubject } from "@/actions"
 import Link from "next/link"
 
 interface Topic {
@@ -34,6 +34,8 @@ interface QuizQuestion {
 }
 
 export default function QuizPage() {
+  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([])
+  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
@@ -48,19 +50,22 @@ export default function QuizPage() {
   const [mode, setMode] = useState<"topics" | "quizzes" | "quiz" | "result">("topics")
 
   useEffect(() => {
-    loadTopics()
+    async function fetchSubjects() {
+      const data = await getAllSubjects()
+      setSubjects(data)
+    }
+    fetchSubjects()
   }, [])
 
-  const loadTopics = async () => {
-    try {
-      const topicsData = await getAllTopics()
-      setTopics(topicsData)
-    } catch (error) {
-      console.error("Erro ao carregar tópicos:", error)
-    } finally {
-      setIsLoading(false)
+  useEffect(() => {
+    async function fetchTopics() {
+      if (selectedSubject) {
+        const data = await getTopicsBySubject(selectedSubject)
+        setTopics(data)
+      }
     }
-  }
+    fetchTopics()
+  }, [selectedSubject])
 
   const loadQuizzes = async (topicId: string) => {
     setIsLoading(true)
@@ -306,6 +311,44 @@ export default function QuizPage() {
             </CardContent>
           </Card>
         )}
+      </DashboardShell>
+    )
+  }
+
+  // Renderização principal
+  if (!selectedSubject) {
+    return (
+      <DashboardShell>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedSubject(subject.id)}>
+              <CardHeader>
+                <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  if (!selectedTopic) {
+    return (
+      <DashboardShell>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha o Tópico</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {topics.map((topic) => (
+            <Card key={topic.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedTopic(topic.id)}>
+              <CardHeader>
+                <CardTitle className="text-xl text-center">{topic.name}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+        <Button variant="outline" className="mt-8" onClick={() => setSelectedSubject(null)}>
+          Voltar às Matérias
+        </Button>
       </DashboardShell>
     )
   }

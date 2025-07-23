@@ -429,3 +429,23 @@ export async function getUserRole() {
 
   return profile?.user_role || null
 }
+
+export async function getAllSubjects() {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase.from("subjects").select("id, name").order("name")
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar matérias:", error)
+    return []
+  }
+  return data || []
+}
+
+export async function getTopicsBySubject(subjectId: number) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase.from("topics").select("id, name").eq("subject_id", subjectId).order("name")
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar tópicos por matéria:", error)
+    return []
+  }
+  return data || []
+}

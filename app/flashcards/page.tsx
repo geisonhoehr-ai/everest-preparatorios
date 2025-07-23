@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { BookOpenText, Play, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react"
-import { getAllTopics, getFlashcardsForReview, updateTopicProgress } from "@/actions"
+import { getAllTopics, getFlashcardsForReview, updateTopicProgress, getAllSubjects, getTopicsBySubject } from "@/actions"
 import Link from "next/link"
 import {
   Dialog,
@@ -71,11 +71,11 @@ if (typeof window !== "undefined") {
         100% { transform: translateX(0); }
       }
       .show-answer-btn {
-        background: #ffe0b2;
-        color: #FF8800;
+        background: #111;
+        color: #fff;
         font-weight: 600;
         border-radius: 0.5rem;
-        box-shadow: 0 2px 8px 0 rgba(255,64,0,0.08);
+        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
         transition: background 0.2s, color 0.2s;
       }
       .show-answer-btn:hover {
@@ -131,6 +131,8 @@ if (typeof window !== "undefined") {
 }
 
 export default function FlashcardsPage() {
+  const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([])
+  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
@@ -149,8 +151,22 @@ export default function FlashcardsPage() {
   const [refreshProgress, setRefreshProgress] = useState(0)
 
   useEffect(() => {
-    loadTopics()
+    async function fetchSubjects() {
+      const data = await getAllSubjects()
+      setSubjects(data)
+    }
+    fetchSubjects()
   }, [])
+
+  useEffect(() => {
+    async function fetchTopics() {
+      if (selectedSubject) {
+        const data = await getTopicsBySubject(selectedSubject)
+        setTopics(data)
+      }
+    }
+    fetchTopics()
+  }, [selectedSubject])
 
   // Buscar quantidade de flashcards disponíveis por tópico
   useEffect(() => {
@@ -283,6 +299,24 @@ export default function FlashcardsPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando flashcards...</p>
           </div>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Renderização principal
+  if (!selectedSubject) {
+    return (
+      <DashboardShell>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedSubject(subject.id)}>
+              <CardHeader>
+                <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
       </DashboardShell>
     )
