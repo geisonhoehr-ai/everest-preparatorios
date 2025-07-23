@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Sparkles, BookOpenText, Trophy, Clock, BrainCircuit, Edit, Mic, ArrowRight } from "lucide-react"
 import { getRank, getNextRankInfo } from "@/lib/ranking"
-import { getTotalScore, getTopicProgress, getAllTopics } from "@/actions"
+import { getTotalScore, getTopicProgress, getAllTopics, getAllSubjects } from "@/actions"
 import Link from "next/link"
 
 export default async function DashboardPage() {
@@ -13,6 +13,7 @@ export default async function DashboardPage() {
   const nextRankInfo = getNextRankInfo(totalScore)
   const topicProgress = await getTopicProgress()
   const topics = await getAllTopics()
+  const subjects = await getAllSubjects()
 
   // Calcular total de flashcards e progresso geral
   const totalFlashcardsCompleted = Object.values(topicProgress).reduce(
@@ -45,6 +46,9 @@ export default async function DashboardPage() {
     '#FFB400', // amarelo escuro
     '#00C9A7', // turquesa
   ]
+
+  // Crie o subjectMap para mapear id para nome
+  const subjectMap = Object.fromEntries(subjects.map(s => [s.id, s.name]))
 
   // Agrupar tópicos por matéria
   const groupedTopics = topics.reduce((acc, topic) => {
