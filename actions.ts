@@ -336,3 +336,35 @@ export async function corrigirRedacaoIA(redacaoId: number) {
   revalidatePath("/teacher")
   return { success: true, correcao: correcaoSimulada }
 }
+
+// Função para obter todas as matérias
+export async function getAllSubjects() {
+  try {
+    const supabase = await getSupabaseClient()
+    const { data, error } = await supabase.from("subjects").select("id, name").order("name")
+    if (error) {
+      console.error("Erro ao buscar matérias:", error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error("Erro inesperado ao buscar matérias:", error)
+    return []
+  }
+}
+
+// Função para obter tópicos por matéria
+export async function getTopicsBySubject(subjectId: number) {
+  try {
+    const supabase = await getSupabaseClient()
+    const { data, error } = await supabase.from("topics").select("id, name, subject_id").eq("subject_id", subjectId).order("name")
+    if (error) {
+      console.error("Erro ao buscar tópicos por matéria:", error)
+      return []
+    }
+    return data || []
+  } catch (error) {
+    console.error("Erro inesperado ao buscar tópicos por matéria:", error)
+    return []
+  }
+}
