@@ -14,9 +14,10 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
     icon: React.ElementType
     external?: boolean // Adicionado propriedade para links externos
   }[]
+  collapsed?: boolean
 }
 
-export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
+export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
   const pathname = usePathname()
 
   return (
@@ -37,10 +38,11 @@ export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
             item.href.startsWith("/community") && pathname.startsWith("/community")
               ? "bg-accent text-accent-foreground"
               : "",
+            collapsed ? "justify-center" : ""
           )}
         >
           <item.icon className="mr-2 h-4 w-4" />
-          {item.title}
+          <span className={cn("transition-all duration-300", collapsed ? "opacity-0 w-0 h-0" : "opacity-100")}>{item.title}</span>
         </Link>
       ))}
     </nav>

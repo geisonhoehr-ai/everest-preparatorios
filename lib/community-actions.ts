@@ -6,20 +6,6 @@ import type { CommunityPost, CommunityComment, CommunityCategory } from "@/lib/t
 
 const supabase = createClient()
 
-// Função para obter todas as categorias da comunidade
-export async function getCommunityCategories(): Promise<CommunityCategory[]> {
-  const { data, error } = await supabase
-    .from("community_categories")
-    .select("id, name, slug, created_at")
-    .order("name", { ascending: true })
-
-  if (error) {
-    console.error("Erro ao buscar categorias da comunidade:", error)
-    return []
-  }
-  return data || []
-}
-
 // Função para obter todos os posts da comunidade
 export async function getCommunityPosts(): Promise<CommunityPost[]> {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -30,15 +16,14 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
     .select(`
       id,
       user_id,
-      category_id,
       title,
       content,
       tags,
       created_at,
       updated_at,
-      community_categories(name),
-      auth_users(raw_user_meta_data),
-      community_likes(user_id)
+      community_likes(user_id),
+      profiles(full_name, avatar_url),
+      auth_users(email)
     `)
     .order("created_at", { ascending: false })
 
@@ -52,13 +37,14 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
     const likes_count = likes ? likes.length : 0
     const has_liked = currentUserId ? likes?.some((like) => like.user_id === currentUserId) : false
 
+    // Tenta pegar nome e avatar do perfil, senão usa email
+    const author_name = post.profiles?.full_name || post.auth_users?.email || "Usuário"
+    const author_avatar = post.profiles?.avatar_url || null
+
     return {
       ...post,
-      author_name:
-        (post.auth_users as any)?.raw_user_meta_data?.full_name ||
-        (post.auth_users as any)?.raw_user_meta_data?.user_name ||
-        "Usuário Desconhecido",
-      category_name: (post.community_categories as any)?.name || "Sem Categoria",
+      author_name,
+      author_avatar,
       likes_count,
       has_liked,
     }
@@ -77,15 +63,14 @@ export async function getCommunityPostById(postId: string): Promise<CommunityPos
     .select(`
       id,
       user_id,
-      category_id,
       title,
       content,
       tags,
       created_at,
       updated_at,
-      community_categories(name),
-      auth_users(raw_user_meta_data),
-      community_likes(user_id)
+      community_likes(user_id),
+      profiles(full_name, avatar_url),
+      auth_users(email)
     `)
     .eq("id", postId)
     .single()
@@ -103,13 +88,13 @@ export async function getCommunityPostById(postId: string): Promise<CommunityPos
   const likes_count = likes ? likes.length : 0
   const has_liked = currentUserId ? likes?.some((like) => like.user_id === currentUserId) : false
 
+  const author_name = postData.profiles?.full_name || postData.auth_users?.email || "Usuário"
+  const author_avatar = postData.profiles?.avatar_url || null
+
   const post: CommunityPost = {
     ...postData,
-    author_name:
-      (postData.auth_users as any)?.raw_user_meta_data?.full_name ||
-      (postData.auth_users as any)?.raw_user_meta_data?.user_name ||
-      "Usuário Desconhecido",
-    category_name: (postData.community_categories as any)?.name || "Sem Categoria",
+    author_name,
+    author_avatar,
     likes_count,
     has_liked,
   } as CommunityPost
@@ -151,11 +136,10 @@ export async function getCommunityCommentsByPostId(postId: string): Promise<Comm
 export async function createCommunityPost(formData: FormData) {
   const title = formData.get("title") as string
   const content = formData.get("content") as string
-  const categoryId = formData.get("categoryId") as string
   const tagsString = formData.get("tags") as string // Nova entrada para tags
 
-  if (!title || !content || !categoryId) {
-    return { success: false, error: "Título, conteúdo e categoria são obrigatórios." }
+  if (!title || !content) {
+    return { success: false, error: "Título e conteúdo são obrigatórios." }
   }
 
   const tags = tagsString
@@ -177,7 +161,6 @@ export async function createCommunityPost(formData: FormData) {
 
   const { error } = await supabase.from("community_posts").insert({
     user_id: user.id,
-    category_id: categoryId,
     title,
     content,
     tags, // Incluir tags

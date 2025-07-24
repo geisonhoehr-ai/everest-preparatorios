@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw } from "lucide-react"
+import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Star, Share2, Copy } from "lucide-react"
 import { getAllTopics, getQuizzesByTopic, getQuizQuestions, submitQuizResult, getAllSubjects, getTopicsBySubject } from "@/actions"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 
 interface Topic {
   id: string
@@ -48,6 +49,7 @@ export default function QuizPage() {
   const [quizResult, setQuizResult] = useState<{ score: number; correct: number; total: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mode, setMode] = useState<"topics" | "quizzes" | "quiz" | "result">("topics")
+  const supabase = createClient();
 
   useEffect(() => {
     async function fetchSubjects() {
@@ -133,7 +135,10 @@ export default function QuizPage() {
     const score = Math.round((correct / questions.length) * 100)
 
     try {
-      await submitQuizResult(selectedQuiz.id, score, correct, questions.length - correct, questions.length)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        await submitQuizResult(selectedQuiz.id, score, correct, questions.length - correct, questions.length, user.id)
+      }
     } catch (error) {
       console.error("Erro ao salvar resultado:", error)
     }
@@ -168,32 +173,84 @@ export default function QuizPage() {
   }
 
   if (mode === "result" && quizResult) {
+    const taxaAcerto = quizResult.total > 0 ? Math.round((quizResult.correct / quizResult.total) * 100) : 0;
     return (
       <DashboardShell>
         <div className="max-w-2xl mx-auto text-center">
           <Card>
             <CardHeader>
               <div className="mx-auto mb-4">
-                {quizResult.score >= 70 ? (
-                  <CheckCircle className="h-16 w-16 text-green-500" />
+                {taxaAcerto === 100 ? (
+                  <Trophy className="h-12 w-12 text-yellow-400 mb-1 animate-bounce" />
+                ) : taxaAcerto >= 70 ? (
+                  <Star className="h-12 w-12 text-yellow-400 mb-1 animate-pulse" />
                 ) : (
-                  <XCircle className="h-16 w-16 text-red-500" />
+                  <XCircle className="h-12 w-12 text-red-500 mb-1 animate-shake" />
                 )}
               </div>
-              <CardTitle className="text-2xl">{quizResult.score >= 70 ? "Parabéns!" : "Continue estudando!"}</CardTitle>
+              <CardTitle className="text-2xl">
+                {taxaAcerto === 100
+                  ? "Parabéns, você gabaritou!"
+                  : taxaAcerto >= 70
+                  ? "Ótimo desempenho, continue praticando!"
+                  : "Não desista, revise os errados e tente novamente!"}
+              </CardTitle>
               <CardDescription>Você completou o quiz: {selectedQuiz?.title}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-primary mb-2">{quizResult.score}%</div>
-                <p className="text-muted-foreground">
-                  {quizResult.correct} de {quizResult.total} questões corretas
-                </p>
+                <div className="text-4xl font-bold text-primary mb-2">{taxaAcerto}%</div>
+                <p className="text-green-600 font-bold">Acertos: {quizResult.correct}</p>
+                <p className="text-red-600 font-bold">Erros: {quizResult.total - quizResult.correct}</p>
               </div>
-
-              <Progress value={quizResult.score} className="h-3" />
-
-              <div className="flex gap-4 justify-center">
+              <Progress value={taxaAcerto} className="h-3" />
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <span className="font-semibold text-zinc-700 dark:text-zinc-200 mb-2">Compartilhe seu resultado:</span>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`)
+                    }}
+                  >
+                    <Share2 className="mr-1 h-4 w-4" /> WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
+                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`)
+                    }}
+                  >
+                    <Share2 className="mr-1 h-4 w-4" /> Twitter
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=https://everest-preparatorios.vercel.app&quote=${encodeURIComponent(text)}`)
+                    }}
+                  >
+                    <Share2 className="mr-1 h-4 w-4" /> Facebook
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
+                      navigator.clipboard.writeText(text)
+                      alert("Resultado copiado para a área de transferência!")
+                    }}
+                  >
+                    <Copy className="mr-1 h-4 w-4" /> Copiar Resultado
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-4 justify-center mt-6">
                 <Button onClick={resetQuiz} variant="outline">
                   <RotateCcw className="mr-2 h-4 w-4" />
                   Fazer Outro Quiz
@@ -324,10 +381,27 @@ export default function QuizPage() {
         <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject) => (
-            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-b from-[#FF8800] to-[#FF4000] text-white border-none" onClick={() => setSelectedSubject(subject.id)}>
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow min-h-[220px] flex flex-col justify-between bg-[#0d1117] border border-[#23272f]">
               <CardHeader>
-                <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <BrainCircuit className="h-8 w-8 text-[#FF4000]" />
+                  <div className="text-xs text-zinc-400">Matéria</div>
+                </div>
+                <CardTitle className="text-2xl text-white mt-2">{subject.name}</CardTitle>
+                <CardDescription className="text-zinc-300 mt-2">
+                  {subject.name === "Português"
+                    ? "Teste seus conhecimentos em gramática, interpretação e muito mais!"
+                    : subject.name === "Regulamentos"
+                    ? "Domine os regulamentos militares e fique pronto para qualquer questão da banca!"
+                    : "Faça quizzes interativos sobre os principais tópicos desta matéria."}
+                </CardDescription>
               </CardHeader>
+              <CardContent>
+                <Button className="w-full bg-[#FF4000] text-white border-none hover:brightness-110 mt-4" onClick={() => setSelectedSubject(subject.id)}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Começar Quiz
+                </Button>
+              </CardContent>
             </Card>
           ))}
         </div>

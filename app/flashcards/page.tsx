@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BookOpenText, Play, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react"
+import { BookOpenText, Play, RotateCcw, CheckCircle, XCircle, ArrowRight, BookOpen, Share2, Copy, Trophy, Star } from "lucide-react"
 import { getAllTopics, getFlashcardsForReview, updateTopicProgress, getAllSubjects, getTopicsBySubject } from "@/actions"
 import Link from "next/link"
 import {
@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import confetti from "canvas-confetti"
+import { createClient } from "@/lib/supabase/client"
 
 interface Topic {
   id: string
@@ -125,6 +126,11 @@ if (typeof window !== "undefined") {
       .flashcard-flip-back {
         transform: rotateY(180deg);
       }
+      @keyframes flashError {
+        0% { opacity: 0.7; }
+        60% { opacity: 1; }
+        100% { opacity: 0; }
+      }
     `
     document.head.appendChild(style)
   }
@@ -149,13 +155,17 @@ export default function FlashcardsPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [availableCounts, setAvailableCounts] = useState<{ [topicId: string]: number }>({})
   const [refreshProgress, setRefreshProgress] = useState(0)
+  const supabase = createClient();
+
+  // Remover estados não utilizados
+  // const [topicQuantity, setTopicQuantity] = useState<{ [topicId: string]: number }>({})
+  // const [showQuantityInput, setShowQuantityInput] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSubjects() {
       const data = await getAllSubjects();
-      console.log('Subjects:', data);
       setSubjects(data);
-      setIsLoading(false); // <-- Garante que o loading termina
+      setIsLoading(false);
     }
     fetchSubjects();
   }, []);
@@ -163,9 +173,10 @@ export default function FlashcardsPage() {
   useEffect(() => {
     async function fetchTopics() {
       if (selectedSubject) {
+        setIsLoading(true);
         const data = await getTopicsBySubject(selectedSubject)
-        console.log('Topics:', data) // <-- Diagnóstico
         setTopics(data)
+        setIsLoading(false);
       }
     }
     fetchTopics()
@@ -226,6 +237,19 @@ export default function FlashcardsPage() {
     }
   }
 
+  // Adicionar overlay animado para erro
+  const ErrorOverlay = () => (
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'rgba(255, 88, 88, 0.25)',
+      borderRadius: '1rem',
+      pointerEvents: 'none',
+      zIndex: 10,
+      animation: 'flashError 0.7s',
+    }} />
+  )
+
   const handleAnswer = async (isCorrect: boolean) => {
     if (!selectedTopic) return
 
@@ -240,30 +264,34 @@ export default function FlashcardsPage() {
         zIndex: 9999,
       })
     }
-    // Vibração ao errar (mobile)
-    if (!isCorrect && typeof window !== "undefined" && window.navigator.vibrate) {
-      window.navigator.vibrate([40, 30, 40])
+    // Vibração e efeito de tremer ao errar (mobile e visual)
+    if (!isCorrect && typeof window !== "undefined") {
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate([40, 30, 40])
+      }
+      setIsTransitioning(true)
+      setTimeout(() => setIsTransitioning(false), 600)
     }
 
-    // Atualizar estatísticas da sessão
     setSessionStats((prev) => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
     }))
 
-    // Guardar cards errados para revisão
     if (!isCorrect) {
       setWrongCards((prev) => [...prev, flashcards[currentCardIndex]])
     }
 
-    // Atualizar progresso no banco
     try {
-      await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect")
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect", user.id)
+      }
     } catch (error) {
       console.error("Erro ao atualizar progresso:", error)
     }
 
-    // Mostrar feedback visual por 1s antes de avançar
+    // Efeito visual por 900ms, depois avança
     setTimeout(() => {
       setLastAnswer(null)
       setShowAnswer(false)
@@ -271,17 +299,14 @@ export default function FlashcardsPage() {
         if (currentCardIndex < flashcards.length - 1) {
           setCurrentCardIndex((prev) => prev + 1)
         } else {
-          // Sessão finalizada
           setLastSessionStats({
             correct: sessionStats.correct + (isCorrect ? 1 : 0),
             incorrect: sessionStats.incorrect + (isCorrect ? 0 : 1),
           })
           setShowFinishModal(true)
-          setStudyMode("select")
-          setSelectedTopic(null)
-          setRefreshProgress((v) => v + 1) // Forçar refresh do progresso
+          setRefreshProgress((v) => v + 1)
         }
-      }, 200) // Pequeno delay para resetar o flip antes de trocar o card
+      }, 200)
     }, 900)
   }
 
@@ -307,17 +332,34 @@ export default function FlashcardsPage() {
     )
   }
 
-  // Renderização principal
+  // 1. Seleção de matéria
   if (!selectedSubject) {
     return (
       <DashboardShell>
         <h1 className="text-3xl font-bold tracking-tight mb-6">Escolha a Matéria</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject) => (
-            <Card key={subject.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-b from-[#FF8800] to-[#FF4000] text-white border-none" onClick={() => setSelectedSubject(subject.id)}>
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow min-h-[220px] flex flex-col justify-between bg-[#0d1117] border border-[#23272f]">
               <CardHeader>
-                <CardTitle className="text-2xl text-center">{subject.name}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <BookOpen className="h-8 w-8 text-[#FF4000]" />
+                  <div className="text-xs text-zinc-400">Matéria</div>
+                </div>
+                <CardTitle className="text-2xl text-white mt-2">{subject.name}</CardTitle>
+                <CardDescription className="text-zinc-300 mt-2">
+                  {subject.name === "Português"
+                    ? "Domine a gramática, interpretação de texto e prepare-se para gabaritar as questões de Português!"
+                    : subject.name === "Regulamentos"
+                    ? "Aprenda tudo sobre os regulamentos militares e fique pronto para qualquer questão da banca!"
+                    : "Estude os principais tópicos desta matéria com flashcards interativos."}
+                </CardDescription>
               </CardHeader>
+              <CardContent>
+                <Button className="w-full bg-[#FF4000] text-white border-none hover:brightness-110 mt-4" onClick={() => setSelectedSubject(subject.id)}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Começar Estudo
+                </Button>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -325,11 +367,71 @@ export default function FlashcardsPage() {
     )
   }
 
+  // 2. Seleção de tópico (após escolher matéria)
+  if (studyMode === "select" && selectedSubject) {
+    return (
+      <DashboardShell>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Flashcards</h1>
+        <p className="text-muted-foreground mb-4">Escolha um tópico para começar a estudar com flashcards</p>
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-sm">Quantidade:</span>
+          <input
+            type="number"
+            min={1}
+            max={availableCounts[selectedTopic ?? ""] || 999}
+            className="border rounded px-2 py-1 bg-background w-20"
+            value={selectedQuantity}
+            onChange={e => setSelectedQuantity(Number(e.target.value))}
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+          {topics.map((topic) => (
+            <Card key={topic.id} className="hover:shadow-lg transition-shadow min-h-[220px] flex flex-col justify-between">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <BookOpenText className="h-8 w-8 text-primary" />
+                  <Badge variant="secondary">{availableCounts[topic.id] !== undefined ? `${availableCounts[topic.id]} cards` : "..."}</Badge>
+                </div>
+                <CardTitle className="text-lg">{topic.name}</CardTitle>
+                <CardDescription>Estude este tópico com flashcards interativos</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col justify-end">
+                <Button onClick={() => startStudySession(topic.id)} className="w-full mt-2" disabled={isLoading}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Começar Estudo
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Button variant="outline" className="mt-8" onClick={() => setSelectedSubject(null)}>
+          Voltar às Matérias
+        </Button>
+        {topics.length === 0 && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <BookOpenText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum tópico disponível</h3>
+              <p className="text-muted-foreground mb-4">Os tópicos de flashcards ainda não foram configurados.</p>
+              <Button asChild variant="outline">
+                <Link href="/">
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </DashboardShell>
+    )
+  }
+
+  // 3. Estudo dos flashcards
   if (studyMode === "study" && flashcards.length > 0) {
     const currentCard = flashcards[currentCardIndex]
     const progress = ((currentCardIndex + 1) / flashcards.length) * 100
     let cardFeedbackClass = ""
-    // Remover fundo colorido, manter apenas classes para efeitos visuais
     if (lastAnswer === true) cardFeedbackClass = "card-correct-effect"
     if (lastAnswer === false) cardFeedbackClass = "card-incorrect-effect"
 
@@ -351,8 +453,26 @@ export default function FlashcardsPage() {
                 <span className="text-red-600 font-bold">Erros: {lastSessionStats.incorrect}</span>
               </div>
               <p className="mb-2">Taxa de acerto: {lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%</p>
+              {lastSessionStats.correct + lastSessionStats.incorrect === 0 ? null :
+                lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect) === 1 ? (
+                  <div className="flex flex-col items-center mt-2">
+                    <Trophy className="h-8 w-8 text-yellow-400 mb-1 animate-bounce" />
+                    <p className="text-green-600 font-bold">Parabéns, você gabaritou!</p>
+                  </div>
+                ) : lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect) >= 0.7 ? (
+                  <div className="flex flex-col items-center mt-2">
+                    <Star className="h-8 w-8 text-yellow-400 mb-1 animate-pulse" />
+                    <p className="text-yellow-600 font-bold">Ótimo desempenho, continue praticando!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center mt-2">
+                    <XCircle className="h-8 w-8 text-red-500 mb-1 animate-shake" />
+                    <p className="text-red-600 font-bold">Não desista, revise os errados e tente novamente!</p>
+                  </div>
+                )
+              }
               {wrongCards.length > 0 && (
-                <Button variant="destructive" onClick={() => {
+                <Button variant="destructive" className="animate-pulse" onClick={() => {
                   setFlashcards(wrongCards)
                   setCurrentCardIndex(0)
                   setShowAnswer(false)
@@ -365,8 +485,54 @@ export default function FlashcardsPage() {
                 </Button>
               )}
             </div>
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <span className="font-semibold text-zinc-700 dark:text-zinc-200 mb-2">Compartilhe seu resultado:</span>
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const text = `Acabei de revisar flashcards no Everest Preparatórios!\nAcertos: ${lastSessionStats.correct}\nErros: ${lastSessionStats.incorrect}\nTaxa de acerto: ${lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%\nhttps://everest-preparatorios.vercel.app`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`)
+                  }}
+                >
+                  <Share2 className="mr-1 h-4 w-4" /> WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const text = `Acabei de revisar flashcards no Everest Preparatórios!\nAcertos: ${lastSessionStats.correct}\nErros: ${lastSessionStats.incorrect}\nTaxa de acerto: ${lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%\nhttps://everest-preparatorios.vercel.app`;
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`)
+                  }}
+                >
+                  <Share2 className="mr-1 h-4 w-4" /> Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const text = `Acabei de revisar flashcards no Everest Preparatórios!\nAcertos: ${lastSessionStats.correct}\nErros: ${lastSessionStats.incorrect}\nTaxa de acerto: ${lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%\nhttps://everest-preparatorios.vercel.app`;
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=https://everest-preparatorios.vercel.app&quote=${encodeURIComponent(text)}`)
+                  }}
+                >
+                  <Share2 className="mr-1 h-4 w-4" /> Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const text = `Acabei de revisar flashcards no Everest Preparatórios!\nAcertos: ${lastSessionStats.correct}\nErros: ${lastSessionStats.incorrect}\nTaxa de acerto: ${lastSessionStats.correct + lastSessionStats.incorrect > 0 ? Math.round((lastSessionStats.correct / (lastSessionStats.correct + lastSessionStats.incorrect)) * 100) : 0}%\nhttps://everest-preparatorios.vercel.app`;
+                    navigator.clipboard.writeText(text)
+                    alert("Resultado copiado para a área de transferência!")
+                  }}
+                >
+                  <Copy className="mr-1 h-4 w-4" /> Copiar Resultado
+                </Button>
+              </div>
+            </div>
             <DialogFooter>
-              <Button onClick={() => setShowFinishModal(false)}>Fechar</Button>
+              <Button onClick={() => { setShowFinishModal(false); setStudyMode("select"); setSelectedTopic(null); }}>Fechar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -382,57 +548,50 @@ export default function FlashcardsPage() {
           </Button>
         </div>
 
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              Card {currentCardIndex + 1} de {flashcards.length}
-            </span>
-            <div className="flex gap-4 text-sm">
-              <span className="text-green-600">✓ {sessionStats.correct}</span>
-              <span className="text-red-600">✗ {sessionStats.incorrect}</span>
-            </div>
+        <div className="mb-2 flex items-center justify-between w-full max-w-2xl mx-auto">
+          <span className="text-sm font-medium">Card {currentCardIndex + 1} de {flashcards.length}</span>
+          <div className="flex gap-4 text-sm">
+            <span className="text-green-600">✓ {sessionStats.correct}</span>
+            <span className="text-red-600">✗ {sessionStats.incorrect}</span>
           </div>
-          <Progress value={progress} className="h-2" />
+        </div>
+        <Progress value={progress} className="h-2 max-w-2xl mx-auto mb-6" />
+
+        {/* Contador acima do card, centralizado */}
+        <div className="w-full flex justify-center mb-2">
+          <span className="text-sm font-semibold opacity-80 text-zinc-700 dark:text-white bg-transparent">Card {currentCardIndex + 1} de {flashcards.length}</span>
         </div>
 
-        <div className={`flashcard-flip w-full max-w-2xl mx-auto${showAnswer ? " show-answer" : ""}`} style={{height: 360}}>
-          <div className="flashcard-flip-inner" style={{height: 360}}>
-            <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass} flashcard-flip-front`}>
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl">Pergunta</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <div className="min-h-[200px] flex items-center justify-center p-6">
-                  <p className="text-lg leading-relaxed">{currentCard.question}</p>
-                </div>
-                <div className="flex gap-4 justify-center mt-6">
+        {/* Centralizar verticalmente o card na área de estudo */}
+        <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-2xl mx-auto">
+          <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass}`} style={{position: 'relative'}}>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">{showAnswer ? 'Resposta' : 'Pergunta'}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="min-h-[200px] flex items-center justify-center p-6">
+                <p className="text-lg leading-relaxed font-bold">{showAnswer ? currentCard.answer : currentCard.question}</p>
+              </div>
+              <div className="flex gap-4 justify-center mt-6">
+                {showAnswer ? (
+                  <>
+                    <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={lastAnswer !== null}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Errei
+                    </Button>
+                    <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={lastAnswer !== null}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Acertei
+                    </Button>
+                  </>
+                ) : (
                   <Button onClick={() => setShowAnswer(true)} size="lg" className="show-answer-btn" disabled={lastAnswer !== null}>
                     Mostrar Resposta
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={`flashcard-gradient-bg w-full h-full border-2 ${cardFeedbackClass} flashcard-flip-back`}>
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl">Resposta</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <div className="min-h-[200px] flex items-center justify-center p-6">
-                  <p className="text-lg leading-relaxed">{currentCard.answer}</p>
-                </div>
-                <div className="flex gap-4 justify-center mt-6">
-                  <Button onClick={() => handleAnswer(false)} size="lg" className="btn-errei" disabled={lastAnswer !== null}>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Errei
-                  </Button>
-                  <Button onClick={() => handleAnswer(true)} size="lg" className="btn-acertou" disabled={lastAnswer !== null}>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Acertei
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
         {/* Botão para gerar mais flashcards com IA */}
         {/* Removido conforme solicitado */}
@@ -443,24 +602,7 @@ export default function FlashcardsPage() {
   return (
     <DashboardShell>
       {/* Seletor de quantidade de flashcards */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Flashcards</h1>
-          <p className="text-muted-foreground">Escolha um tópico para começar a estudar com flashcards</p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-sm">Quantidade:</span>
-          <input
-            type="number"
-            min={1}
-            max={availableCounts[selectedTopic ?? ""] || 999}
-            className="border rounded px-2 py-1 bg-background w-20"
-            value={selectedQuantity}
-            onChange={e => setSelectedQuantity(Number(e.target.value))}
-            disabled={isLoading}
-          />
-        </div>
-      </div>
+      {/* Removido conforme solicitado */}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
         {topics.map((topic) => (

@@ -13,9 +13,40 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sparkles } from "lucide-react"
-import { supabaseClient } from "@/lib/supabaseClient" // Importar o cliente Supabase do lado do cliente
-import { useRouter } from "next/navigation" // Importar useRouter
-import { useEffect, useState } from "react" // Importar useEffect e useState
+import { supabaseClient } from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+
+const marqueeMessages = [
+  "Mantenha o foco! Você está mais perto do seu objetivo.",
+  "Próxima live: 10/08 às 19h com o Prof. Tiago Costa!",
+  "Não esqueça de revisar seus flashcards hoje!"
+];
+
+function HeaderMarquee() {
+  return (
+    <div className="flex-1 flex items-center justify-center overflow-hidden h-8">
+      <div className="whitespace-nowrap animate-marquee text-sm text-white/90 font-medium">
+        {marqueeMessages.map((msg, idx) => (
+          <span key={idx} className="mx-8">
+            {msg}
+          </span>
+        ))}
+      </div>
+      <style jsx>{`
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+          display: inline-block;
+          min-width: 100%;
+          animation: marquee 18s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export function SiteHeader() {
   const router = useRouter()
@@ -56,19 +87,20 @@ export function SiteHeader() {
 
   const handleLogout = async () => {
     await supabaseClient.auth.signOut()
-    router.push("/login") // Redireciona para a página de login após o logout
+    router.push("/login")
   }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
-      <div className="container flex h-16 items-center justify-between py-4">
-        <div className="flex items-center space-x-4">
+      <div className="container flex h-16 items-center justify-between py-4 gap-4">
+        <div className="flex items-center space-x-4 min-w-fit">
           <Link href="/" className="flex items-center space-x-2">
             <Sparkles className="h-6 w-6 text-primary" />
             <span className="font-bold text-lg">Everest Preparatórios</span>
           </Link>
         </div>
-        <div className="flex items-center space-x-4">
+        <HeaderMarquee />
+        <div className="flex items-center space-x-4 min-w-fit">
           <ThemeToggle />
           {userEmail ? (
             <DropdownMenu>
