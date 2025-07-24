@@ -5,7 +5,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { BookOpen, Home, Settings, User, GraduationCap, MessageSquareText, BookText, MonitorPlay } from "lucide-react" // Adicionei MonitorPlay para Meus Cursos
+import { BookOpen, Home, Settings, User, GraduationCap, MessageSquareText, BookText, MonitorPlay, Calendar } from "lucide-react" // Adicionei MonitorPlay para Meus Cursos
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
   items: {
@@ -79,6 +79,11 @@ export const mainNavItems = [
     href: "/community",
     title: "Comunidade",
     icon: MessageSquareText,
+  },
+  {
+    href: "/calendario",
+    title: "Calendário",
+    icon: Calendar,
   },
   {
     href: "https://alunos.everestpreparatorios.com.br/", // Link para a Memberkit

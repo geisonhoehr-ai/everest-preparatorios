@@ -26,16 +26,7 @@ export default function LoginPage() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("user_role")
-          .eq("user_uuid", session.user.id)
-          .single()
-        if (profileError || !profile || !profile.user_role) {
-          router.push("/") // Redireciona para o dashboard
-        } else {
-          router.push("/")
-        }
+        router.push("/dashboard"); // Redireciona para o dashboard
       }
     })
     return () => {
