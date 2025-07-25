@@ -108,11 +108,6 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: BookText,
   },
   {
-    href: "/my-flashcards",
-    title: "Meus Flashcards",
-    icon: BookOpen,
-  },
-  {
     href: "/quiz",
     title: "Quiz",
     icon: GraduationCap,
