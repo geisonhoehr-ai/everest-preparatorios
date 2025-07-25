@@ -1241,6 +1241,8 @@ export async function checkCalendarAccess(userUuid: string) {
   try {
     const supabase = await getSupabaseClient()
     
+    console.log('Verificando acesso ao calendário para usuário:', userUuid)
+    
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
@@ -1249,13 +1251,25 @@ export async function checkCalendarAccess(userUuid: string) {
 
     if (error) {
       console.error('Erro ao verificar role do usuário:', error)
-      return false
+      // Verificar se a tabela user_roles existe
+      const { data: tables, error: tableError } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_schema', 'public')
+        .eq('table_name', 'user_roles')
+      
+      if (tableError || !tables || tables.length === 0) {
+        throw new Error('Tabela user_roles não existe. Execute os scripts de configuração do banco.')
+      }
+      
+      throw new Error('Erro ao verificar permissões: ' + error.message)
     }
 
+    console.log('Role do usuário:', data?.role)
     return data?.role === 'teacher' || data?.role === 'admin'
   } catch (error) {
     console.error('Erro ao verificar acesso ao calendário:', error)
-    return false
+    throw error
   }
 }
 
@@ -1264,12 +1278,23 @@ export async function getAllCalendarEvents(): Promise<CalendarEvent[]> {
   try {
     const supabase = await getSupabaseClient()
 
+    console.log('Buscando todos os eventos do calendário...')
+
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
       .order('event_date', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error('Erro SQL ao buscar eventos:', error)
+      // Verificar se a tabela existe
+      if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+        throw new Error('Tabela calendar_events não existe. Execute o script: scripts/063_fix_calendar_events_table.sql')
+      }
+      throw new Error('Erro ao buscar eventos: ' + error.message)
+    }
+
+    console.log('Eventos encontrados:', data?.length || 0)
     return data || []
   } catch (error) {
     console.error('Erro ao buscar eventos do calendário:', error)
@@ -1322,6 +1347,9 @@ export async function getCalendarEventById(eventId: string): Promise<CalendarEve
 // Criar novo evento do calendário
 export async function createCalendarEvent(userUuid: string, eventData: CalendarEvent): Promise<CalendarEvent> {
   try {
+    console.log('Criando evento do calendário para usuário:', userUuid)
+    console.log('Dados do evento:', eventData)
+    
     // Verificar acesso
     const hasAccess = await checkCalendarAccess(userUuid)
     if (!hasAccess) {
@@ -1340,7 +1368,21 @@ export async function createCalendarEvent(userUuid: string, eventData: CalendarE
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Erro SQL ao criar evento:', error)
+      if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+        throw new Error('Tabela calendar_events não existe. Execute o script: scripts/063_fix_calendar_events_table.sql')
+      }
+      if (error.code === '23514' && error.message?.includes('event_type')) {
+        throw new Error('Tipo de evento inválido. Use: live, simulado, prova, redacao ou aula')
+      }
+      if (error.code === '23503') {
+        throw new Error('Erro de referência: usuário não encontrado')
+      }
+      throw new Error('Erro ao criar evento: ' + error.message)
+    }
+
+    console.log('Evento criado com sucesso:', data)
     return data
   } catch (error) {
     console.error('Erro ao criar evento do calendário:', error)
