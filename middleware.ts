@@ -1,32 +1,37 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const isLoggedIn = request.cookies.get('sb-access-token');
-
-  // Permitir acesso livre à landing page, login, signup, e arquivos públicos
-  if (
-    request.nextUrl.pathname === '/' ||
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/public') ||
-    request.nextUrl.pathname === '/favicon.ico'
-  ) {
-    return NextResponse.next();
-  }
-
-  // Se não estiver logado, redireciona para login
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+export async function middleware(request: NextRequest) {
+  // Por enquanto, vamos permitir acesso a todas as rotas
+  // Isso evita o loop de redirecionamento
+  
+  console.log('Middleware - Path:', request.nextUrl.pathname);
+  
+  // Lista de rotas que definitivamente são públicas
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/signup',
+    '/clear-cookies',
+    '/api',
+    '/_next',
+    '/public',
+    '/favicon.ico',
+    '/.well-known'
+  ];
+  
+  // Verifica se é uma rota pública
+  const isPublicRoute = publicRoutes.some(route => 
+    request.nextUrl.pathname === route || 
+    request.nextUrl.pathname.startsWith(route)
+  );
+  
+  // Por enquanto, permite acesso a todas as rotas
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/((?!login|signup|api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

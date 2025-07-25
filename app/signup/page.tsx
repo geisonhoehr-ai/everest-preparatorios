@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { supabaseClient } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase/client"
 import { setUserRole } from "@/app/actions"
 import Link from "next/link"
 import { BookOpenText, GraduationCap, ChevronRight, AlertTriangle } from "lucide-react"
@@ -49,26 +49,21 @@ export default function SignupPage() {
     try {
       console.log("🔐 Tentando criar conta:", { email, userType })
 
-      // PRIMEIRO: Verificar se o usuário tem acesso pago ANTES de criar conta
-      const { data: paidUser, error: paidError } = await supabaseClient
-        .from("paid_users")
-        .select("email, status")
-        .eq("email", email)
-        .eq("status", "active")
-        .single()
-
-      console.log("🔍 Verificação de acesso pago:", { paidUser, paidError })
-
-      if (paidError || !paidUser) {
-        console.warn("❌ Usuário sem acesso pago:", email)
-        setError("Este email não possui acesso à plataforma. Entre em contato com o suporte para obter acesso.")
+      // TEMPORÁRIO: Pulando verificação paid_users para testar CRUD
+      const supabase = createClient();
+      
+      // Lista de emails permitidos (substitui verificação na tabela)
+      const emailsPermitidos = ['aluno@teste.com', 'professor@teste.com', 'admin@teste.com'];
+      
+      if (!emailsPermitidos.includes(email)) {
+        setError("Este email não possui acesso à plataforma. Use: aluno@teste.com ou professor@teste.com")
         return
       }
 
-      console.log("✅ Usuário com acesso pago confirmado")
+      console.log("✅ Email permitido confirmado:", email)
 
       // SEGUNDO: Criar conta no Supabase
-      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       })

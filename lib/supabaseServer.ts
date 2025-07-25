@@ -20,13 +20,3 @@ export const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceKe
 export function createClient() {
   return supabaseAdmin
 }
-
-// ---------------------------------------------------
-//  Optional client-side instance with anon privileges
-// ---------------------------------------------------
-export const supabaseClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-  },
-})

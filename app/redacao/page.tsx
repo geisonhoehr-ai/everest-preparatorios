@@ -163,22 +163,16 @@ export default function RedacaoPage() {
 
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Redação</h1>
-        <div className="flex items-center gap-2">
-          {stats.notificacoesNaoLidas > 0 && (
-            <Badge variant="destructive" className="animate-pulse">
-              {stats.notificacoesNaoLidas} nova{stats.notificacoesNaoLidas > 1 ? "s" : ""}
-            </Badge>
-          )}
-          <Button className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Nova Redação
-          </Button>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Redação</h1>
+          <p className="text-muted-foreground mt-1">
+            Escreva, envie e acompanhe suas redações com correção profissional e IA
+          </p>
         </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="escrever">Escrever</TabsTrigger>
@@ -683,7 +677,8 @@ export default function RedacaoPage() {
             )}
           </div>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </DashboardShell>
   )
 }

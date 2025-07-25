@@ -7,11 +7,16 @@ import { Button } from "@/components/ui/button"
 export default function SettingsPage() {
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-      </div>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Configurações</h1>
+          <p className="text-muted-foreground mt-1">
+            Ajuste as configurações da sua conta e preferências
+          </p>
+        </div>
 
-      <div className="grid gap-6 mt-6">
+        <div className="grid gap-6">
         <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
           <CardHeader>
             <CardTitle>Configurações Gerais</CardTitle>
@@ -39,6 +44,7 @@ export default function SettingsPage() {
             <Button className="w-fit">Salvar Configurações</Button>
           </CardContent>
         </Card>
+        </div>
       </div>
     </DashboardShell>
   )

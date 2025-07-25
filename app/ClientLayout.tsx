@@ -26,18 +26,22 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth event:", event);
+      console.log("Current pathname:", pathname);
+      
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         setSession(currentSession)
         if (currentSession?.user?.id) {
           const role = await getUserRoleClient(currentSession.user.id)
           setUserRole(role)
-          if (event === "SIGNED_IN") {
-            if (role === "teacher" && window.location.pathname !== "/teacher") {
-              router.push("/teacher")
-              router.refresh()
-            } else if (role === "student" && window.location.pathname !== "/") {
-              router.push("/")
-              router.refresh()
+          console.log("User role in ClientLayout:", role);
+          
+          // Só redireciona se estiver na página de login após fazer login
+          if (event === "SIGNED_IN" && pathname === "/login") {
+            if (role === "teacher") {
+              window.location.replace("/teacher");
+            } else {
+              window.location.replace("/dashboard");
             }
           }
         } else {
@@ -46,7 +50,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       } else if (event === "SIGNED_OUT") {
         setSession(null)
         setUserRole(null)
-        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+        if (pathname !== "/" && pathname !== "/login" && pathname !== "/signup") {
           router.push("/login")
           router.refresh()
         }
@@ -61,7 +65,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     return () => {
       authListener?.subscription?.unsubscribe()
     }
-  }, [supabase, router, toast])
+  }, [supabase, router, toast, pathname])
 
   if (loadingSession) {
     return (

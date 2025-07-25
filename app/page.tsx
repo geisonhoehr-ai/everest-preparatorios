@@ -1,22 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { getUserRoleClient } from "@/lib/get-user-role";
 
 export default function LandingPage() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Verifica se o cookie de autenticação existe
-    if (typeof document !== "undefined") {
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const isLoggedIn = cookies.some(c => c.startsWith('sb-access-token='));
-      if (isLoggedIn) {
-        router.replace("/dashboard");
+    async function checkAndRedirect() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const role = await getUserRoleClient(user.id);
+          console.log("User role on landing page:", role);
+          
+          if (role === "teacher") {
+            router.push("/teacher");
+          } else if (role === "admin" || role === "student") {
+            router.push("/dashboard");
+          } else {
+            // Se tiver usuário mas não tiver role, vai para dashboard
+            router.push("/dashboard");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setChecking(false);
       }
     }
+    checkAndRedirect();
   }, [router]);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-white">
+        <span className="text-lg">Carregando...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#18181b] to-[#23272f] text-white px-4">

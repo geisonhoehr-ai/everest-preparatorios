@@ -167,20 +167,16 @@ export default function TeacherDashboard() {
 
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Área do Professor</h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="destructive" className="animate-pulse">
-            {stats.pendentes} pendente{stats.pendentes !== 1 ? "s" : ""}
-          </Badge>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Turma
-          </Button>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Área do Professor</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie suas turmas, corrija redações e acompanhe o progresso dos alunos
+          </p>
         </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="correcoes">
@@ -611,7 +607,8 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </DashboardShell>
   )
 }

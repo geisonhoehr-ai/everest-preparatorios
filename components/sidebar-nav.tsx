@@ -1,19 +1,44 @@
 "use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { BookOpen, Home, Settings, User, GraduationCap, MessageSquareText, BookText, MonitorPlay, Calendar } from "lucide-react" // Adicionei MonitorPlay para Meus Cursos
+import { 
+  BookOpen, 
+  Home, 
+  Settings, 
+  User, 
+  GraduationCap, 
+  MessageSquare, 
+  BookText, 
+  Calendar,
+  LayoutDashboard,
+  PenTool,
+  Users2,
+  Trophy,
+  FileText,
+  HelpCircle,
+  ClipboardCheck,
+  Library,
+  Users
+} from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+interface SidebarNavItem {
+  href: string
+  title: string
+  icon: React.ElementType
+  external?: boolean
+}
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
-  items: {
-    href: string
-    title: string
-    icon: React.ElementType
-    external?: boolean // Adicionado propriedade para links externos
-  }[]
+  items: SidebarNavItem[]
   collapsed?: boolean
 }
 
@@ -21,39 +46,61 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
   const pathname = usePathname()
 
   return (
-    <nav className={cn("flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1", className)} {...props}>
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          // Se for um link externo, abre em nova aba
-          target={item.external ? "_blank" : undefined}
-          rel={item.external ? "noopener noreferrer" : undefined}
-          className={cn(
-            "inline-flex items-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 justify-start",
-            pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
-            item.href.startsWith("/teacher") && pathname.startsWith("/teacher")
-              ? "bg-accent text-accent-foreground"
-              : "",
-            item.href.startsWith("/community") && pathname.startsWith("/community")
-              ? "bg-accent text-accent-foreground"
-              : "",
-            collapsed ? "justify-center" : ""
-          )}
-        >
-          <item.icon className="mr-2 h-4 w-4" />
-          <span className={cn("transition-all duration-300", collapsed ? "opacity-0 w-0 h-0" : "opacity-100")}>{item.title}</span>
-        </Link>
-      ))}
-    </nav>
+    <TooltipProvider>
+      <nav className={cn("flex flex-col space-y-1", className)} {...props}>
+        {items.map((item) => {
+          const isActive = pathname === item.href || 
+            (item.href !== "/" && pathname.startsWith(item.href))
+          
+          const navItem = (
+            <Link
+              key={item.href}
+              href={item.href}
+              target={item.external ? "_blank" : undefined}
+              rel={item.external ? "noopener noreferrer" : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
+                isActive 
+                  ? "bg-accent text-accent-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground",
+                collapsed && "justify-center px-2"
+              )}
+            >
+              <item.icon className={cn(
+                "flex-shrink-0",
+                collapsed ? "h-5 w-5" : "h-4 w-4"
+              )} />
+              {!collapsed && (
+                <span className="truncate">{item.title}</span>
+              )}
+            </Link>
+          )
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.href} delayDuration={0}>
+                <TooltipTrigger asChild>
+                  {navItem}
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <p>{item.title}</p>
+                </TooltipContent>
+              </Tooltip>
+            )
+          }
+
+          return navItem
+        })}
+      </nav>
+    </TooltipProvider>
   )
 }
 
-export const mainNavItems = [
+export const sidebarNavItems: SidebarNavItem[] = [
   {
-    href: "/",
-    title: "Início",
-    icon: Home,
+    href: "/dashboard",
+    title: "Dashboard",
+    icon: LayoutDashboard,
   },
   {
     href: "/flashcards",
@@ -71,14 +118,19 @@ export const mainNavItems = [
     icon: GraduationCap,
   },
   {
-    href: "/redacao",
-    title: "Redação",
-    icon: MessageSquareText,
+    href: "/community/provas",
+    title: "Provas",
+    icon: FileText,
   },
   {
-    href: "/community",
-    title: "Comunidade",
-    icon: MessageSquareText,
+    href: "/community/livros",
+    title: "Livros",
+    icon: Library,
+  },
+  {
+    href: "/redacao",
+    title: "Redação",
+    icon: PenTool,
   },
   {
     href: "/calendario",
@@ -86,24 +138,13 @@ export const mainNavItems = [
     icon: Calendar,
   },
   {
-    href: "https://alunos.everestpreparatorios.com.br/", // Link para a Memberkit
-    title: "Meus Cursos",
-    icon: MonitorPlay, // Ícone para cursos/vídeos
-    external: true, // Marca como link externo
-  },
-]
-
-export const profileNavItems = [
-  {
-    href: "/profile",
-    title: "Perfil",
-    icon: User,
+    href: "/community",
+    title: "Comunidade",
+    icon: Users2,
   },
   {
-    href: "/settings",
-    title: "Configurações",
-    icon: Settings,
+    href: "/community/suporte",
+    title: "Suporte",
+    icon: HelpCircle,
   },
 ]
-
-export const sidebarNavItems = [...mainNavItems, ...profileNavItems]
