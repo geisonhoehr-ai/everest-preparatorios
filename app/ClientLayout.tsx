@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 import { getUserRoleClient } from "@/lib/get-user-role"
-import { SiteHeader } from "@/components/site-header"
+// import { SiteHeader } from "@/components/site-header"
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -78,11 +78,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   // Só renderiza o menu principal se não estiver em /community
-  const isCommunity = pathname?.startsWith("/community")
+  // const isCommunity = pathname?.startsWith("/community")
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {!isCommunity && <SiteHeader />}
+      {/* {!isCommunity && <SiteHeader />} */}
       {children}
       <Toaster />
     </ThemeProvider>

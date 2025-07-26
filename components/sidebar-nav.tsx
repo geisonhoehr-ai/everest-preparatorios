@@ -21,7 +21,8 @@ import {
   HelpCircle,
   ClipboardCheck,
   Library,
-  Users
+  Users,
+  Archive
 } from "lucide-react"
 import {
   Tooltip,
@@ -119,8 +120,8 @@ export const sidebarNavItems: SidebarNavItem[] = [
   },
   {
     href: "/community/livros",
-    title: "Livros",
-    icon: Library,
+    title: "Acervo",
+    icon: Archive,
   },
   {
     href: "/redacao",

@@ -164,12 +164,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
       {/* Sidebar Desktop */}
       <div className={cn(
         "hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30 bg-background border-r transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-72"
       )}>
         {/* Header do Sidebar */}
         <div className="flex h-16 items-center justify-between px-4 border-b">
           {!collapsed && (
-            <span className="text-lg font-semibold truncate">Everest Prep</span>
+            <span className="text-base font-semibold">Everest Preparatórios</span>
           )}
           <Button
             variant="ghost"
@@ -269,7 +269,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Main Content */}
       <main className={cn(
-        "flex-1 transition-all duration-300 md:pl-64",
+        "flex-1 transition-all duration-300 md:pl-72",
         collapsed && "md:pl-16"
       )}>
         <div className="h-full p-4 md:p-8 pt-16 md:pt-8">

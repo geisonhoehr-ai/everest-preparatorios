@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { getUserRoleClient } from "@/lib/get-user-role";
 import { 
   getAllCalendarEvents,
@@ -151,6 +151,7 @@ export default function CalendarioPage() {
   // Função para verificar role do usuário
   const checkUserRole = async () => {
     try {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const role = await getUserRoleClient(user.id);
@@ -169,6 +170,7 @@ export default function CalendarioPage() {
   // Função para salvar evento
   const handleSaveEvent = async () => {
     try {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Usuário não autenticado");
@@ -214,6 +216,7 @@ export default function CalendarioPage() {
   // Função para deletar evento
   const handleDeleteEvent = async (eventId: string) => {
     try {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Usuário não autenticado");

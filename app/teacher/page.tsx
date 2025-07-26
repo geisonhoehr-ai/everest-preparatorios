@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRedacoesProfessor, getTurmasProfessor, getEstatisticasProfessor, corrigirRedacaoIA } from "@/app/actions"
+import { CorrecaoDetalhada } from "@/components/correcao-detalhada"
 
 interface RedacaoProfessor {
   id: number
@@ -75,6 +76,7 @@ export default function TeacherDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
   const [corrigindoIA, setCorrigindoIA] = useState<number | null>(null)
+  const [correcaoDetalhada, setCorrecaoDetalhada] = useState<number | null>(null)
 
   useEffect(() => {
     loadData()
@@ -89,11 +91,28 @@ export default function TeacherDashboard() {
         getEstatisticasProfessor(),
       ])
 
-      setRedacoes(redacoesData)
-      setTurmas(turmasData)
-      setStats(statsData)
+      // Garantir que redacoesData seja sempre um array
+      setRedacoes(Array.isArray(redacoesData) ? redacoesData : [])
+      setTurmas(Array.isArray(turmasData) ? turmasData : [])
+      setStats(statsData || {
+        total_redacoes: 0,
+        pendentes: 0,
+        corrigidas_hoje: 0,
+        media_tempo_correcao: 0,
+        total_alunos: 0,
+      })
     } catch (error) {
       console.error("Erro ao carregar dados:", error)
+      // Em caso de erro, definir arrays vazios
+      setRedacoes([])
+      setTurmas([])
+      setStats({
+        total_redacoes: 0,
+        pendentes: 0,
+        corrigidas_hoje: 0,
+        media_tempo_correcao: 0,
+        total_alunos: 0,
+      })
     } finally {
       setLoading(false)
     }
@@ -109,6 +128,10 @@ export default function TeacherDashboard() {
     } finally {
       setCorrigindoIA(null)
     }
+  }
+
+  const iniciarCorrecaoDetalhada = (redacaoId: number) => {
+    setCorrecaoDetalhada(redacaoId)
   }
 
   const getStatusColor = (status: string) => {
@@ -141,7 +164,7 @@ export default function TeacherDashboard() {
     }
   }
 
-  const redacoesFiltradas = redacoes.filter((redacao) => {
+  const redacoesFiltradas = Array.isArray(redacoes) ? redacoes.filter((redacao) => {
     const matchStatus = filtroStatus === "todos" || redacao.status === filtroStatus
     const matchTurma = filtroTurma === "todas" || redacao.turma_nome === filtroTurma
     const matchSearch =
@@ -150,7 +173,7 @@ export default function TeacherDashboard() {
       redacao.aluno_nome.toLowerCase().includes(searchTerm.toLowerCase())
 
     return matchStatus && matchTurma && matchSearch
-  })
+  }) : []
 
   if (loading) {
     return (
@@ -162,6 +185,16 @@ export default function TeacherDashboard() {
           </div>
         </div>
       </DashboardShell>
+    )
+  }
+
+  // Se estiver em modo de correção detalhada
+  if (correcaoDetalhada) {
+    return (
+      <CorrecaoDetalhada 
+        redacaoId={correcaoDetalhada} 
+        onClose={() => setCorrecaoDetalhada(null)} 
+      />
     )
   }
 
@@ -253,7 +286,7 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {turmas.slice(0, 3).map((turma) => (
+                  {Array.isArray(turmas) ? turmas.slice(0, 3).map((turma) => (
                     <div key={turma.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium">{turma.nome}</p>
@@ -270,7 +303,7 @@ export default function TeacherDashboard() {
                         )}
                       </div>
                     </div>
-                  ))}
+                  )) : null}
                 </div>
               </CardContent>
             </Card>
@@ -350,17 +383,17 @@ export default function TeacherDashboard() {
               className="px-3 py-1 border rounded-md bg-background"
             >
               <option value="todas">Todas as Turmas</option>
-              {turmas.map((turma) => (
+              {Array.isArray(turmas) ? turmas.map((turma) => (
                 <option key={turma.id} value={turma.nome}>
                   {turma.nome}
                 </option>
-              ))}
+              )) : null}
             </select>
           </div>
 
           {/* Lista de Redações */}
           <div className="space-y-4">
-            {redacoesFiltradas.map((redacao) => (
+            {Array.isArray(redacoesFiltradas) ? redacoesFiltradas.map((redacao) => (
               <Card
                 key={redacao.id}
                 className={cn(
@@ -399,15 +432,26 @@ export default function TeacherDashboard() {
                       </Button>
 
                       {redacao.status === "pendente" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCorrecaoIA(redacao.id)}
-                          disabled={corrigindoIA === redacao.id}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Bot className="h-4 w-4 mr-1" />
-                          {corrigindoIA === redacao.id ? "Corrigindo..." : "IA"}
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleCorrecaoIA(redacao.id)}
+                            disabled={corrigindoIA === redacao.id}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Bot className="h-4 w-4 mr-1" />
+                            {corrigindoIA === redacao.id ? "Corrigindo..." : "IA"}
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            onClick={() => iniciarCorrecaoDetalhada(redacao.id)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Corrigir
+                          </Button>
+                        </>
                       )}
 
                       {redacao.correcao_ia && (
@@ -436,9 +480,9 @@ export default function TeacherDashboard() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+            )) : null}
 
-            {redacoesFiltradas.length === 0 && (
+            {(!Array.isArray(redacoesFiltradas) || redacoesFiltradas.length === 0) && (
               <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
                 <CardContent className="text-center py-12">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -461,7 +505,7 @@ export default function TeacherDashboard() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {turmas.map((turma) => (
+            {Array.isArray(turmas) ? turmas.map((turma) => (
               <Card key={turma.id} className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -495,7 +539,7 @@ export default function TeacherDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) : null}
           </div>
         </TabsContent>
 
@@ -516,7 +560,7 @@ export default function TeacherDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {turmas.map((turma) => (
+                  {Array.isArray(turmas) ? turmas.map((turma) => (
                     <div key={turma.id} className="flex items-center justify-between">
                       <span className="text-sm font-medium">{turma.nome}</span>
                       <div className="flex items-center gap-2">
@@ -524,7 +568,7 @@ export default function TeacherDashboard() {
                         <span className="text-sm text-muted-foreground">750/1000</span>
                       </div>
                     </div>
-                  ))}
+                  )) : null}
                 </div>
               </CardContent>
             </Card>

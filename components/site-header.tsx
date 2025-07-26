@@ -49,7 +49,7 @@ function HeaderMarquee() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-gradient-to-r from-orange-500 to-orange-700 backdrop-blur-lg shadow-lg">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-gradient-to-r from-blue-600 to-purple-600 backdrop-blur-lg shadow-lg">
       <div className="container flex h-16 items-center justify-between py-4 gap-2">
         <div className="flex items-center space-x-2 min-w-fit flex-shrink-0">
           <Link href="/" className="flex items-center space-x-2 hover:opacity-90 transition-opacity">

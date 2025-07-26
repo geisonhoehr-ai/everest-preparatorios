@@ -357,9 +357,12 @@ export default function FlashcardsPage() {
   const [showContinueModal, setShowContinueModal] = useState(false)
 
   useEffect(() => {
+    console.log("🔍 [DEBUG] useEffect triggered, selectedSubject:", selectedSubject)
     if (selectedSubject) {
+      console.log("🔍 [DEBUG] selectedSubject existe, chamando loadTopicsBySubject()")
       loadTopicsBySubject()
     } else {
+      console.log("🔍 [DEBUG] selectedSubject é null, chamando loadSubjects()")
       loadSubjects()
     }
   }, [selectedSubject])
@@ -482,13 +485,28 @@ export default function FlashcardsPage() {
 
   const loadSubjects = async () => {
     try {
-      console.log("🔍 Carregando matérias...")
+      console.log("🔍 [DEBUG] Iniciando loadSubjects...")
+      console.log("🔍 [DEBUG] Chamando getAllSubjects()...")
       const subjectsData = await getAllSubjects()
-      console.log("📚 Matérias encontradas:", subjectsData)
-      setSubjects(subjectsData)
+      console.log("📚 [DEBUG] Resposta de getAllSubjects():", subjectsData)
+      console.log("📚 [DEBUG] Tipo de subjectsData:", typeof subjectsData)
+      console.log("📚 [DEBUG] É array?", Array.isArray(subjectsData))
+      console.log("📚 [DEBUG] Length:", subjectsData?.length)
+      
+      if (subjectsData && Array.isArray(subjectsData)) {
+        console.log("✅ [DEBUG] Dados válidos, setando subjects...")
+        setSubjects(subjectsData)
+        console.log("✅ [DEBUG] Subjects setados:", subjectsData)
+      } else {
+        console.error("❌ [DEBUG] Dados inválidos:", subjectsData)
+        setSubjects([])
+      }
     } catch (error) {
-      console.error("❌ Erro ao carregar matérias:", error)
+      console.error("❌ [DEBUG] Erro ao carregar matérias:", error)
+      console.error("❌ [DEBUG] Stack trace:", error instanceof Error ? error.stack : 'N/A')
+      setSubjects([])
     } finally {
+      console.log("🔍 [DEBUG] Finalizando loadSubjects, setIsLoading(false)")
       setIsLoading(false)
     }
   }
@@ -1922,16 +1940,16 @@ export default function FlashcardsPage() {
         )}
 
         {topics.length === 0 && (
-          <Card className="text-center py-16 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-800 dark:to-orange-900 border-orange-200 dark:border-orange-700 hover:shadow-xl transition-all duration-300">
+                          <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
             <CardContent>
-              <div className="p-6 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 mx-auto mb-6 w-fit">
+                              <div className="p-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 mx-auto mb-6 w-fit">
                 <BookOpenText className="h-16 w-16 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">Nenhum tópico disponível</h3>
+                              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-800 bg-clip-text text-transparent">Nenhum tópico disponível</h3>
               <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
                 Os tópicos de flashcards ainda não foram configurados para esta matéria. Em breve haverá novos conteúdos!
               </p>
-              <Button asChild className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                              <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
                 <Link href="/dashboard">
                   <ArrowRight className="mr-3 h-5 w-5" />
                   Voltar ao Dashboard
