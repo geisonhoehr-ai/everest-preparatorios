@@ -374,10 +374,11 @@ export default function FlashcardsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.id) {
           const role = await getUserRoleClient(user.id)
-          setUserRole(role)
+          setUserRole(role || 'student') // Garante que sempre teremos um valor
         }
       } catch (error) {
-        console.error("Erro ao verificar role:", error)
+        console.log("Erro ao verificar role do usuário:", error instanceof Error ? error.message : 'Erro desconhecido')
+        setUserRole('student') // Define 'student' como padrão em caso de erro
       }
     }
     checkUserRole()
