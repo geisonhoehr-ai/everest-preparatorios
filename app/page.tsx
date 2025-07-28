@@ -66,24 +66,14 @@ export default function LandingPage() {
                 <span className="text-white font-bold text-xl">E</span>
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                Everest
+                Everest Preparatórios
               </span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#recursos" className="text-gray-300 hover:text-white transition-colors">Recursos</a>
-              <a href="#precos" className="text-gray-300 hover:text-white transition-colors">Preços</a>
-              <a href="#sobre" className="text-gray-300 hover:text-white transition-colors">Sobre</a>
-              <Link href="/login">
-                <Button variant="outline" className="bg-white text-black hover:bg-gray-100 font-semibold">
-                  Entrar
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
-                  Começar Agora
-                </Button>
-              </Link>
-            </div>
+            <Link href="/login">
+              <Button variant="outline" className="bg-white text-black hover:bg-gray-100 font-semibold">
+                Área do Aluno
+              </Button>
+            </Link>
           </div>
         </nav>
       </header>
@@ -112,21 +102,6 @@ export default function LandingPage() {
               A plataforma mais completa para estudar Português e Redação para o concurso da Força Aérea Brasileira. 
               <span className="text-orange-400 font-semibold"> 785+ flashcards</span>, simulados exclusivos e correção de redações.
             </p>
-            
-            
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Link href="/signup">
-                <Button size="lg" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-lg px-8 py-4">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Começar Gratuitamente
-                </Button>
-              </Link>
-              <Button variant="outline" size="lg" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white text-lg px-8 py-4">
-                <Play className="w-5 h-5 mr-2" />
-                Ver Demonstração
-              </Button>
-            </div>
             <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
               <div className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
@@ -146,86 +121,188 @@ export default function LandingPage() {
       </section>
 
       {/* Casos de Sucesso */}
-      <section className="py-20 bg-gradient-to-b from-transparent to-[#0f172a]/50">
+      <section className="py-20 bg-gradient-to-br from-gray-900 to-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Casos de
-              <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"> Sucesso</span>
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Casos de Sucesso
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Mais de 80 alunos aprovados no EAOF 2025 usando nossa metodologia comprovada.
+            <p className="text-xl text-gray-300">
+              Mais de 80 alunos aprovados no EAOF com nossa metodologia
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-8 border border-orange-500/20">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-96 overflow-y-auto">
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">João Silva</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovado</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Maria Santos</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovada</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Pedro Costa</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovado</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Ana Oliveira</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovada</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Carlos Lima</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovado</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Juliana Ferreira</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovada</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Roberto Alves</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovado</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Fernanda Rocha</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovada</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 rounded-lg">
-                <Medal className="w-6 h-6 text-yellow-500" />
-                <div>
-                  <p className="font-semibold text-white">Lucas Mendes</p>
-                  <p className="text-sm text-gray-300">EAOF 2025 - Aprovado</p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* SVE - Serviços */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Serviços (SVE)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-blue-100">🏆 ADRIANO PONTES NEPOMUCENO</div>
+                <div className="text-sm text-blue-100">🏆 ALISSON ALVES OLIVEIRA LEITE</div>
+                <div className="text-sm text-blue-100">🏆 VICTOR SALUSTRINO BEZERRA</div>
+                <div className="text-sm text-blue-100">🏆 DENIS MOURA DE MELO</div>
+                <div className="text-sm text-blue-100">🏆 ANTONIO DE PÁDUA AGUIAR FILHO</div>
+                <div className="text-sm text-blue-100">🏆 REGINALDO CESAR DUARTE</div>
               </div>
             </div>
-            <div className="text-center mt-6">
-              <p className="text-gray-400 text-sm">E mais de 70 outros aprovados...</p>
+
+            {/* GDS - Gerenciamento de Defesa */}
+            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Gerenciamento (GDS)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-green-100">🏆 ALEXANDRE ALEX LUDOVINO DA FONSECA</div>
+                <div className="text-sm text-green-100">🏆 ANDERSON BARBOSA MARTINS</div>
+                <div className="text-sm text-green-100">🏆 DANIEL ELIAS VELASCO</div>
+                <div className="text-sm text-green-100">🏆 MANUEL COSTA SOARES</div>
+                <div className="text-sm text-green-100">🏆 MARCELO SANTOS PACHECO</div>
+                <div className="text-sm text-green-100">🏆 ROBSON MARTINS REIS</div>
+                <div className="text-sm text-green-100">🏆 THENÓRIO ALMEIDA LOPES DE ARAÚJO</div>
+                <div className="text-sm text-green-100">🏆 THIAGO SOARES DE BARROS</div>
+                <div className="text-sm text-green-100">🏆 WAGNER DA SILVA DE FARIAS</div>
+                <div className="text-sm text-green-100">🏆 ROBERTO MÁRCIO DE MELO JUNIOR</div>
+                <div className="text-sm text-green-100">🏆 GILSON CONCEIÇÃO DE ARAÚJO</div>
+              </div>
+            </div>
+
+            {/* CTA - Controle de Tráfego Aéreo */}
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Controle Aéreo (CTA)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-purple-100">🏆 ALINE VEIGA DO NASCIMENTO</div>
+                <div className="text-sm text-purple-100">🏆 GEANDRO PINHEIRO PIRES</div>
+                <div className="text-sm text-purple-100">🏆 MARCOS CORREIA DOS SANTOS</div>
+                <div className="text-sm text-purple-100">🏆 NARA LUANA XAVIER DA SILVA FERREIRA</div>
+                <div className="text-sm text-purple-100">🏆 VITOR EMANUEL REZENDE PEREIRA</div>
+                <div className="text-sm text-purple-100">🏆 MARCO ANTONIO FREITAS DE ABREU</div>
+              </div>
+            </div>
+
+            {/* COM - Comunicações */}
+            <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Comunicações (COM)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-orange-100">🏆 DAVI NILSON MOREIRA CARDOSO</div>
+                <div className="text-sm text-orange-100">🏆 GERSON FÁBIO DE PINHO GONÇALVES</div>
+                <div className="text-sm text-orange-100">🏆 GILSOMAR DE OLIVEIRA THOMAZ</div>
+                <div className="text-sm text-orange-100">🏆 WILLIAM DO NASCIMENTO FERREIRA</div>
+                <div className="text-sm text-orange-100">🏆 FREDSON ALVES DE FARIA</div>
+                <div className="text-sm text-orange-100">🏆 JORGE CARDOSO PALHETA</div>
+                <div className="text-sm text-orange-100">🏆 FLÁVIA CARVALHO CALDAS</div>
+              </div>
+            </div>
+
+            {/* ANV - Análise */}
+            <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Análise (ANV)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-red-100">🏆 DAVID RODRIGO GONCALVES RIBEIRO</div>
+                <div className="text-sm text-red-100">🏆 FÁBIO HENRIQUE PEREIRA DOS SANTOS</div>
+                <div className="text-sm text-red-100">🏆 ROBERVAL CORRÊA ESPADIM</div>
+                <div className="text-sm text-red-100">🏆 ELIAS AMARO DOS SANTOS JUNIOR</div>
+              </div>
+            </div>
+
+            {/* SVA - Serviços Administrativos */}
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Administrativo (SVA)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-indigo-100">🏆 ANDERSON EVANGELISTA DOS SANTOS</div>
+                <div className="text-sm text-indigo-100">🏆 ANTONIO CARLOS MENDONÇA</div>
+                <div className="text-sm text-indigo-100">🏆 CLÁUDIO JOSÉ DA SILVA</div>
+                <div className="text-sm text-indigo-100">🏆 EDILSON LINDEMBERG DIAS BARBOSA</div>
+                <div className="text-sm text-indigo-100">🏆 ELVAIR DOS SANTOS LIBORIO</div>
+                <div className="text-sm text-indigo-100">🏆 FABIO BATISTA DE MELO NETO</div>
+                <div className="text-sm text-indigo-100">🏆 FABIO MARTINS</div>
+                <div className="text-sm text-indigo-100">🏆 IRAÍ DIAS DOS SANTOS</div>
+                <div className="text-sm text-indigo-100">🏆 JUSSIÊ BARBOSA DE SOUSA</div>
+                <div className="text-sm text-indigo-100">🏆 LUIZ GUILHERME DOS SANTOS MORAES</div>
+                <div className="text-sm text-indigo-100">🏆 PRISCILA PONTES DOS SANTOS</div>
+                <div className="text-sm text-indigo-100">🏆 RAQUEL MACIAS DOS SANTOS</div>
+                <div className="text-sm text-indigo-100">🏆 SHIRLEY DOS SANTOS</div>
+                <div className="text-sm text-indigo-100">🏆 ANDRÉ LUIZ MOREIRA TEIXEIRA</div>
+                <div className="text-sm text-indigo-100">🏆 TELIEDER FANDLEY DE MOURA</div>
+                <div className="text-sm text-indigo-100">🏆 ROGÉRIO PINTO DE AZEVEDO</div>
+              </div>
+            </div>
+
+            {/* SVH - Serviços Hospitalares */}
+            <div className="bg-gradient-to-br from-pink-600 to-pink-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Hospitalar (SVH)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-pink-100">🏆 RAQUEL WEISHEIMER DE SOUZA</div>
+                <div className="text-sm text-pink-100">🏆 THIAGO RODRIGUES EVANGELISTA</div>
+                <div className="text-sm text-pink-100">🏆 VIVIANE MANHAES XAVIER</div>
+                <div className="text-sm text-pink-100">🏆 PRISCILA BORDUAM DA SILVA</div>
+              </div>
+            </div>
+
+            {/* SVI - Serviços de Informática */}
+            <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Informática (SVI)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-teal-100">🏆 RENATO MAIA RAEL</div>
+                <div className="text-sm text-teal-100">🏆 WAGNER DOS SANTOS DA SILVA</div>
+              </div>
+            </div>
+
+            {/* SVM - Serviços de Manutenção */}
+            <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Manutenção (SVM)
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-amber-100">🏆 ALAN TEIXEIRA REIS</div>
+                <div className="text-sm text-amber-100">🏆 ARMANDO HENRIQUE LOPES CORRÊA</div>
+                <div className="text-sm text-amber-100">🏆 CARLOS EDUARDO BEZERRA DE SOUZA</div>
+                <div className="text-sm text-amber-100">🏆 DOUGLAS LEÃO</div>
+                <div className="text-sm text-amber-100">🏆 REGINALDO VIEIRA DE PINHO</div>
+                <div className="text-sm text-amber-100">🏆 WESLEY BARLATTI DE MACEDO</div>
+              </div>
+            </div>
+
+            {/* Outras Especialidades */}
+            <div className="bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Outras Especialidades
+              </h3>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-100">🏆 EMERSON MAXWELL MARCIANO PEDRONI SILVA - MET</div>
+                <div className="text-sm text-gray-100">🏆 RENATO MAIA RAEL - FOT</div>
+                <div className="text-sm text-gray-100">🏆 BERGSON TOMAZ E SILVA - BBA</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <div className="inline-flex items-center bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-8 py-4 rounded-full font-semibold text-lg">
+              <Trophy className="w-6 h-6 mr-3" />
+              Total: 80+ Alunos Aprovados
             </div>
           </div>
         </div>
