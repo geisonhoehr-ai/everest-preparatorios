@@ -132,172 +132,172 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* SVE - Serviços */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Serviços (SVE)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-blue-100">🏆 ADRIANO PONTES NEPOMUCENO</div>
-                <div className="text-sm text-blue-100">🏆 ALISSON ALVES OLIVEIRA LEITE</div>
-                <div className="text-sm text-blue-100">🏆 VICTOR SALUSTRINO BEZERRA</div>
-                <div className="text-sm text-blue-100">🏆 DENIS MOURA DE MELO</div>
-                <div className="text-sm text-blue-100">🏆 ANTONIO DE PÁDUA AGUIAR FILHO</div>
-                <div className="text-sm text-blue-100">🏆 REGINALDO CESAR DUARTE</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* SVE - Serviços */}
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  SVE
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-blue-100">🏆 ADRIANO PONTES NEPOMUCENO</div>
+                  <div className="text-sm text-blue-100">🏆 ALISSON ALVES OLIVEIRA LEITE</div>
+                  <div className="text-sm text-blue-100">🏆 VICTOR SALUSTRINO BEZERRA</div>
+                  <div className="text-sm text-blue-100">🏆 DENIS MOURA DE MELO</div>
+                  <div className="text-sm text-blue-100">🏆 ANTONIO DE PÁDUA AGUIAR FILHO</div>
+                  <div className="text-sm text-blue-100">🏆 REGINALDO CESAR DUARTE</div>
+                </div>
               </div>
-            </div>
 
-            {/* GDS - Gerenciamento de Defesa */}
-            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Gerenciamento (GDS)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-green-100">🏆 ALEXANDRE ALEX LUDOVINO DA FONSECA</div>
-                <div className="text-sm text-green-100">🏆 ANDERSON BARBOSA MARTINS</div>
-                <div className="text-sm text-green-100">🏆 DANIEL ELIAS VELASCO</div>
-                <div className="text-sm text-green-100">🏆 MANUEL COSTA SOARES</div>
-                <div className="text-sm text-green-100">🏆 MARCELO SANTOS PACHECO</div>
-                <div className="text-sm text-green-100">🏆 ROBSON MARTINS REIS</div>
-                <div className="text-sm text-green-100">🏆 THENÓRIO ALMEIDA LOPES DE ARAÚJO</div>
-                <div className="text-sm text-green-100">🏆 THIAGO SOARES DE BARROS</div>
-                <div className="text-sm text-green-100">🏆 WAGNER DA SILVA DE FARIAS</div>
-                <div className="text-sm text-green-100">🏆 ROBERTO MÁRCIO DE MELO JUNIOR</div>
-                <div className="text-sm text-green-100">🏆 GILSON CONCEIÇÃO DE ARAÚJO</div>
+              {/* GDS - Gerenciamento de Defesa */}
+              <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  GDS
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-green-100">🏆 ALEXANDRE ALEX LUDOVINO DA FONSECA</div>
+                  <div className="text-sm text-green-100">🏆 ANDERSON BARBOSA MARTINS</div>
+                  <div className="text-sm text-green-100">🏆 DANIEL ELIAS VELASCO</div>
+                  <div className="text-sm text-green-100">🏆 MANUEL COSTA SOARES</div>
+                  <div className="text-sm text-green-100">🏆 MARCELO SANTOS PACHECO</div>
+                  <div className="text-sm text-green-100">🏆 ROBSON MARTINS REIS</div>
+                  <div className="text-sm text-green-100">🏆 THENÓRIO ALMEIDA LOPES DE ARAÚJO</div>
+                  <div className="text-sm text-green-100">🏆 THIAGO SOARES DE BARROS</div>
+                  <div className="text-sm text-green-100">🏆 WAGNER DA SILVA DE FARIAS</div>
+                  <div className="text-sm text-green-100">🏆 ROBERTO MÁRCIO DE MELO JUNIOR</div>
+                  <div className="text-sm text-green-100">🏆 GILSON CONCEIÇÃO DE ARAÚJO</div>
+                </div>
               </div>
-            </div>
 
-            {/* CTA - Controle de Tráfego Aéreo */}
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Controle Aéreo (CTA)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-purple-100">🏆 ALINE VEIGA DO NASCIMENTO</div>
-                <div className="text-sm text-purple-100">🏆 GEANDRO PINHEIRO PIRES</div>
-                <div className="text-sm text-purple-100">🏆 MARCOS CORREIA DOS SANTOS</div>
-                <div className="text-sm text-purple-100">🏆 NARA LUANA XAVIER DA SILVA FERREIRA</div>
-                <div className="text-sm text-purple-100">🏆 VITOR EMANUEL REZENDE PEREIRA</div>
-                <div className="text-sm text-purple-100">🏆 MARCO ANTONIO FREITAS DE ABREU</div>
+              {/* CTA - Controle de Tráfego Aéreo */}
+              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  CTA
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-purple-100">🏆 ALINE VEIGA DO NASCIMENTO</div>
+                  <div className="text-sm text-purple-100">🏆 GEANDRO PINHEIRO PIRES</div>
+                  <div className="text-sm text-purple-100">🏆 MARCOS CORREIA DOS SANTOS</div>
+                  <div className="text-sm text-purple-100">🏆 NARA LUANA XAVIER DA SILVA FERREIRA</div>
+                  <div className="text-sm text-purple-100">🏆 VITOR EMANUEL REZENDE PEREIRA</div>
+                  <div className="text-sm text-purple-100">🏆 MARCO ANTONIO FREITAS DE ABREU</div>
+                </div>
               </div>
-            </div>
 
-            {/* COM - Comunicações */}
-            <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Comunicações (COM)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-orange-100">🏆 DAVI NILSON MOREIRA CARDOSO</div>
-                <div className="text-sm text-orange-100">🏆 GERSON FÁBIO DE PINHO GONÇALVES</div>
-                <div className="text-sm text-orange-100">🏆 GILSOMAR DE OLIVEIRA THOMAZ</div>
-                <div className="text-sm text-orange-100">🏆 WILLIAM DO NASCIMENTO FERREIRA</div>
-                <div className="text-sm text-orange-100">🏆 FREDSON ALVES DE FARIA</div>
-                <div className="text-sm text-orange-100">🏆 JORGE CARDOSO PALHETA</div>
-                <div className="text-sm text-orange-100">🏆 FLÁVIA CARVALHO CALDAS</div>
+              {/* COM - Comunicações */}
+              <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  COM
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-orange-100">🏆 DAVI NILSON MOREIRA CARDOSO</div>
+                  <div className="text-sm text-orange-100">🏆 GERSON FÁBIO DE PINHO GONÇALVES</div>
+                  <div className="text-sm text-orange-100">🏆 GILSOMAR DE OLIVEIRA THOMAZ</div>
+                  <div className="text-sm text-orange-100">🏆 WILLIAM DO NASCIMENTO FERREIRA</div>
+                  <div className="text-sm text-orange-100">🏆 FREDSON ALVES DE FARIA</div>
+                  <div className="text-sm text-orange-100">🏆 JORGE CARDOSO PALHETA</div>
+                  <div className="text-sm text-orange-100">🏆 FLÁVIA CARVALHO CALDAS</div>
+                </div>
               </div>
-            </div>
 
-            {/* ANV - Análise */}
-            <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Análise (ANV)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-red-100">🏆 DAVID RODRIGO GONCALVES RIBEIRO</div>
-                <div className="text-sm text-red-100">🏆 FÁBIO HENRIQUE PEREIRA DOS SANTOS</div>
-                <div className="text-sm text-red-100">🏆 ROBERVAL CORRÊA ESPADIM</div>
-                <div className="text-sm text-red-100">🏆 ELIAS AMARO DOS SANTOS JUNIOR</div>
+              {/* ANV - Análise */}
+              <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  ANV
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-red-100">🏆 DAVID RODRIGO GONCALVES RIBEIRO</div>
+                  <div className="text-sm text-red-100">🏆 FÁBIO HENRIQUE PEREIRA DOS SANTOS</div>
+                  <div className="text-sm text-red-100">🏆 ROBERVAL CORRÊA ESPADIM</div>
+                  <div className="text-sm text-red-100">🏆 ELIAS AMARO DOS SANTOS JUNIOR</div>
+                </div>
               </div>
-            </div>
 
-            {/* SVA - Serviços Administrativos */}
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Administrativo (SVA)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-indigo-100">🏆 ANDERSON EVANGELISTA DOS SANTOS</div>
-                <div className="text-sm text-indigo-100">🏆 ANTONIO CARLOS MENDONÇA</div>
-                <div className="text-sm text-indigo-100">🏆 CLÁUDIO JOSÉ DA SILVA</div>
-                <div className="text-sm text-indigo-100">🏆 EDILSON LINDEMBERG DIAS BARBOSA</div>
-                <div className="text-sm text-indigo-100">🏆 ELVAIR DOS SANTOS LIBORIO</div>
-                <div className="text-sm text-indigo-100">🏆 FABIO BATISTA DE MELO NETO</div>
-                <div className="text-sm text-indigo-100">🏆 FABIO MARTINS</div>
-                <div className="text-sm text-indigo-100">🏆 IRAÍ DIAS DOS SANTOS</div>
-                <div className="text-sm text-indigo-100">🏆 JUSSIÊ BARBOSA DE SOUSA</div>
-                <div className="text-sm text-indigo-100">🏆 LUIZ GUILHERME DOS SANTOS MORAES</div>
-                <div className="text-sm text-indigo-100">🏆 PRISCILA PONTES DOS SANTOS</div>
-                <div className="text-sm text-indigo-100">🏆 RAQUEL MACIAS DOS SANTOS</div>
-                <div className="text-sm text-indigo-100">🏆 SHIRLEY DOS SANTOS</div>
-                <div className="text-sm text-indigo-100">🏆 ANDRÉ LUIZ MOREIRA TEIXEIRA</div>
-                <div className="text-sm text-indigo-100">🏆 TELIEDER FANDLEY DE MOURA</div>
-                <div className="text-sm text-indigo-100">🏆 ROGÉRIO PINTO DE AZEVEDO</div>
+              {/* SVA - Serviços Administrativos */}
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  SVA
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-indigo-100">🏆 ANDERSON EVANGELISTA DOS SANTOS</div>
+                  <div className="text-sm text-indigo-100">🏆 ANTONIO CARLOS MENDONÇA</div>
+                  <div className="text-sm text-indigo-100">🏆 CLÁUDIO JOSÉ DA SILVA</div>
+                  <div className="text-sm text-indigo-100">🏆 EDILSON LINDEMBERG DIAS BARBOSA</div>
+                  <div className="text-sm text-indigo-100">🏆 ELVAIR DOS SANTOS LIBORIO</div>
+                  <div className="text-sm text-indigo-100">🏆 FABIO BATISTA DE MELO NETO</div>
+                  <div className="text-sm text-indigo-100">🏆 FABIO MARTINS</div>
+                  <div className="text-sm text-indigo-100">🏆 IRAÍ DIAS DOS SANTOS</div>
+                  <div className="text-sm text-indigo-100">🏆 JUSSIÊ BARBOSA DE SOUSA</div>
+                  <div className="text-sm text-indigo-100">🏆 LUIZ GUILHERME DOS SANTOS MORAES</div>
+                  <div className="text-sm text-indigo-100">🏆 PRISCILA PONTES DOS SANTOS</div>
+                  <div className="text-sm text-indigo-100">🏆 RAQUEL MACIAS DOS SANTOS</div>
+                  <div className="text-sm text-indigo-100">🏆 SHIRLEY DOS SANTOS</div>
+                  <div className="text-sm text-indigo-100">🏆 ANDRÉ LUIZ MOREIRA TEIXEIRA</div>
+                  <div className="text-sm text-indigo-100">🏆 TELIEDER FANDLEY DE MOURA</div>
+                  <div className="text-sm text-indigo-100">🏆 ROGÉRIO PINTO DE AZEVEDO</div>
+                </div>
               </div>
-            </div>
 
-            {/* SVH - Serviços Hospitalares */}
-            <div className="bg-gradient-to-br from-pink-600 to-pink-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Hospitalar (SVH)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-pink-100">🏆 RAQUEL WEISHEIMER DE SOUZA</div>
-                <div className="text-sm text-pink-100">🏆 THIAGO RODRIGUES EVANGELISTA</div>
-                <div className="text-sm text-pink-100">🏆 VIVIANE MANHAES XAVIER</div>
-                <div className="text-sm text-pink-100">🏆 PRISCILA BORDUAM DA SILVA</div>
+              {/* SVH - Serviços Hospitalares */}
+              <div className="bg-gradient-to-br from-pink-600 to-pink-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  SVH
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-pink-100">🏆 RAQUEL WEISHEIMER DE SOUZA</div>
+                  <div className="text-sm text-pink-100">🏆 THIAGO RODRIGUES EVANGELISTA</div>
+                  <div className="text-sm text-pink-100">🏆 VIVIANE MANHAES XAVIER</div>
+                  <div className="text-sm text-pink-100">🏆 PRISCILA BORDUAM DA SILVA</div>
+                </div>
               </div>
-            </div>
 
-            {/* SVI - Serviços de Informática */}
-            <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Informática (SVI)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-teal-100">🏆 RENATO MAIA RAEL</div>
-                <div className="text-sm text-teal-100">🏆 WAGNER DOS SANTOS DA SILVA</div>
+              {/* SVI - Serviços de Informática */}
+              <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  SVI
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-teal-100">🏆 RENATO MAIA RAEL</div>
+                  <div className="text-sm text-teal-100">🏆 WAGNER DOS SANTOS DA SILVA</div>
+                </div>
               </div>
-            </div>
 
-            {/* SVM - Serviços de Manutenção */}
-            <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Manutenção (SVM)
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-amber-100">🏆 ALAN TEIXEIRA REIS</div>
-                <div className="text-sm text-amber-100">🏆 ARMANDO HENRIQUE LOPES CORRÊA</div>
-                <div className="text-sm text-amber-100">🏆 CARLOS EDUARDO BEZERRA DE SOUZA</div>
-                <div className="text-sm text-amber-100">🏆 DOUGLAS LEÃO</div>
-                <div className="text-sm text-amber-100">🏆 REGINALDO VIEIRA DE PINHO</div>
-                <div className="text-sm text-amber-100">🏆 WESLEY BARLATTI DE MACEDO</div>
+              {/* SVM - Serviços de Manutenção */}
+              <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  SVM
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-amber-100">🏆 ALAN TEIXEIRA REIS</div>
+                  <div className="text-sm text-amber-100">🏆 ARMANDO HENRIQUE LOPES CORRÊA</div>
+                  <div className="text-sm text-amber-100">🏆 CARLOS EDUARDO BEZERRA DE SOUZA</div>
+                  <div className="text-sm text-amber-100">🏆 DOUGLAS LEÃO</div>
+                  <div className="text-sm text-amber-100">🏆 REGINALDO VIEIRA DE PINHO</div>
+                  <div className="text-sm text-amber-100">🏆 WESLEY BARLATTI DE MACEDO</div>
+                </div>
               </div>
-            </div>
 
-            {/* Outras Especialidades */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                Outras Especialidades
-              </h3>
-              <div className="space-y-2">
-                <div className="text-sm text-gray-100">🏆 EMERSON MAXWELL MARCIANO PEDRONI SILVA - MET</div>
-                <div className="text-sm text-gray-100">🏆 RENATO MAIA RAEL - FOT</div>
-                <div className="text-sm text-gray-100">🏆 BERGSON TOMAZ E SILVA - BBA</div>
+              {/* Outras Especialidades */}
+              <div className="bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                  Outras
+                </h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-100">🏆 EMERSON MAXWELL MARCIANO PEDRONI SILVA - MET</div>
+                  <div className="text-sm text-gray-100">🏆 RENATO MAIA RAEL - FOT</div>
+                  <div className="text-sm text-gray-100">🏆 BERGSON TOMAZ E SILVA - BBA</div>
+                </div>
               </div>
             </div>
-          </div>
 
           <div className="text-center mt-12">
             <div className="inline-flex items-center bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-8 py-4 rounded-full font-semibold text-lg">
