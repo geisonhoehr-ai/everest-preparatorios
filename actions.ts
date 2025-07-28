@@ -170,34 +170,48 @@ export async function updateTopicProgress(topicId: string, type: "correct" | "in
 
 // Função para obter flashcards para revisão
 export async function getFlashcardsForReview(topicId: string, limit = 10) {
-  const supabase = await getSupabaseClient()
+  try {
+    const supabase = await getSupabaseClient()
 
-  const { data, error } = await supabase
-    .from("flashcards")
-    .select("id, topic_id, question, answer")
-    .eq("topic_id", topicId)
-    .limit(limit)
+    console.log("🔍 [DEBUG] Buscando flashcards para tópico:", topicId)
+    const { data, error } = await supabase
+      .from("flashcards")
+      .select("id, topic_id, question, answer")
+      .eq("topic_id", topicId)
+      .limit(limit)
 
-  if (error) {
-    console.error("Erro ao buscar flashcards:", error)
+    if (error) {
+      console.error("❌ [DEBUG] Erro ao buscar flashcards:", error)
+      return []
+    }
+
+    console.log("✅ [DEBUG] Flashcards encontrados:", data?.length || 0)
+    return data || []
+  } catch (error) {
+    console.error("❌ [DEBUG] Erro inesperado ao buscar flashcards:", error)
     return []
   }
-
-  return data || []
 }
 
 // Função para obter todos os tópicos
 export async function getAllTopics() {
-  const supabase = await getSupabaseClient()
+  try {
+    const supabase = await getSupabaseClient()
 
-  const { data, error } = await supabase.from("topics").select("id, name").order("name")
+    console.log("🔍 [DEBUG] Buscando tópicos...")
+    const { data, error } = await supabase.from("topics").select("id, name").order("name")
 
-  if (error) {
-    console.error("Erro ao buscar tópicos:", error)
+    if (error) {
+      console.error("❌ [DEBUG] Erro ao buscar tópicos:", error)
+      return []
+    }
+
+    console.log("✅ [DEBUG] Tópicos encontrados:", data?.length || 0)
+    return data || []
+  } catch (error) {
+    console.error("❌ [DEBUG] Erro inesperado ao buscar tópicos:", error)
     return []
   }
-
-  return data || []
 }
 
 // Função para obter progresso SM2 de um card
@@ -239,8 +253,10 @@ export async function saveWrongCard(userUuid: string, flashcardId: number, topic
 }
 
 // Função para buscar cards errados do usuário por tópico
-export async function getWrongCardsByTopic(userUuid: string, topicId: string) {
+export async function getWrongCardsByTopic(userUuid: string, topicId: string, page = 1, limit = 20) {
   const supabase = await getSupabaseClient()
+
+  const offset = (page - 1) * limit
 
   const { data, error } = await supabase
     .from("wrong_cards")
@@ -256,14 +272,40 @@ export async function getWrongCardsByTopic(userUuid: string, topicId: string) {
     .eq("user_uuid", userUuid)
     .eq("topic_id", topicId)
     .eq("reviewed", false)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) {
     console.error("Erro ao buscar cards errados:", error)
-    return []
+    return { success: false, error: error.message }
+  }
+
+  // Contar total de cards errados
+  const { count, error: countError } = await supabase
+    .from("wrong_cards")
+    .select("*", { count: "exact", head: true })
+    .eq("user_uuid", userUuid)
+    .eq("topic_id", topicId)
+    .eq("reviewed", false)
+
+  if (countError) {
+    console.error("Erro ao contar cards errados:", countError)
+    return { success: false, error: countError.message }
   }
 
   // Transformar os dados para o formato esperado
-  return data?.map(item => item.flashcards).filter(Boolean) || []
+  const flashcards = data?.map(item => item.flashcards).filter(Boolean) || []
+
+  return {
+    success: true,
+    data: {
+      flashcards,
+      total: count || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((count || 0) / limit)
+    }
+  }
 }
 
 // Função para marcar cards errados como revisados

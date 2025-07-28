@@ -64,9 +64,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import confetti from "canvas-confetti"
 import { createClient } from "@/lib/supabase/client"
-import { getUserRoleClient } from "@/lib/get-user-role"
+import { getUserRoleClient, ensureUserRole, checkAuthentication } from "@/lib/get-user-role"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import FlashcardQuantityModal from "@/components/FlashcardQuantityModal"
 
 interface Topic {
   id: string
@@ -335,7 +336,7 @@ export default function FlashcardsPage() {
   const [isStudyingWrongCards, setIsStudyingWrongCards] = useState(false)
 
   // Estados para administração (professores/admins)
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string>('student')
   const [isAdminMode, setIsAdminMode] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -367,20 +368,28 @@ export default function FlashcardsPage() {
     }
   }, [selectedSubject])
 
-  // Verificar role do usuário
+  // Verificar autenticação e role do usuário
   useEffect(() => {
-    const checkUserRole = async () => {
+    const checkAuthAndRole = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          const role = await getUserRoleClient(user.id)
+        console.log('🔍 [DEBUG] Verificando autenticação...')
+        const authResult = await checkAuthentication()
+        
+        if (authResult.isAuthenticated && authResult.user) {
+          console.log('✅ [DEBUG] Usuário autenticado:', authResult.user.id)
+          const role = await getUserRoleClient(authResult.user.id)
+          console.log('✅ [DEBUG] Role definida:', role)
           setUserRole(role)
+        } else {
+          console.log('❌ [DEBUG] Usuário não autenticado')
+          setUserRole('student')
         }
       } catch (error) {
-        console.error("Erro ao verificar role:", error)
+        console.error("❌ [DEBUG] Erro ao verificar autenticação/role:", error)
+        setUserRole('student')
       }
     }
-    checkUserRole()
+    checkAuthAndRole()
   }, [])
 
   useEffect(() => {
@@ -497,14 +506,26 @@ export default function FlashcardsPage() {
         console.log("✅ [DEBUG] Dados válidos, setando subjects...")
         setSubjects(subjectsData)
         console.log("✅ [DEBUG] Subjects setados:", subjectsData)
+        
+        // Se não há subjects, carregar tópicos diretamente
+        if (subjectsData.length === 0) {
+          console.log("📚 [DEBUG] Nenhum subject encontrado, carregando tópicos diretamente...")
+          loadTopics()
+        }
       } else {
         console.error("❌ [DEBUG] Dados inválidos:", subjectsData)
         setSubjects([])
+        // Carregar tópicos diretamente se não há subjects
+        console.log("📚 [DEBUG] Carregando tópicos diretamente devido a dados inválidos...")
+        loadTopics()
       }
     } catch (error) {
       console.error("❌ [DEBUG] Erro ao carregar matérias:", error)
       console.error("❌ [DEBUG] Stack trace:", error instanceof Error ? error.stack : 'N/A')
       setSubjects([])
+      // Carregar tópicos diretamente em caso de erro
+      console.log("📚 [DEBUG] Carregando tópicos diretamente devido a erro...")
+      loadTopics()
     } finally {
       console.log("🔍 [DEBUG] Finalizando loadSubjects, setIsLoading(false)")
       setIsLoading(false)
@@ -527,8 +548,15 @@ export default function FlashcardsPage() {
 
   const loadTopics = async () => {
     try {
+      console.log('Carregando tópicos...')
       const topicsData = await getAllTopics()
+      console.log('Tópicos carregados:', topicsData)
       setTopics(topicsData)
+      
+      // Se não há tópicos, mostrar mensagem
+      if (!topicsData || topicsData.length === 0) {
+        console.log('Nenhum tópico encontrado')
+      }
     } catch (error) {
       console.error("Erro ao carregar tópicos:", error)
     } finally {
@@ -553,68 +581,115 @@ export default function FlashcardsPage() {
     }
   }
 
-  const startStudySession = async (topicId: string, mode: string = "normal") => {
-    setIsLoading(true)
-    setStudyModeType(mode as any)
-    const config = getStudyModeConfig(mode)
-    setIsStudyingWrongCards(mode === "wrong")
-    
+  // Type guard para validar modos de estudo
+  const isValidStudyMode = (mode: any): mode is "normal" | "quick" | "review" | "test" | "custom" | "wrong" => {
+    const validModes: ("normal" | "quick" | "review" | "test" | "custom" | "wrong")[] = 
+      ["normal", "quick", "review", "test", "custom", "wrong"]
+    return validModes.includes(mode)
+  }
+
+  const startStudySession = async (
+    topicId: string, 
+    mode: string = "normal", 
+    customQuantity?: number
+  ) => {
     try {
-      let cards: any[]
+      setIsLoading(true)
+      setSelectedTopic(topicId)
       
-      if (mode === "wrong") {
-        // Carregar apenas cards errados
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          cards = await getWrongCardsByTopic(user.id, topicId)
-        } else {
-          cards = []
+      // Validar e converter o modo de estudo
+      const validMode: "normal" | "quick" | "review" | "test" | "custom" | "wrong" = 
+        isValidStudyMode(mode) ? mode : "normal"
+      
+      // Configuração de estudo baseada no modo
+      const config = getStudyModeConfig(validMode)
+      const quantity = customQuantity || config.quantity
+      
+      // Obter usuário atual
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        alert("Usuário não autenticado")
+        setStudyMode("select")
+        setIsLoading(false)
+        return
+      }
+      
+      // Buscar flashcards do tópico baseado no role do usuário
+      let cards = []
+      if (userRole === "teacher" || userRole === "admin") {
+        // Para professores e admins, usar função com paginação
+        const flashcardsResult = await getAllFlashcardsByTopic(user.id, topicId, 1, quantity)
+        if (flashcardsResult && flashcardsResult.success && flashcardsResult.data) {
+          cards = flashcardsResult.data.flashcards
         }
       } else {
-        // Carregar cards normais
-        cards = await getFlashcardsForReview(topicId, config.quantity)
+        // Para estudantes, usar função simples
+        cards = await getFlashcardsForReview(topicId, quantity)
       }
       
-      if (cards.length > 0) {
+      // Verificar se há flashcards disponíveis
+      if (cards && cards.length > 0) {
+        
+        // Configurar sessão de estudo
         setFlashcards(cards)
-        setSelectedTopic(topicId)
         setCurrentCardIndex(0)
         setShowAnswer(false)
-        setStudyMode("study")
         setSessionStats({ correct: 0, incorrect: 0 })
-        setWrongCards([])
         setSessionStartTime(new Date())
         setCardTimer(0)
+        setStudyModeType(validMode)
+        setIsStudyingWrongCards(validMode === "wrong")
+        
+        // Transição para modo de estudo
+        setStudyMode("study")
       } else {
-        const message = mode === "wrong" 
-          ? "Parabéns! Você não tem cards errados para revisar neste tópico." 
-          : "Nenhum flashcard disponível para este tópico no momento."
-        alert(message)
+        // Sem flashcards disponíveis
+        alert("Não há flashcards disponíveis para este tópico.")
+        setStudyMode("select")
       }
-    } catch (error) {
-      console.error("Erro ao carregar flashcards:", error)
-      alert("Erro ao carregar flashcards. Tente novamente.")
-    } finally {
+      
       setIsLoading(false)
+    } catch (error) {
+      console.error("Erro ao iniciar sessão de estudo:", error)
+      setIsLoading(false)
+      setStudyMode("select")
+      alert("Erro ao iniciar sessão de estudo. Tente novamente.")
     }
   }
 
-  const handleTopicStart = (topicId: string, mode: string = "normal") => {
-    if (mode === "custom") {
+  const handleCustomQuantityStart = async () => {
+    // Obter usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
+      alert("Usuário não autenticado")
+      return
+    }
+
+    if (pendingTopicId) {
+      startStudySession(pendingTopicId, "custom", customQuantity)
+      setShowQuantityModal(false)
+      setPendingTopicId(null)
+    }
+  }
+
+  const handleTopicStart = async (topicId: string, mode: string = "normal") => {
+    const validMode = isValidStudyMode(mode) 
+      ? mode 
+      : "normal"
+
+    // Obter usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
+      alert("Usuário não autenticado")
+      return
+    }
+
+    if (validMode === "custom") {
       setPendingTopicId(topicId)
-      setPendingMode(mode)
+      setPendingMode(validMode)
       setShowQuantityModal(true)
     } else {
-      startStudySession(topicId, mode)
-    }
-  }
-
-  const handleCustomQuantityStart = () => {
-    if (pendingTopicId) {
-      setShowQuantityModal(false)
-      startStudySession(pendingTopicId, pendingMode)
-      setPendingTopicId(null)
-      setPendingMode("normal")
+      startStudySession(topicId, validMode)
     }
   }
 
@@ -693,16 +768,21 @@ export default function FlashcardsPage() {
       setIsCardAnimating(true)
       
       setTimeout(() => {
-        if (currentCardIndex < flashcards.length - 1) {
-          setCurrentCardIndex((prev: any) => prev + 1)
+        // Modificação: Adicionar verificação para evitar repetição infinita
+        const nextIndex = currentCardIndex + 1
+        
+        if (nextIndex < flashcards.length) {
+          setCurrentCardIndex(nextIndex)
         } else {
           // Terminou a sessão - mostrar modal para continuar ou finalizar
           setLastSessionStats({
             correct: sessionStats.correct + (isCorrect ? 1 : 0),
             incorrect: sessionStats.incorrect + (isCorrect ? 0 : 1),
           })
-          setShowContinueModal(true)
-          setRefreshProgress((v: any) => v + 1)
+          
+          // Modificação: Sempre finalizar a sessão ao chegar no último card
+          resetSession()
+          setShowStatsModal(true)
         }
         
         // Reset da animação após a transição
@@ -734,46 +814,76 @@ export default function FlashcardsPage() {
     
     setShowContinueModal(false)
     
+    // Modificação: Impedir continuação infinita
+    if (isStudyingWrongCards) {
+      // Se estava estudando cards errados, finalizar sessão
+      resetSession()
+      setShowStatsModal(true)
+      return
+    }
+    
     // Carregar mais cards (mesma quantidade)
     const config = getStudyModeConfig(studyModeType)
     
     try {
       setIsLoading(true)
-      let moreCards: any[]
+      let moreCards: Flashcard[] = []
+      
+      // Modificação: Limitar a quantidade de cards adicionais
+      const additionalCardsLimit = 10
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        // Modificação: Finalizar sessão se não houver usuário
+        resetSession()
+        setShowStatsModal(true)
+        return
+      }
       
       if (isStudyingWrongCards) {
         // Se estava estudando cards errados, carregar novamente
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          moreCards = await getWrongCardsByTopic(user.id, selectedTopic)
+        const wrongCardsResult = await getWrongCardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
+        
+        if (wrongCardsResult && Array.isArray(wrongCardsResult)) {
+          moreCards = wrongCardsResult.flat().slice(0, additionalCardsLimit)
         } else {
-          moreCards = []
+          // Modificação: Finalizar sessão se não houver cards
+          resetSession()
+          setShowStatsModal(true)
+          return
         }
       } else {
-        // Carregar cards normais
-        moreCards = await getFlashcardsForReview(selectedTopic, config.quantity)
+        // Carregar novos cards do tópico
+        const allFlashcardsResult = await getAllFlashcardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
+        
+        if (allFlashcardsResult && allFlashcardsResult.success && allFlashcardsResult.data) {
+          moreCards = allFlashcardsResult.data.flashcards
+        } else {
+          // Modificação: Se não houver mais cards, finalizar sessão
+          resetSession()
+          setShowStatsModal(true)
+          return
+        }
       }
       
-      if (moreCards.length > 0) {
-        setFlashcards(moreCards)
-        setCurrentCardIndex(0)
-        setShowAnswer(false)
-        setSessionStats({ correct: 0, incorrect: 0 })
-        setWrongCards([])
-        setCardTimer(0)
-      } else {
-        const message = isStudyingWrongCards 
-          ? "Parabéns! Você não tem mais cards errados para revisar."
-          : "Não há mais flashcards disponíveis para este tópico."
-        alert(message)
-        setShowFinishModal(true)
+      // Modificação: Se não houver mais cards, finalizar sessão
+      if (!moreCards || moreCards.length === 0) {
+        resetSession()
+        setShowStatsModal(true)
+        return
       }
-    } catch (error) {
-      console.error("Erro ao carregar mais flashcards:", error)
-      alert("Erro ao carregar mais flashcards. Tente novamente.")
-      setShowFinishModal(true)
-    } finally {
+      
+      // Atualizar flashcards e reiniciar sessão
+      setFlashcards(moreCards)
+      setCurrentCardIndex(0)
+      setShowAnswer(false)
+      setIsStudyingWrongCards(false)
+      
       setIsLoading(false)
+    } catch (error) {
+      console.error("Erro ao carregar mais cards:", error)
+      resetSession()
+      setShowStatsModal(true)
     }
   }
 
@@ -842,7 +952,7 @@ export default function FlashcardsPage() {
   // ==================== FUNÇÕES ADMINISTRATIVAS ====================
 
   const loadAdminFlashcards = async (topicId: string, page = 1) => {
-    if (!userRole || (userRole !== "teacher" && userRole !== "admin")) return
+    if (userRole !== "teacher" && userRole !== "admin") return
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -950,6 +1060,26 @@ export default function FlashcardsPage() {
       loadAdminFlashcards(selectedTopic)
     }
     setIsAdminMode(!isAdminMode)
+  }
+
+  // Adicionar nova função assíncrona para contar flashcards
+  const getFlashcardCountForTopic = async (topicId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return 0
+
+      const result = await getAllFlashcardsByTopic(user.id, topicId, 1, 1)
+      
+      // Verificar se o resultado é um array e tem dados
+      if (result && result.success && result.data) {
+        return result.data.total
+      }
+      
+      return 0
+    } catch (error) {
+      console.error("Erro ao buscar contagem de flashcards:", error)
+      return 0
+    }
   }
 
   if (isLoading) {
@@ -2346,6 +2476,21 @@ export default function FlashcardsPage() {
          </DialogContent>
        </Dialog>
 
+       {showQuantityModal && pendingTopicId && (
+         <FlashcardQuantityModal
+           topicName={topics.find(t => t.id === pendingTopicId)?.name || "Tópico"}
+           totalFlashcards={() => getFlashcardCountForTopic(pendingTopicId)}
+           onStartStudy={(quantity: number) => {
+             setCustomQuantity(quantity)
+             handleCustomQuantityStart()
+           }}
+           onClose={() => {
+             setShowQuantityModal(false)
+             setPendingTopicId(null)
+             setPendingMode("normal")
+           }}
+         />
+       )}
     </DashboardShell>
   )
 }
