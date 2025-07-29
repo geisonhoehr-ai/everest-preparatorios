@@ -133,7 +133,6 @@ export default function LandingPage() {
           </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* SVE - Serviços */}
               <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                   <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -149,7 +148,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* GDS - Gerenciamento de Defesa */}
               <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
                   <Trophy className="w-5 h-5 mr-2 text-yellow-300" />

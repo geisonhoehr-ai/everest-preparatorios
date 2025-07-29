@@ -1,15 +1,19 @@
 "use server"
 
-import { createClient } from "@/lib/supabaseServer"
+import { createClient as createServerClient } from "@/lib/supabaseServer"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
+import { supabaseAdmin } from '@/lib/supabaseServer'
+import { getUserRoleServer } from '@/lib/get-user-role-server'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase-server'
 
 /**
  * Obtém uma instância do Supabase (server-side)
  */
 async function getSupabase() {
-  return createClient()
+  return await createClient()
 }
 
 // Função para verificar se o usuário tem acesso pago
@@ -256,28 +260,44 @@ export async function getRedacoesUsuario() {
       return []
     }
 
-    const redacoesFormatadas = redacoes?.map(redacao => ({
-      id: redacao.id,
-      titulo: redacao.titulo,
-      tema: redacao.temas_redacao?.titulo || redacao.tema,
-      tema_id: redacao.tema_id || 1,
-      status: redacao.status as "rascunho" | "enviada" | "em_correcao" | "corrigida" | "revisada",
-      nota_final: redacao.nota_final,
-      nota_ia: redacao.nota_ia,
-      data_criacao: redacao.created_at,
-      data_envio: redacao.data_envio,
-      data_correcao: redacao.data_correcao,
-      feedback_professor: redacao.feedback_professor,
-      feedback_audio_url: redacao.feedback_audio_url,
-      correcao_ia: redacao.correcao_ia,
-      imagens: [], // Será implementado quando conectarmos as imagens
-      comentarios: [],
-      aluno_id: redacao.user_uuid,
-      professor_id: redacao.professor_uuid
-    })) || []
+    // Buscar imagens para cada redação
+    const redacoesComImagens = await Promise.all(
+      redacoes?.map(async (redacao) => {
+        // Buscar imagens da redação
+        const { data: imagens, error: imagensError } = await supabase
+          .from('redacao_imagens')
+          .select('*')
+          .eq('redacao_id', redacao.id)
+          .order('ordem', { ascending: true })
 
-    console.log(`✅ Encontradas ${redacoesFormatadas.length} redações para o usuário`)
-    return redacoesFormatadas
+        if (imagensError) {
+          console.error(`❌ Erro ao buscar imagens da redação ${redacao.id}:`, imagensError)
+        }
+
+        return {
+          id: redacao.id,
+          titulo: redacao.titulo,
+          tema: redacao.temas_redacao?.titulo || redacao.tema,
+          tema_id: redacao.tema_id || 1,
+          status: redacao.status as "rascunho" | "enviada" | "em_correcao" | "corrigida" | "revisada",
+          nota_final: redacao.nota_final,
+          nota_ia: redacao.nota_ia,
+          data_criacao: redacao.created_at,
+          data_envio: redacao.data_envio,
+          data_correcao: redacao.data_correcao,
+          feedback_professor: redacao.feedback_professor,
+          feedback_audio_url: redacao.feedback_audio_url,
+          correcao_ia: redacao.correcao_ia,
+          imagens: imagens || [],
+          comentarios: [],
+          aluno_id: redacao.user_uuid,
+          professor_id: redacao.professor_uuid
+        }
+      }) || []
+    )
+
+    console.log(`✅ Encontradas ${redacoesComImagens.length} redações para o usuário`)
+    return redacoesComImagens
   } catch (error) {
     console.error("❌ Erro ao buscar redações do usuário:", error)
     return []
@@ -364,62 +384,110 @@ export async function createRedacao(data: {
       return { success: false, error: "Erro ao criar redação" }
     }
 
-         // Upload das imagens com melhor tratamento
-     const imagensUrls = []
-     for (let i = 0; i < data.imagens.length; i++) {
-       const file = data.imagens[i]
-       const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-       const fileName = `redacao-${redacao.id}-pagina-${i + 1}-${Date.now()}.${fileExtension}`
-       
-       // Verificar tamanho do arquivo (máximo 10MB por imagem)
-       if (file.size > 10 * 1024 * 1024) {
-         console.error(`❌ Arquivo muito grande: ${file.name} (${file.size} bytes)`)
-         continue
-       }
-
-       // Verificar tipo do arquivo
-       if (!file.type.startsWith('image/')) {
-         console.error(`❌ Tipo de arquivo inválido: ${file.type}`)
-         continue
-       }
-       
-       const { data: uploadData, error: uploadError } = await supabase.storage
-         .from('redacoes')
-         .upload(fileName, file, {
-           cacheControl: '3600',
-           upsert: false
-         })
-
-       if (uploadError) {
-         console.error(`❌ Erro ao fazer upload da imagem ${i + 1}:`, uploadError)
-         // Se falhar o upload, não continuar com as outras
-         return { success: false, error: `Erro no upload da imagem ${i + 1}: ${uploadError.message}` }
-       }
-
-       const { data: { publicUrl } } = supabase.storage
-         .from('redacoes')
-         .getPublicUrl(fileName)
-
-       imagensUrls.push({
-         url: publicUrl,
-         ordem: i + 1,
-         rotation: 0,
-         file_name: fileName
-       })
-     }
-
-    // Atualizar redação com URLs das imagens (simplificado)
-    if (imagensUrls.length > 0) {
-      await supabase
-        .from('redacoes')
-        .update({ 
-          arquivo_url: imagensUrls[0].url, // Primeira imagem como arquivo principal
-          imagens_urls: imagensUrls // Array das imagens (campo customizado)
-        })
-        .eq('id', redacao.id)
+    // Verificar se o usuário está autenticado antes de fazer upload
+    if (!user) {
+      return { success: false, error: "Usuário não autenticado" }
     }
 
-    console.log(`✅ Redação criada com sucesso - ID: ${redacao.id}`)
+    // Verificar se bucket 'redacoes' existe, se não, criar
+    const { data: buckets } = await supabase.storage.listBuckets()
+    const redacoesBucket = buckets?.find(bucket => bucket.name === 'redacoes')
+    
+    if (!redacoesBucket) {
+      console.log("📦 Criando bucket 'redacoes'...")
+      const { error: bucketError } = await supabase.storage.createBucket('redacoes', {
+        public: false,
+        allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'],
+        fileSizeLimit: 50 * 1024 * 1024 // 50MB
+      })
+      
+      if (bucketError) {
+        console.error("❌ Erro ao criar bucket:", bucketError)
+        return { success: false, error: "Erro no sistema de storage. Verifique se o bucket 'redacoes' foi criado manualmente no painel do Supabase." }
+      }
+    }
+
+    // Upload das imagens com melhor tratamento
+    const imagensUrls = []
+    for (let i = 0; i < data.imagens.length; i++) {
+      const file = data.imagens[i]
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const fileName = `redacao-${redacao.id}-pagina-${i + 1}-${Date.now()}.${fileExtension}`
+      
+      // Verificar tamanho do arquivo (máximo 10MB por imagem)
+      if (file.size > 10 * 1024 * 1024) {
+        console.error(`❌ Arquivo muito grande: ${file.name} (${file.size} bytes)`)
+        continue
+      }
+
+      // Verificar tipo do arquivo (aceitar imagens e PDFs)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+      if (!allowedTypes.includes(file.type)) {
+        console.error(`❌ Tipo de arquivo inválido: ${file.type}`)
+        continue
+      }
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('redacoes')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error(`❌ Erro ao fazer upload da imagem ${i + 1}:`, uploadError)
+        
+        // Tratamento específico para erros de RLS
+        if (uploadError.message.includes('row-level security policy') || uploadError.message.includes('must be owner')) {
+          return { 
+            success: false, 
+            error: `Erro de permissão no upload. Configure manualmente o bucket 'redacoes' no painel do Supabase com políticas básicas. Detalhes: ${uploadError.message}` 
+          }
+        }
+        
+        return { success: false, error: `Erro no upload da imagem ${i + 1}: ${uploadError.message}` }
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('redacoes')
+        .getPublicUrl(fileName)
+
+      // Inserir registro na tabela redacao_imagens
+      const { error: insertError } = await supabase
+        .from('redacao_imagens')
+        .insert({
+          redacao_id: redacao.id,
+          url: publicUrl,
+          ordem: i + 1,
+          rotation: 0,
+          file_name: fileName,
+          file_size: file.size,
+          mime_type: file.type
+        })
+
+      if (insertError) {
+        console.error(`❌ Erro ao inserir registro da imagem ${i + 1}:`, insertError)
+        // Tentar deletar o arquivo do storage se falhar ao inserir no banco
+        await supabase.storage.from('redacoes').remove([fileName])
+        return { success: false, error: `Erro ao salvar dados da imagem ${i + 1}` }
+      }
+
+      imagensUrls.push({
+        url: publicUrl,
+        ordem: i + 1,
+        rotation: 0,
+        file_name: fileName
+      })
+    }
+
+    // Se nenhum arquivo foi enviado com sucesso
+    if (imagensUrls.length === 0) {
+      // Deletar a redação criada
+      await supabase.from('redacoes').delete().eq('id', redacao.id)
+      return { success: false, error: "Nenhum arquivo foi enviado com sucesso" }
+    }
+
+    console.log(`✅ Redação criada com sucesso - ID: ${redacao.id}, ${imagensUrls.length} arquivos enviados`)
     revalidatePath("/redacao")
     
     return { 
@@ -722,7 +790,7 @@ export async function salvarCorrecaoRedacao(data: {
 export async function login(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -742,7 +810,7 @@ export async function signup(formData: FormData) {
   const origin = headers().get("origin")
   const email = formData.get("email") as string
   const password = formData.get("password") as string
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -761,7 +829,7 @@ export async function signup(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = createClient()
+  const supabase = createBrowserClient()
   const { error } = await supabase.auth.signOut()
 
   if (error) {
@@ -774,7 +842,7 @@ export async function signOut() {
 }
 
 export async function getUserRole() {
-  const supabase = createClient()
+  const supabase = createBrowserClient()
   const {
     data: { user },
     error: userError,
@@ -1103,5 +1171,808 @@ export async function getAlunosDaTurma(turmaId: string) {
   } catch (error) {
     console.error("❌ Erro inesperado:", error)
     return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// ========================================
+// SISTEMA DE PROVAS ONLINE
+// ========================================
+
+export async function getProvas() {
+  try {
+    const { data: provas, error } = await supabaseAdmin
+      .from('provas')
+      .select(`
+        *,
+        questoes (
+          id,
+          tipo,
+          enunciado,
+          pontuacao,
+          ordem
+        )
+      `)
+      .eq('status', 'publicada')
+      .order('criado_em', { ascending: false });
+
+    if (error) throw error;
+    return { data: provas, error: null };
+  } catch (error) {
+    console.error('Erro ao buscar provas:', error);
+    return { data: null, error };
+  }
+}
+
+export async function getProvasProfessor() {
+  try {
+    console.log('🔍 Iniciando getProvasProfessor...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('👤 Usuário nas Server Actions:', user?.id)
+    console.log('❌ Erro de auth:', authError)
+    
+    if (authError) {
+      console.error('Erro de autenticação:', authError)
+      throw new Error(`Erro de autenticação: ${authError.message}`)
+    }
+    
+    if (!user) {
+      console.error('Usuário não encontrado nas Server Actions')
+      redirect('/login')
+    }
+
+    console.log('✅ Usuário autenticado nas Server Actions:', user.email);
+
+    const { data: provas, error } = await supabaseAdmin
+      .from('provas')
+      .select(`
+        *,
+        questoes (
+          id,
+          tipo,
+          enunciado,
+          pontuacao,
+          ordem
+        )
+      `)
+      .eq('criado_por', user.id)
+      .order('criado_em', { ascending: false });
+
+    if (error) throw error;
+    return { data: provas, error: null };
+  } catch (error) {
+    console.error('💥 Erro em getProvasProfessor:', error);
+    
+    // Se for erro de autenticação, redirecionar
+    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
+      redirect('/login')
+    }
+    
+    return { data: null, error };
+  }
+}
+
+export async function criarProva(provaData: {
+  titulo: string;
+  descricao: string;
+  materia: string;
+  dificuldade: 'facil' | 'medio' | 'dificil';
+  tempo_limite: number;
+  tentativas_permitidas: number;
+  nota_minima: number;
+  texto_base?: string;
+  tem_texto_base?: boolean;
+  titulo_texto_base?: string;
+  fonte_texto_base?: string;
+}) {
+  try {
+    console.log('🔍 Iniciando criarProva...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    const { data: prova, error } = await supabaseAdmin
+      .from('provas')
+      .insert({
+        titulo: provaData.titulo,
+        descricao: provaData.descricao,
+        materia: provaData.materia,
+        dificuldade: provaData.dificuldade,
+        tempo_limite: provaData.tempo_limite,
+        tentativas_permitidas: provaData.tentativas_permitidas,
+        nota_minima: provaData.nota_minima,
+        criado_por: user.id,
+        status: 'rascunho',
+        texto_base: provaData.texto_base || null,
+        tem_texto_base: provaData.tem_texto_base || false,
+        titulo_texto_base: provaData.titulo_texto_base || null,
+        fonte_texto_base: provaData.fonte_texto_base || null
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao criar prova:', error);
+      throw error;
+    }
+
+    console.log('✅ Prova criada:', prova);
+    revalidatePath('/provas');
+    return { data: prova, error: null };
+  } catch (error) {
+    console.error('Erro ao criar prova:', error);
+    return { data: null, error };
+  }
+}
+
+export async function atualizarProva(provaId: string, dados: any) {
+  try {
+    const supabase = createBrowserClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Usuário não autenticado');
+
+    const { data: prova, error } = await supabase
+      .from('provas')
+      .update({
+        ...dados,
+        atualizado_em: new Date().toISOString()
+      })
+      .eq('id', provaId)
+      .eq('criado_por', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: prova, error: null };
+  } catch (error) {
+    console.error('Erro ao atualizar prova:', error);
+    return { data: null, error };
+  }
+}
+
+export async function publicarProva(provaId: string) {
+  try {
+    console.log('🔍 Iniciando publicarProva...', provaId)
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    const { data, error } = await supabaseAdmin
+      .from('provas')
+      .update({ status: 'publicada' })
+      .eq('id', provaId)
+      .select();
+
+    if (error) {
+      console.error('❌ Erro ao publicar prova:', error);
+      throw error;
+    }
+
+    console.log('✅ Prova publicada com sucesso:', data);
+    revalidatePath('/provas');
+    return { data, error: null };
+  } catch (error) {
+    console.error('❌ Erro em publicarProva:', error);
+    return { data: null, error };
+  }
+}
+
+export async function arquivarProva(provaId: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('provas')
+      .update({ status: 'arquivada' })
+      .eq('id', provaId);
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+export async function deletarProva(provaId: string) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('provas')
+      .delete()
+      .eq('id', provaId);
+    if (error) throw error;
+    return { data: { success: true }, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+export async function getProvaCompleta(provaId: string) {
+  try {
+    console.log('🔍 Iniciando getProvaCompleta...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    // Buscar a prova com todas as informações
+    const { data: prova, error: provaError } = await supabaseAdmin
+      .from('provas')
+      .select(`
+        *,
+        questoes (
+          *,
+          opcoes_questao (*)
+        )
+      `)
+      .eq('id', provaId)
+      .single();
+
+    if (provaError) {
+      console.error('Erro ao buscar prova:', provaError);
+      throw provaError;
+    }
+
+    console.log('✅ Prova encontrada:', prova);
+    return { data: prova, error: null };
+  } catch (error) {
+    console.error('Erro ao buscar prova completa:', error);
+    return { data: null, error };
+  }
+}
+
+export async function iniciarTentativa(provaId: string) {
+  try {
+    console.log('🔍 Iniciando iniciarTentativa...', provaId)
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('❌ Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    // Verificar se já existe uma tentativa em andamento
+    const { data: tentativaExistente, error: checkError } = await supabaseAdmin
+      .from('tentativas_prova')
+      .select('*')
+      .eq('prova_id', provaId)
+      .eq('aluno_id', user.id)
+      .eq('status', 'em_andamento')
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Erro ao verificar tentativa existente:', checkError);
+      throw checkError;
+    }
+
+    if (tentativaExistente) {
+      console.log('✅ Tentativa existente encontrada:', tentativaExistente);
+      return { data: tentativaExistente, error: null };
+    }
+
+    const { data: tentativa, error } = await supabaseAdmin
+      .from('tentativas_prova')
+      .insert({
+        prova_id: provaId,
+        aluno_id: user.id,
+        status: 'em_andamento',
+        iniciada_em: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Erro ao criar tentativa:', error);
+      throw error;
+    }
+
+    console.log('✅ Tentativa criada com sucesso:', tentativa);
+    return { data: tentativa, error: null };
+  } catch (error) {
+    console.error('❌ Erro em iniciarTentativa:', error);
+    return { data: null, error };
+  }
+}
+
+export async function salvarResposta(tentativaId: string, questaoId: string, resposta: string) {
+  try {
+    const supabase = await createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabaseAdmin
+      .from('respostas_aluno')
+      .upsert({
+        tentativa_id: tentativaId,
+        questao_id: questaoId,
+        aluno_id: user.id,
+        resposta: resposta,
+        respondida_em: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erro ao salvar resposta:', error);
+    return { data: null, error };
+  }
+}
+
+export async function finalizarTentativa(tentativaId: string) {
+  try {
+    const supabase = await createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Usuário não autenticado');
+
+    // Buscar todas as respostas da tentativa
+    const { data: respostas, error: respostasError } = await supabaseAdmin
+      .from('respostas_aluno')
+      .select(`
+        *,
+        questao:questoes (
+          pontuacao,
+          resposta_correta
+        )
+      `)
+      .eq('tentativa_id', tentativaId);
+
+    if (respostasError) throw respostasError;
+
+    // Calcular nota final
+    let notaFinal = 0;
+    let totalPontos = 0;
+
+    respostas?.forEach((resposta) => {
+      totalPontos += resposta.questao.pontuacao;
+      if (resposta.resposta === resposta.questao.resposta_correta) {
+        notaFinal += resposta.questao.pontuacao;
+      }
+    });
+
+    const notaPercentual = totalPontos > 0 ? (notaFinal / totalPontos) * 10 : 0;
+
+    // Atualizar tentativa
+    const { data: tentativa, error } = await supabaseAdmin
+      .from('tentativas_prova')
+      .update({
+        status: 'finalizada',
+        nota_final: notaPercentual,
+        finalizada_em: new Date().toISOString()
+      })
+      .eq('id', tentativaId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: { ...tentativa, nota_final: notaPercentual }, error: null };
+  } catch (error) {
+    console.error('Erro ao finalizar tentativa:', error);
+    return { data: null, error };
+  }
+}
+
+export async function getTentativasAluno() {
+  try {
+    console.log('🔍 Iniciando getTentativasAluno...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('👤 Usuário nas Server Actions:', user?.id)
+    console.log('❌ Erro de auth:', authError)
+    
+    if (authError) {
+      console.error('Erro de autenticação:', authError)
+      throw new Error(`Erro de autenticação: ${authError.message}`)
+    }
+    
+    if (!user) {
+      console.error('Usuário não encontrado nas Server Actions')
+      redirect('/login')
+    }
+
+    console.log('✅ Usuário autenticado nas Server Actions:', user.email);
+
+    const { data: tentativas, error } = await supabaseAdmin
+      .from('tentativas_prova')
+      .select(`
+        *,
+        prova:provas (
+          titulo,
+          materia,
+          dificuldade
+        )
+      `)
+      .eq('aluno_id', user.id)
+      .order('iniciada_em', { ascending: false });
+
+    if (error) throw error;
+    
+    console.log('✅ Tentativas encontradas:', tentativas?.length || 0);
+    return { data: tentativas, error: null };
+  } catch (error) {
+    console.error('💥 Erro em getTentativasAluno:', error);
+    
+    // Se for erro de autenticação, redirecionar
+    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
+      redirect('/login')
+    }
+    
+    return { data: null, error };
+  }
+}
+
+export async function getTentativasProfessor() {
+  try {
+    const supabase = await createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error('Usuário não autenticado');
+
+    const { data: tentativas, error } = await supabaseAdmin
+      .from('tentativas_prova')
+      .select(`
+        *,
+        prova:provas (
+          titulo,
+          materia,
+          dificuldade
+        ),
+        aluno:auth.users (
+          email
+        )
+      `)
+      .eq('prova.criado_por', user.id)
+      .order('iniciada_em', { ascending: false });
+
+    if (error) throw error;
+    return { data: tentativas, error: null };
+  } catch (error) {
+    console.error('Erro ao buscar tentativas do professor:', error);
+    return { data: null, error };
+  }
+}
+
+export async function adicionarQuestao(provaId: string, questaoData: {
+  tipo: 'multipla_escolha' | 'dissertativa' | 'verdadeiro_falso' | 'completar' | 'associacao' | 'ordenacao';
+  enunciado: string;
+  pontuacao: number;
+  ordem: number;
+  opcoes?: string[];
+  resposta_correta?: string;
+  explicacao?: string;
+  imagem_url?: string;
+  tempo_estimado?: number;
+}) {
+  try {
+    console.log('🔍 Iniciando adicionarQuestao...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    // Inserir questão
+    const { data: questao, error: questaoError } = await supabaseAdmin
+      .from('questoes')
+      .insert({
+        prova_id: provaId,
+        tipo: questaoData.tipo,
+        enunciado: questaoData.enunciado,
+        pontuacao: questaoData.pontuacao,
+        ordem: questaoData.ordem,
+        explicacao: questaoData.explicacao,
+        imagem_url: questaoData.imagem_url,
+        tempo_estimado: questaoData.tempo_estimado || 60
+      })
+      .select()
+      .single();
+
+    if (questaoError) {
+      console.error('Erro ao inserir questão:', questaoError);
+      throw questaoError;
+    }
+
+    console.log('✅ Questão criada:', questao);
+
+    // Se for múltipla escolha, inserir opções
+    if (questaoData.tipo === 'multipla_escolha' && questaoData.opcoes) {
+      const opcoesData = questaoData.opcoes.map((opcao, index) => ({
+        questao_id: questao.id,
+        texto: opcao,
+        ordem: index + 1,
+        is_correta: opcao === questaoData.resposta_correta
+      }));
+
+      const { error: opcoesError } = await supabaseAdmin
+        .from('opcoes_questao')
+        .insert(opcoesData);
+
+      if (opcoesError) {
+        console.error('Erro ao inserir opções:', opcoesError);
+        throw opcoesError;
+      }
+
+      console.log('✅ Opções inseridas');
+    }
+
+    // Se for verdadeiro/falso, inserir opções
+    if (questaoData.tipo === 'verdadeiro_falso') {
+      const opcoesData = [
+        {
+          questao_id: questao.id,
+          texto: 'Verdadeiro',
+          ordem: 1,
+          is_correta: questaoData.resposta_correta === 'verdadeiro'
+        },
+        {
+          questao_id: questao.id,
+          texto: 'Falso',
+          ordem: 2,
+          is_correta: questaoData.resposta_correta === 'falso'
+        }
+      ];
+
+      const { error: opcoesError } = await supabaseAdmin
+        .from('opcoes_questao')
+        .insert(opcoesData);
+
+      if (opcoesError) {
+        console.error('Erro ao inserir opções V/F:', opcoesError);
+        throw opcoesError;
+      }
+
+      console.log('✅ Opções V/F inseridas');
+    }
+
+    // Se for associação, inserir pares
+    if (questaoData.tipo === 'associacao' && questaoData.opcoes) {
+      const opcoesData = questaoData.opcoes
+        .filter((opcao, index) => index % 2 === 0) // Pegar apenas os itens (não os correspondentes)
+        .map((item, index) => ({
+          questao_id: questao.id,
+          texto: `${item} → ${questaoData.opcoes![index * 2 + 1]}`,
+          ordem: index + 1,
+          is_correta: true // Todas as associações são corretas
+        }));
+
+      const { error: opcoesError } = await supabaseAdmin
+        .from('opcoes_questao')
+        .insert(opcoesData);
+
+      if (opcoesError) {
+        console.error('Erro ao inserir associações:', opcoesError);
+        throw opcoesError;
+      }
+
+      console.log('✅ Associações inseridas');
+    }
+
+    // Se for ordenação, inserir itens
+    if (questaoData.tipo === 'ordenacao' && questaoData.opcoes) {
+      const opcoesData = questaoData.opcoes.map((item, index) => ({
+        questao_id: questao.id,
+        texto: item,
+        ordem: index + 1,
+        is_correta: true // A ordem correta é a sequência original
+      }));
+
+      const { error: opcoesError } = await supabaseAdmin
+        .from('opcoes_questao')
+        .insert(opcoesData);
+
+      if (opcoesError) {
+        console.error('Erro ao inserir itens de ordenação:', opcoesError);
+        throw opcoesError;
+      }
+
+      console.log('✅ Itens de ordenação inseridos');
+    }
+
+    revalidatePath('/provas');
+    return { data: questao, error: null };
+  } catch (error) {
+    console.error('Erro ao adicionar questão:', error);
+    return { data: null, error };
+  }
+}
+
+export async function atualizarQuestao(questaoId: string, questaoData: {
+  tipo: 'multipla_escolha' | 'dissertativa';
+  enunciado: string;
+  pontuacao: number;
+  ordem: number;
+  opcoes?: string[];
+  resposta_correta?: string;
+}) {
+  try {
+    console.log('🔍 Iniciando atualizarQuestao...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    // Atualizar questão
+    const { data: questao, error: questaoError } = await supabaseAdmin
+      .from('questoes')
+      .update({
+        tipo: questaoData.tipo,
+        enunciado: questaoData.enunciado,
+        pontuacao: questaoData.pontuacao,
+        ordem: questaoData.ordem
+      })
+      .eq('id', questaoId)
+      .select()
+      .single();
+
+    if (questaoError) {
+      console.error('Erro ao atualizar questão:', questaoError);
+      throw questaoError;
+    }
+
+    console.log('✅ Questão atualizada:', questao);
+
+    // Se for múltipla escolha, atualizar opções
+    if (questaoData.tipo === 'multipla_escolha' && questaoData.opcoes) {
+      // Deletar opções antigas
+      await supabaseAdmin
+        .from('opcoes_questao')
+        .delete()
+        .eq('questao_id', questaoId);
+
+      // Inserir novas opções
+      const opcoesData = questaoData.opcoes.map((opcao, index) => ({
+        questao_id: questaoId,
+        texto: opcao,
+        ordem: index + 1,
+        is_correta: opcao === questaoData.resposta_correta
+      }));
+
+      const { error: opcoesError } = await supabaseAdmin
+        .from('opcoes_questao')
+        .insert(opcoesData);
+
+      if (opcoesError) {
+        console.error('Erro ao atualizar opções:', opcoesError);
+        throw opcoesError;
+      }
+
+      console.log('✅ Opções atualizadas');
+    }
+
+    revalidatePath('/provas');
+    return { data: questao, error: null };
+  } catch (error) {
+    console.error('Erro ao atualizar questão:', error);
+    return { data: null, error };
+  }
+}
+
+export async function deletarQuestao(questaoId: string) {
+  try {
+    console.log('🔍 Iniciando deletarQuestao...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    // Deletar opções primeiro (se existirem)
+    await supabaseAdmin
+      .from('opcoes_questao')
+      .delete()
+      .eq('questao_id', questaoId);
+
+    // Deletar questão
+    const { error } = await supabaseAdmin
+      .from('questoes')
+      .delete()
+      .eq('id', questaoId);
+
+    if (error) {
+      console.error('Erro ao deletar questão:', error);
+      throw error;
+    }
+
+    console.log('✅ Questão deletada');
+
+    revalidatePath('/provas');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Erro ao deletar questão:', error);
+    return { success: false, error };
+  }
+}
+
+export async function getQuestoesProva(provaId: string) {
+  try {
+    console.log('🔍 Iniciando getQuestoesProva...')
+    
+    const supabase = createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      throw new Error('Usuário não autenticado');
+    }
+
+    console.log('✅ Usuário autenticado:', user.email);
+
+    const { data: questoes, error } = await supabaseAdmin
+      .from('questoes')
+      .select(`
+        *,
+        opcoes:opcoes_questao (
+          id,
+          texto,
+          ordem,
+          is_correta
+        )
+      `)
+      .eq('prova_id', provaId)
+      .order('ordem', { ascending: true });
+
+    if (error) {
+      console.error('Erro ao buscar questões:', error);
+      throw error;
+    }
+
+    console.log('✅ Questões encontradas:', questoes?.length || 0);
+    return { data: questoes, error: null };
+  } catch (error) {
+    console.error('Erro ao buscar questões:', error);
+    return { data: null, error };
   }
 }

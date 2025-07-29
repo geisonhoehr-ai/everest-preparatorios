@@ -2,53 +2,38 @@ import { createClient } from '@/lib/supabase/client'
 
 export async function getUserRoleClient(userUuid: string): Promise<string> {
   try {
-    console.log('🔍 [DEBUG] getUserRoleClient iniciado para:', userUuid)
+    console.log('🔍 [ROLE] Iniciando busca para:', userUuid)
     const supabase = createClient()
     
     if (!userUuid) {
-      console.warn('⚠️ [DEBUG] Nenhum UUID de usuário fornecido')
+      console.warn('⚠️ [ROLE] Nenhum UUID de usuário fornecido')
       return 'student'
     }
 
-    console.log('🔍 [DEBUG] Buscando role para usuário:', userUuid)
-
-    // Verificar se o usuário está autenticado
-    console.log('🔍 [DEBUG] Verificando autenticação...')
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    console.log('🔍 [DEBUG] Resultado da autenticação:', { user: user?.id, error: authError })
-    
-    if (authError || !user) {
-      console.error('❌ [DEBUG] Erro de autenticação:', authError)
-      return 'student'
-    }
-
-    console.log('✅ [DEBUG] Usuário autenticado, buscando role...')
+    // Buscar role diretamente sem verificar autenticação novamente
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_uuid', userUuid)
       .single()
 
-    console.log('🔍 [DEBUG] Resultado da busca de role:', { data, error })
+    console.log('🔍 [ROLE] Resultado da busca:', { data, error })
 
     if (error) {
-      console.error('❌ [DEBUG] Erro ao buscar role do usuário:', error)
-      console.error('❌ [DEBUG] Código do erro:', error.code)
-      console.error('❌ [DEBUG] Mensagem do erro:', error.message)
-      console.error('❌ [DEBUG] Detalhes do erro:', error.details)
+      console.error('❌ [ROLE] Erro ao buscar role:', error)
       
       // Se não encontrar o usuário, retorna 'student' como padrão
       if (error.code === 'PGRST116') {
-        console.log('ℹ️ [DEBUG] Usuário não encontrado na tabela user_roles, retornando role padrão')
+        console.log('ℹ️ [ROLE] Usuário não encontrado na tabela user_roles, retornando student')
         return 'student'
       }
       return 'student'
     }
 
-    console.log('✅ [DEBUG] Role encontrada:', data?.role)
+    console.log('✅ [ROLE] Role encontrada:', data?.role)
     return data?.role || 'student'
   } catch (error) {
-    console.error('❌ [DEBUG] Erro inesperado ao buscar role:', error)
+    console.error('❌ [ROLE] Erro inesperado:', error)
     return 'student'
   }
 }

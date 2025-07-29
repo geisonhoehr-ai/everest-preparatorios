@@ -6,9 +6,9 @@ import { useState } from "react"
 
 const communityNavItems = [
   { href: "/community", title: "Feed", icon: "🏠" },
-  { href: "/community/provas", title: "Provas", icon: "📝" },
-  { href: "/community/livros", title: "Livros", icon: "📚" },
-  { href: "/community/suporte", title: "Suporte", icon: "💬" },
+  { href: "/provas", title: "Provas", icon: "📝" },
+  { href: "/livros", title: "Livros", icon: "📚" },
+  { href: "/suporte", title: "Suporte", icon: "💬" },
 ]
 
 export default function CommunitySidebar() {

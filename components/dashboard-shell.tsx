@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { getUserRoleClient } from "@/lib/get-user-role"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -31,6 +32,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const router = useRouter()
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userInitials, setUserInitials] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null) // Mudança: null em vez de "student"
+  const [isLoadingRole, setIsLoadingRole] = useState(true) // Novo estado para controlar loading
 
   useEffect(() => {
     const getUser = async () => {
@@ -41,9 +44,24 @@ export function DashboardShell({ children }: DashboardShellProps) {
       if (user) {
         setUserEmail(user.email)
         setUserInitials(user.email ? user.email.substring(0, 2).toUpperCase() : "US")
+        
+        // Buscar role do usuário
+        try {
+          console.log("🔍 [DASHBOARD] Iniciando busca do role para:", user.email);
+          const role = await getUserRoleClient(user.id);
+          console.log("✅ [DASHBOARD] Role encontrado:", role);
+          setUserRole(role);
+        } catch (error) {
+          console.error("❌ [DASHBOARD] Erro ao buscar role:", error);
+          setUserRole("student");
+        } finally {
+          setIsLoadingRole(false);
+        }
       } else {
         setUserEmail(null)
         setUserInitials(null)
+        setUserRole(null)
+        setIsLoadingRole(false)
       }
     }
     getUser()
@@ -51,13 +69,28 @@ export function DashboardShell({ children }: DashboardShellProps) {
     const supabase = createClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUserEmail(session.user.email)
         setUserInitials(session.user.email ? session.user.email.substring(0, 2).toUpperCase() : "US")
+        
+        // Buscar role do usuário quando a sessão mudar
+        try {
+          console.log("🔄 [DASHBOARD] Sessão mudou, buscando role para:", session.user.email);
+          const role = await getUserRoleClient(session.user.id);
+          console.log("✅ [DASHBOARD] Role atualizado:", role);
+          setUserRole(role);
+        } catch (error) {
+          console.error("❌ [DASHBOARD] Erro ao buscar role:", error);
+          setUserRole("student");
+        } finally {
+          setIsLoadingRole(false);
+        }
       } else {
         setUserEmail(null)
         setUserInitials(null)
+        setUserRole(null)
+        setIsLoadingRole(false)
       }
     })
 
@@ -66,10 +99,47 @@ export function DashboardShell({ children }: DashboardShellProps) {
     }
   }, [])
 
+  // Remover o useEffect duplicado que estava causando conflito
+  // useEffect(() => {
+  //   const forceRoleCheck = async () => {
+  //     const supabase = createClient();
+  //     const { data: { user } } = await supabase.auth.getUser();
+  //     if (user) {
+  //       try {
+  //         const role = await getUserRoleClient(user.id);
+  //         console.log("🔍 [FORCE CHECK] Role encontrado:", role);
+  //         setUserRole(role);
+  //       } catch (error) {
+  //         console.error("🔍 [FORCE CHECK] Erro ao buscar role:", error);
+  //       }
+  //     }
+  //   };
+    
+  //   // Aguardar um pouco para garantir que a autenticação foi carregada
+  //   setTimeout(forceRoleCheck, 1000);
+  // }, []);
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut()
     router.push("/login")
+  }
+
+  // Função para traduzir o role
+  const getRoleDisplay = (role: string | null) => {
+    if (isLoadingRole) {
+      return "Carregando...";
+    }
+    
+    switch (role) {
+      case "teacher":
+        return "Professor";
+      case "admin":
+        return "Administrador";
+      case "student":
+      default:
+        return "Estudante";
+    }
   }
 
   return (
@@ -120,7 +190,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
-                        <p className="text-xs leading-none text-muted-foreground">Estudante</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                        </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -225,7 +297,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                     {!collapsed && (
                       <div className="ml-3 flex-1 text-left">
                         <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Estudante</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                        </p>
                       </div>
                     )}
                   </Button>
@@ -239,7 +313,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
-                      <p className="text-xs leading-none text-muted-foreground">Estudante</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

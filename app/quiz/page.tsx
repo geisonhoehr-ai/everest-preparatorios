@@ -26,11 +26,7 @@ import {
   createQuizQuestion,
   updateQuizQuestion,
   deleteQuizQuestion,
-  getAllQuestionsByQuiz,
-  debugQuizzesTable,
-  testQuizzesConnection,
-  createSampleQuizzes,
-  investigateQuizIssue
+  getAllQuestionsByQuiz
 } from "@/actions"
 import { getUserRoleClient } from "@/lib/get-user-role"
 import Link from "next/link"
@@ -101,17 +97,41 @@ export default function QuizPage() {
   useEffect(() => {
     async function fetchData() {
       try {
+        console.log("🔍 [QUIZ PAGE] Iniciando carregamento de dados...")
+        
+        // Verificar autenticação primeiro
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          console.error("❌ [QUIZ PAGE] Usuário não autenticado")
+          setIsLoading(false)
+          return
+        }
+        
+        console.log("✅ [QUIZ PAGE] Usuário autenticado:", user.email)
+        
+        // Buscar subjects
+        console.log("🔍 [QUIZ PAGE] Buscando subjects...")
         const subjectsData = await getAllSubjects()
+        console.log("✅ [QUIZ PAGE] Subjects carregados:", subjectsData)
+        
+        if (!subjectsData || subjectsData.length === 0) {
+          console.warn("⚠️ [QUIZ PAGE] Nenhum subject encontrado")
+        }
+        
         setSubjects(subjectsData)
         
         // Obter role do usuário
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user?.id) {
-          const role = await getUserRoleClient(user.id)
-          setUserRole(role)
-        }
+        console.log("🔍 [QUIZ PAGE] Buscando role do usuário...")
+        const role = await getUserRoleClient(user.id)
+        console.log("✅ [QUIZ PAGE] Role do usuário:", role)
+        setUserRole(role)
+        
       } catch (error) {
-        console.error("Erro ao carregar dados:", error)
+        console.error("❌ [QUIZ PAGE] Erro ao carregar dados:", error)
+        console.error("❌ [QUIZ PAGE] Detalhes do erro:", {
+          message: error.message,
+          stack: error.stack
+        })
       } finally {
         setIsLoading(false)
       }
@@ -132,31 +152,15 @@ export default function QuizPage() {
          const loadQuizzes = async (topicId: string) => {
     setIsLoading(true)
     try {
-      // INVESTIGAÇÃO COMPLETA DO PROBLEMA
-      console.log("🔍🔍 [MAIN INVESTIGATION] Iniciando investigação completa...")
-      await investigateQuizIssue()
-      
-      // Debug: testar conexão primeiro
-      console.log("🧪 [TEST QUIZ PAGE] Testando conexão com quizzes...")
-      await testQuizzesConnection()
-      
-      // Debug: verificar tabela
-      console.log("🔍 [DEBUG QUIZ PAGE] Executando debug da tabela...")
-      await debugQuizzesTable()
-      
-      // Verificar se precisa criar quizzes de exemplo
-      console.log("🌱 [SEED QUIZ PAGE] Verificando se precisa criar quizzes de exemplo...")
-      await createSampleQuizzes()
-      
-      console.log("🔍 [DEBUG QUIZ PAGE] Carregando quizzes para tópico:", topicId)
+      console.log("🔍 [QUIZ PAGE] Carregando quizzes para tópico:", topicId)
       const quizzesData = await getQuizzesByTopic(topicId)
-      console.log("🔍 [DEBUG QUIZ PAGE] Dados recebidos:", quizzesData)
+      console.log("✅ [QUIZ PAGE] Quizzes carregados:", quizzesData)
       
       setQuizzes(quizzesData)
       setSelectedTopic(topicId)
       setMode("quizzes")
     } catch (error) {
-      console.error("❌ [ERROR QUIZ PAGE] Erro ao carregar quizzes:", error)
+      console.error("❌ [QUIZ PAGE] Erro ao carregar quizzes:", error)
       alert("Erro ao carregar quizzes. Tente novamente.")
     } finally {
       setIsLoading(false)

@@ -210,8 +210,9 @@ export default function RedacaoPage() {
 
     // Validar arquivos
     const validFiles = files.filter(file => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} não é uma imagem válida`)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name} não é um arquivo válido (aceitamos imagens e PDFs)`)
         return false
       }
       if (file.size > 10 * 1024 * 1024) { // 10MB
@@ -222,7 +223,7 @@ export default function RedacaoPage() {
     })
 
     if (validFiles.length + selectedFiles.length > 10) {
-      toast.error("Máximo de 10 páginas por redação")
+      toast.error("Máximo de 10 arquivos por redação")
       return
     }
 
@@ -250,7 +251,7 @@ export default function RedacaoPage() {
   // Enviar redação
   const handleSubmitRedacao = async () => {
     if (!formData.titulo || !formData.tema_id || selectedFiles.length === 0) {
-      toast.error("Preencha todos os campos e adicione pelo menos uma imagem")
+      toast.error("Preencha todos os campos e adicione pelo menos um arquivo")
       return
     }
 
@@ -551,9 +552,9 @@ export default function RedacaoPage() {
                   {/* Upload de Imagens */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label>Páginas da Redação *</Label>
+                      <Label>Arquivos da Redação *</Label>
                       <div className="text-sm text-muted-foreground">
-                        {selectedFiles.length}/10 páginas
+                        {selectedFiles.length}/10 arquivos
                       </div>
                     </div>
                     
@@ -566,37 +567,47 @@ export default function RedacaoPage() {
                         <div>
                           <h3 className="font-medium mb-2">Adicionar Páginas</h3>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Fotografe ou escaneie suas páginas de redação
+                            Fotografe, escaneie ou envie PDFs das suas páginas de redação
                           </p>
                           <input
                             type="file"
                             multiple
-                            accept="image/*"
+                            accept="image/*,.pdf"
                             onChange={handleFileSelect}
                             className="hidden"
                             id="file-upload"
                           />
-                          <label
-                            htmlFor="file-upload"
-                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md cursor-pointer hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Selecionar Imagens
-                          </label>
+                                                      <label
+                              htmlFor="file-upload"
+                              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md cursor-pointer hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Selecionar Arquivos
+                            </label>
                         </div>
                       </div>
                     </div>
 
-                    {/* Preview das imagens */}
+                    {/* Preview dos arquivos */}
                     {selectedFiles.length > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {selectedFiles.map((file, index) => (
                           <div key={index} className="relative group">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`Página ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-lg border-2 border-blue-200 dark:border-blue-800"
-                            />
+                            {file.type.startsWith('image/') ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Página ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg border-2 border-blue-200 dark:border-blue-800"
+                              />
+                            ) : (
+                              <div className="w-full h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-lg border-2 border-red-200 dark:border-red-800 flex items-center justify-center">
+                                <div className="text-center text-white">
+                                  <FileText className="h-8 w-8 mx-auto mb-1" />
+                                  <p className="text-xs font-medium">PDF</p>
+                                  <p className="text-xs opacity-75">{file.name}</p>
+                                </div>
+                              </div>
+                            )}
                             <button
                               onClick={() => removeFile(index)}
                               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -604,7 +615,7 @@ export default function RedacaoPage() {
                               <X className="h-3 w-3" />
                             </button>
                             <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                              Página {index + 1}
+                              {file.type.startsWith('image/') ? `Página ${index + 1}` : 'PDF'}
                             </div>
                           </div>
                         ))}

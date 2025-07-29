@@ -114,12 +114,12 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: GraduationCap,
   },
   {
-    href: "/community/provas",
+    href: "/provas",
     title: "Provas",
     icon: FileText,
   },
   {
-    href: "/community/livros",
+    href: "/livros",
     title: "Acervo",
     icon: Archive,
   },
@@ -139,7 +139,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: Users2,
   },
   {
-    href: "/community/suporte",
+    href: "/suporte",
     title: "Suporte",
     icon: HelpCircle,
   },
