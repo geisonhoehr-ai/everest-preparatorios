@@ -116,6 +116,8 @@ export default function QuizPage() {
         
         if (!subjectsData || subjectsData.length === 0) {
           console.warn("⚠️ [QUIZ PAGE] Nenhum subject encontrado")
+          setIsLoading(false)
+          return
         }
         
         setSubjects(subjectsData)
@@ -125,6 +127,12 @@ export default function QuizPage() {
         const role = await getUserRoleClient(user.id)
         console.log("✅ [QUIZ PAGE] Role do usuário:", role)
         setUserRole(role)
+        
+        // Se há subjects, selecionar o primeiro automaticamente
+        if (subjectsData.length > 0) {
+          console.log("🔍 [QUIZ PAGE] Selecionando primeiro subject:", subjectsData[0])
+          setSelectedSubject(subjectsData[0].id)
+        }
         
       } catch (error) {
         console.error("❌ [QUIZ PAGE] Erro ao carregar dados:", error)
@@ -142,8 +150,17 @@ export default function QuizPage() {
   useEffect(() => {
     async function fetchTopics() {
       if (selectedSubject) {
-        const data = await getTopicsBySubject(selectedSubject)
-        setTopics(data)
+        try {
+          console.log("🔍 [QUIZ PAGE] Carregando topics para subject:", selectedSubject)
+          const data = await getTopicsBySubject(selectedSubject)
+          console.log("✅ [QUIZ PAGE] Topics carregados:", data)
+          setTopics(data)
+        } catch (error) {
+          console.error("❌ [QUIZ PAGE] Erro ao carregar topics:", error)
+          setTopics([])
+        }
+      } else {
+        setTopics([])
       }
     }
     fetchTopics()
@@ -608,6 +625,82 @@ export default function QuizPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Verificar se não há subjects
+  if (subjects.length === 0) {
+    return (
+      <DashboardShell>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
+            <p className="text-muted-foreground mt-1">
+              Sistema de quizzes interativos
+            </p>
+          </div>
+          
+          <Card className="text-center py-16 bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-800 dark:to-red-900 border-orange-200 dark:border-orange-700">
+            <CardContent>
+              <div className="p-6 rounded-full bg-gradient-to-r from-orange-400 to-red-600 mx-auto mb-6 w-fit">
+                <BrainCircuit className="h-16 w-16 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-800 bg-clip-text text-transparent">
+                Nenhuma matéria disponível
+              </h3>
+              <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                As matérias de quiz ainda não foram configuradas. Entre em contato com o administrador.
+              </p>
+              <Button asChild className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                <Link href="/dashboard">
+                  <ArrowRight className="mr-3 h-5 w-5" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Verificar se nenhum subject está selecionado
+  if (!selectedSubject) {
+    return (
+      <DashboardShell>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
+            <p className="text-muted-foreground mt-1">
+              Escolha uma matéria para começar
+            </p>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {subjects.map((subject) => (
+              <Card key={subject.id} className="hover:shadow-lg transition-shadow border-emerald-200 dark:border-emerald-800">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <BrainCircuit className="h-8 w-8 text-emerald-600" />
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Matéria</Badge>
+                  </div>
+                  <CardTitle className="text-lg text-emerald-800 dark:text-emerald-200">{subject.name}</CardTitle>
+                  <CardDescription>Escolha esta matéria para ver os tópicos disponíveis</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => setSelectedSubject(subject.id)} 
+                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    Selecionar Matéria
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </DashboardShell>
