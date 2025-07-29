@@ -33,7 +33,22 @@ import {
   ArrowLeft,
   MoreHorizontal,
   Shield,
-  Crown
+  Crown,
+  Star,
+  Zap,
+  Users,
+  Headphones,
+  BookOpen,
+  Settings,
+  Lightbulb,
+  Heart,
+  Award,
+  TrendingUp,
+  Activity,
+  Edit,
+  Trash2,
+  Save,
+  X
 } from "lucide-react";
 import {
   Collapsible,
@@ -81,9 +96,9 @@ interface Ticket {
   createdAt: Date;
   lastMessage: Date;
   unreadCount: number;
-  studentId: string; // ID do aluno que criou o ticket
-  studentName: string; // Nome do aluno
-  studentEmail: string; // Email do aluno
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
   messages: Message[];
 }
 
@@ -109,11 +124,8 @@ export default function SuportePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Estados para FAQ
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [expandedFaqs, setExpandedFaqs] = useState<Set<string>>(new Set());
-
-  // Estados para tickets
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [showNewTicketDialog, setShowNewTicketDialog] = useState(false);
   const [newTicket, setNewTicket] = useState({
@@ -121,6 +133,16 @@ export default function SuportePage() {
     category: "",
     priority: "media" as const,
     description: ""
+  });
+
+  // Estados para edição de FAQs
+  const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
+  const [showEditFAQDialog, setShowEditFAQDialog] = useState(false);
+  const [showNewFAQDialog, setShowNewFAQDialog] = useState(false);
+  const [newFAQ, setNewFAQ] = useState({
+    question: "",
+    answer: "",
+    category: ""
   });
 
   const supabase = createClient();
@@ -135,12 +157,9 @@ export default function SuportePage() {
     try {
       setIsLoading(true);
       
-      // Obter ID do usuário atual
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        
-        // Verificar role do usuário
         const role = await getUserRoleClient(user.id);
         setUserRole(role as any);
       }
@@ -154,7 +173,6 @@ export default function SuportePage() {
 
   const loadFAQs = async () => {
     try {
-      // Simular carregamento de FAQs
       const faqsMock: FAQ[] = [
         {
           id: "1",
@@ -171,7 +189,7 @@ export default function SuportePage() {
         {
           id: "3",
           question: "Posso baixar os materiais?",
-          answer: "Sim! Na seção 'Livros' você pode baixar todos os materiais disponíveis. Basta clicar no botão 'Baixar' ao lado de cada arquivo.",
+          answer: "Sim! Na seção 'Acervo Digital' você pode baixar todos os materiais disponíveis. Basta clicar no botão 'Baixar' ao lado de cada arquivo.",
           category: "Materiais"
         },
         {
@@ -202,7 +220,6 @@ export default function SuportePage() {
 
   const loadTickets = async () => {
     try {
-      // Simular carregamento de tickets
       const ticketsMock: Ticket[] = [
         {
           id: "1",
@@ -287,62 +304,101 @@ export default function SuportePage() {
 
   const getStatusColor = (status: string) => {
     const colors: {[key: string]: string} = {
-      "aberto": "bg-blue-100 text-blue-800",
-      "em_andamento": "bg-yellow-100 text-yellow-800",
-      "resolvido": "bg-green-100 text-green-800",
-      "fechado": "bg-gray-100 text-gray-800"
+      "aberto": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+      "em_andamento": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+      "resolvido": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+      "fechado": "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
     };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return colors[status] || "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
   };
 
   const getPriorityColor = (priority: string) => {
     const colors: {[key: string]: string} = {
-      "baixa": "bg-green-100 text-green-800",
-      "media": "bg-yellow-100 text-yellow-800",
-      "alta": "bg-orange-100 text-orange-800",
-      "urgente": "bg-red-100 text-red-800"
+      "baixa": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+      "media": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+      "alta": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+      "urgente": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
     };
-    return colors[priority] || "bg-gray-100 text-gray-800";
+    return colors[priority] || "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300";
   };
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInMinutes < 1) return "Agora mesmo";
-    if (diffInMinutes < 60) return `${diffInMinutes} min atrás`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`;
-    return `${Math.floor(diffInMinutes / 1440)}d atrás`;
+    if (diffInHours < 1) return "Agora mesmo";
+    if (diffInHours < 24) return `${diffInHours}h atrás`;
+    if (diffInHours < 48) return "Ontem";
+    return date.toLocaleDateString('pt-BR');
   };
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedTicket) return;
-
+    
+    // Simular envio de mensagem
     const newMsg: Message = {
-      id: `msg${Date.now()}`,
+      id: Date.now().toString(),
       content: newMessage,
       sender: {
-        name: userRole === "student" ? "Você" : "Suporte Everest",
-        role: userRole === "student" ? "student" : "admin",
-        avatar: userRole === "student" ? "/avatars/user.jpg" : "/avatars/support.jpg"
+        name: userRole === "admin" ? "Suporte Everest" : "Você",
+        role: userRole || "student",
+        avatar: "/avatars/user.jpg"
       },
       timestamp: new Date(),
       isRead: false
     };
-
-    setSelectedTicket({
-      ...selectedTicket,
-      messages: [...selectedTicket.messages, newMsg],
-      lastMessage: new Date(),
-      unreadCount: 0
-    });
-
+    
+    selectedTicket.messages.push(newMsg);
     setNewMessage("");
+    toast.success("Mensagem enviada!");
   };
 
   const openChat = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setActiveView("chat");
+  };
+
+  // Funções para gerenciar FAQs
+  const handleEditFAQ = (faq: FAQ) => {
+    setEditingFAQ(faq);
+    setShowEditFAQDialog(true);
+  };
+
+  const handleSaveFAQ = () => {
+    if (!editingFAQ) return;
+    
+    const updatedFaqs = faqs.map(faq => 
+      faq.id === editingFAQ.id ? editingFAQ : faq
+    );
+    setFaqs(updatedFaqs);
+    setShowEditFAQDialog(false);
+    setEditingFAQ(null);
+    toast.success("FAQ atualizada com sucesso!");
+  };
+
+  const handleDeleteFAQ = (faqId: string) => {
+    const updatedFaqs = faqs.filter(faq => faq.id !== faqId);
+    setFaqs(updatedFaqs);
+    toast.success("FAQ removida com sucesso!");
+  };
+
+  const handleCreateFAQ = () => {
+    if (!newFAQ.question || !newFAQ.answer || !newFAQ.category) {
+      toast.error("Preencha todos os campos!");
+      return;
+    }
+
+    const newFAQItem: FAQ = {
+      id: Date.now().toString(),
+      question: newFAQ.question,
+      answer: newFAQ.answer,
+      category: newFAQ.category
+    };
+
+    setFaqs([...faqs, newFAQItem]);
+    setShowNewFAQDialog(false);
+    setNewFAQ({ question: "", answer: "", category: "" });
+    toast.success("FAQ criada com sucesso!");
   };
 
   const filteredTickets = tickets.filter(ticket => {
@@ -358,73 +414,124 @@ export default function SuportePage() {
     faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "admin": return <Crown className="h-4 w-4" />;
+      case "teacher": return <Shield className="h-4 w-4" />;
+      default: return <User className="h-4 w-4" />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "admin": return "text-purple-600 dark:text-purple-400";
+      case "teacher": return "text-blue-600 dark:text-blue-400";
+      default: return "text-orange-600 dark:text-orange-400";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando suporte...</p>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suporte</h1>
-          <p className="text-muted-foreground">
-            Central de ajuda e suporte técnico
-          </p>
+      {/* Header com gradiente */}
+      <div className={`${gradients.cardOrange} rounded-xl p-6 mb-6 border border-orange-200/20 dark:border-orange-800/20`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`${gradients.orange} p-3 rounded-lg`}>
+              <Headphones className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Central de Suporte
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Estamos aqui para ajudar você a ter a melhor experiência possível
+              </p>
+            </div>
+          </div>
+          {activeView === "chat" && (
+            <Button
+              variant="outline"
+              onClick={() => setActiveView("overview")}
+              className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          )}
         </div>
-        {activeView === "chat" && (
-          <Button
-            variant="outline"
-            onClick={() => setActiveView("overview")}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
-        )}
       </div>
 
       {activeView === "overview" ? (
         <div className="space-y-6">
-          {/* Cards de Estatísticas */}
+          {/* Cards de Estatísticas com gradientes */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
+            <Card className={`${gradients.cardOrange} border-orange-200/20 dark:border-orange-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Tickets Abertos</CardTitle>
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{tickets.filter(t => t.status === "aberto").length}</div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {tickets.filter(t => t.status === "aberto").length}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   +2 desde ontem
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className={`${gradients.cardBlue} border-blue-200/20 dark:border-blue-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Em Andamento</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{tickets.filter(t => t.status === "em_andamento").length}</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {tickets.filter(t => t.status === "em_andamento").length}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   +1 desde ontem
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className={`${gradients.cardGreen} border-green-200/20 dark:border-green-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Resolvidos</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{tickets.filter(t => t.status === "resolvido").length}</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {tickets.filter(t => t.status === "resolvido").length}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   +5 esta semana
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            
+            <Card className={`${gradients.cardPurple} border-purple-200/20 dark:border-purple-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2.4h</div>
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  2.4h
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Tempo de resposta
                 </p>
@@ -432,30 +539,100 @@ export default function SuportePage() {
             </Card>
           </div>
 
+          {/* Seção de Acesso Rápido */}
+          <Card className="border-orange-200/20 dark:border-orange-800/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                Acesso Rápido
+              </CardTitle>
+              <CardDescription>
+                Encontre ajuda rapidamente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+                  onClick={() => setShowNewTicketDialog(true)}
+                >
+                  <Plus className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  <span className="font-medium">Novo Ticket</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Criar solicitação de suporte
+                  </span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-blue-200 hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-950"
+                >
+                  <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">Base de Conhecimento</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Artigos e tutoriais
+                  </span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950"
+                >
+                  <MessageCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <span className="font-medium">Chat ao Vivo</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Falar com suporte
+                  </span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Tabs defaultValue="faq" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="faq">FAQ</TabsTrigger>
-              <TabsTrigger value="tickets">Tickets de Suporte</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="faq" className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" />
+                FAQ
+              </TabsTrigger>
+              <TabsTrigger value="tickets" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Tickets de Suporte
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="faq" className="space-y-4">
-              <Card>
+              <Card className="border-orange-200/20 dark:border-orange-800/20">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Perguntas Frequentes</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        Perguntas Frequentes
+                      </CardTitle>
                       <CardDescription>
                         Encontre respostas para as dúvidas mais comuns
                       </CardDescription>
                     </div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar nas FAQs..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-[300px]"
-                      />
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar nas FAQs..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 w-[300px] border-orange-200 focus:border-orange-500"
+                        />
+                      </div>
+                      {(userRole === "teacher" || userRole === "admin") && (
+                        <Button 
+                          onClick={() => setShowNewFAQDialog(true)}
+                          className={`${gradients.buttonOrange} text-white`}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nova FAQ
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -470,23 +647,47 @@ export default function SuportePage() {
                         <CollapsibleTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="w-full justify-between p-4 h-auto"
+                            className="w-full justify-between p-4 h-auto hover:bg-orange-50 dark:hover:bg-orange-950"
                           >
                             <div className="text-left">
                               <div className="font-medium">{faq.question}</div>
-                              <div className="text-sm text-muted-foreground mt-1">
-                                {faq.category}
+                              <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {faq.category}
+                                </Badge>
                               </div>
                             </div>
-                            {expandedFaqs.has(faq.id) ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
+                            <div className="flex items-center gap-2">
+                              {(userRole === "teacher" || userRole === "admin") && (
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditFAQ(faq)}
+                                    className="h-8 w-8 p-0 hover:bg-orange-100 dark:hover:bg-orange-900"
+                                  >
+                                    <Edit className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteFAQ(faq.id)}
+                                    className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                                  >
+                                    <Trash2 className="h-3 w-3 text-red-600 dark:text-red-400" />
+                                  </Button>
+                                </div>
+                              )}
+                              {expandedFaqs.has(faq.id) ? (
+                                <ChevronUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                              )}
+                            </div>
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="px-4 pb-4">
-                          <div className="text-sm text-muted-foreground leading-relaxed">
+                          <div className="text-sm text-muted-foreground leading-relaxed bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg">
                             {faq.answer}
                           </div>
                         </CollapsibleContent>
@@ -498,18 +699,21 @@ export default function SuportePage() {
             </TabsContent>
 
             <TabsContent value="tickets" className="space-y-4">
-              <Card>
+              <Card className="border-orange-200/20 dark:border-orange-800/20">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Tickets de Suporte</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        Tickets de Suporte
+                      </CardTitle>
                       <CardDescription>
                         Gerencie suas solicitações de suporte
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-4">
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[180px] border-orange-200 focus:border-orange-500">
                           <SelectValue placeholder="Categoria" />
                         </SelectTrigger>
                         <SelectContent>
@@ -526,10 +730,13 @@ export default function SuportePage() {
                           placeholder="Buscar tickets..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 w-[250px]"
+                          className="pl-10 w-[250px] border-orange-200 focus:border-orange-500"
                         />
                       </div>
-                      <Button onClick={() => setShowNewTicketDialog(true)}>
+                      <Button 
+                        onClick={() => setShowNewTicketDialog(true)}
+                        className={`${gradients.buttonOrange} text-white`}
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Novo Ticket
                       </Button>
@@ -541,13 +748,14 @@ export default function SuportePage() {
                     {filteredTickets.map((ticket) => (
                       <div
                         key={ticket.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                        className="flex items-center justify-between p-4 border border-orange-200/20 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/30 cursor-pointer transition-colors"
                         onClick={() => openChat(ticket)}
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex flex-col">
                             <div className="font-medium">{ticket.subject}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                              <User className="h-3 w-3" />
                               {ticket.studentName} • {ticket.category}
                             </div>
                           </div>
@@ -572,12 +780,21 @@ export default function SuportePage() {
                     ))}
                     
                     {filteredTickets.length === 0 && (
-                      <div className="text-center py-8">
-                        <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-2 text-sm font-semibold">Nenhum ticket encontrado</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                      <div className="text-center py-12">
+                        <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Nenhum ticket encontrado</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
                           {searchTerm ? "Tente ajustar os filtros." : "Crie seu primeiro ticket de suporte."}
                         </p>
+                        {!searchTerm && (
+                          <Button 
+                            onClick={() => setShowNewTicketDialog(true)}
+                            className={`${gradients.buttonOrange} text-white`}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Criar Primeiro Ticket
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -587,15 +804,15 @@ export default function SuportePage() {
           </Tabs>
         </div>
       ) : (
-        // Chat View
+        // Chat View com design melhorado
         <div className="space-y-4">
           {selectedTicket && (
-            <Card>
-              <CardHeader>
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
+              <CardHeader className={`${gradients.cardOrange} rounded-t-lg`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>{selectedTicket.subject}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-white">{selectedTicket.subject}</CardTitle>
+                    <CardDescription className="text-orange-100">
                       {selectedTicket.studentName} • {selectedTicket.category}
                     </CardDescription>
                   </div>
@@ -609,8 +826,8 @@ export default function SuportePage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-0">
+                <div className="space-y-4 p-6">
                   <ScrollArea className="h-[400px]">
                     <div className="space-y-4">
                       {selectedTicket.messages.map((message) => (
@@ -621,14 +838,14 @@ export default function SuportePage() {
                           <div className={`flex items-start gap-3 max-w-[70%] ${message.sender.role === "student" ? "" : "flex-row-reverse"}`}>
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={message.sender.avatar} />
-                              <AvatarFallback>
+                              <AvatarFallback className="bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
                                 {message.sender.name.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
                             <div className={`rounded-lg p-3 ${
                               message.sender.role === "student" 
-                                ? "bg-muted" 
-                                : "bg-primary text-primary-foreground"
+                                ? "bg-gray-100 dark:bg-gray-800" 
+                                : `${gradients.orange} text-white`
                             }`}>
                               <div className="text-sm">{message.content}</div>
                               <div className="text-xs text-muted-foreground mt-1">
@@ -641,15 +858,19 @@ export default function SuportePage() {
                     </div>
                   </ScrollArea>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-4 border-t border-orange-200/20">
                     <Textarea
                       placeholder="Digite sua mensagem..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      className="flex-1"
+                      className="flex-1 border-orange-200 focus:border-orange-500"
                       rows={2}
                     />
-                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={!newMessage.trim()}
+                      className={`${gradients.buttonOrange} text-white`}
+                    >
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
@@ -660,12 +881,15 @@ export default function SuportePage() {
         </div>
       )}
 
-      {/* Dialog para novo ticket */}
+      {/* Dialog para novo ticket com design melhorado */}
       <Dialog open={showNewTicketDialog} onOpenChange={setShowNewTicketDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Criar Novo Ticket</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-2xl border-orange-200/20">
+          <DialogHeader className={`${gradients.cardOrange} rounded-t-lg -m-6 mb-6 p-6`}>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Criar Novo Ticket
+            </DialogTitle>
+            <DialogDescription className="text-orange-100">
               Descreva seu problema para que possamos ajudá-lo
             </DialogDescription>
           </DialogHeader>
@@ -677,6 +901,7 @@ export default function SuportePage() {
                 value={newTicket.subject}
                 onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})}
                 placeholder="Ex: Problema com login"
+                className="border-orange-200 focus:border-orange-500"
               />
             </div>
             
@@ -684,7 +909,7 @@ export default function SuportePage() {
               <div className="space-y-2">
                 <Label htmlFor="category">Categoria</Label>
                 <Select value={newTicket.category} onValueChange={(value) => setNewTicket({...newTicket, category: value})}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-orange-200 focus:border-orange-500">
                     <SelectValue placeholder="Selecione a categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -698,7 +923,7 @@ export default function SuportePage() {
               <div className="space-y-2">
                 <Label htmlFor="priority">Prioridade</Label>
                 <Select value={newTicket.priority} onValueChange={(value: any) => setNewTicket({...newTicket, priority: value})}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-orange-200 focus:border-orange-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -719,26 +944,185 @@ export default function SuportePage() {
                 onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
                 placeholder="Descreva detalhadamente o problema que está enfrentando..."
                 rows={4}
+                className="border-orange-200 focus:border-orange-500"
               />
             </div>
             
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowNewTicketDialog(false)}>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNewTicketDialog(false)}
+                className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+              >
                 Cancelar
               </Button>
-              <Button onClick={() => {
-                // Implementar criação do ticket
-                toast.success("Ticket criado com sucesso!");
-                setShowNewTicketDialog(false);
-                setNewTicket({
-                  subject: "",
-                  category: "",
-                  priority: "media",
-                  description: ""
-                });
-              }}>
+              <Button 
+                onClick={() => {
+                  toast.success("Ticket criado com sucesso!");
+                  setShowNewTicketDialog(false);
+                  setNewTicket({
+                    subject: "",
+                    category: "",
+                    priority: "media",
+                    description: ""
+                  });
+                }}
+                className={`${gradients.buttonOrange} text-white`}
+              >
                 <Send className="mr-2 h-4 w-4" />
                 Enviar Ticket
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar FAQ */}
+      <Dialog open={showEditFAQDialog} onOpenChange={setShowEditFAQDialog}>
+        <DialogContent className="max-w-2xl border-orange-200/20">
+          <DialogHeader className={`${gradients.cardOrange} rounded-t-lg -m-6 mb-6 p-6`}>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Editar FAQ
+            </DialogTitle>
+            <DialogDescription className="text-orange-100">
+              Atualize as informações da pergunta frequente
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-question">Pergunta</Label>
+              <Input
+                id="edit-question"
+                value={editingFAQ?.question || ""}
+                onChange={(e) => setEditingFAQ(editingFAQ ? {...editingFAQ, question: e.target.value} : null)}
+                placeholder="Digite a pergunta..."
+                className="border-orange-200 focus:border-orange-500"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Categoria</Label>
+              <Select 
+                value={editingFAQ?.category || ""} 
+                onValueChange={(value) => setEditingFAQ(editingFAQ ? {...editingFAQ, category: value} : null)}
+              >
+                <SelectTrigger className="border-orange-200 focus:border-orange-500">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Geral">Geral</SelectItem>
+                  <SelectItem value="Estudo">Estudo</SelectItem>
+                  <SelectItem value="Materiais">Materiais</SelectItem>
+                  <SelectItem value="Personalização">Personalização</SelectItem>
+                  <SelectItem value="Provas">Provas</SelectItem>
+                  <SelectItem value="Conta">Conta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-answer">Resposta</Label>
+              <Textarea
+                id="edit-answer"
+                value={editingFAQ?.answer || ""}
+                onChange={(e) => setEditingFAQ(editingFAQ ? {...editingFAQ, answer: e.target.value} : null)}
+                placeholder="Digite a resposta detalhada..."
+                rows={6}
+                className="border-orange-200 focus:border-orange-500"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEditFAQDialog(false)}
+                className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSaveFAQ}
+                className={`${gradients.buttonOrange} text-white`}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para criar nova FAQ */}
+      <Dialog open={showNewFAQDialog} onOpenChange={setShowNewFAQDialog}>
+        <DialogContent className="max-w-2xl border-orange-200/20">
+          <DialogHeader className={`${gradients.cardOrange} rounded-t-lg -m-6 mb-6 p-6`}>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Criar Nova FAQ
+            </DialogTitle>
+            <DialogDescription className="text-orange-100">
+              Adicione uma nova pergunta frequente para ajudar os usuários
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-question">Pergunta</Label>
+              <Input
+                id="new-question"
+                value={newFAQ.question}
+                onChange={(e) => setNewFAQ({...newFAQ, question: e.target.value})}
+                placeholder="Digite a pergunta..."
+                className="border-orange-200 focus:border-orange-500"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-category">Categoria</Label>
+              <Select 
+                value={newFAQ.category} 
+                onValueChange={(value) => setNewFAQ({...newFAQ, category: value})}
+              >
+                <SelectTrigger className="border-orange-200 focus:border-orange-500">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Geral">Geral</SelectItem>
+                  <SelectItem value="Estudo">Estudo</SelectItem>
+                  <SelectItem value="Materiais">Materiais</SelectItem>
+                  <SelectItem value="Personalização">Personalização</SelectItem>
+                  <SelectItem value="Provas">Provas</SelectItem>
+                  <SelectItem value="Conta">Conta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-answer">Resposta</Label>
+              <Textarea
+                id="new-answer"
+                value={newFAQ.answer}
+                onChange={(e) => setNewFAQ({...newFAQ, answer: e.target.value})}
+                placeholder="Digite a resposta detalhada..."
+                rows={6}
+                className="border-orange-200 focus:border-orange-500"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNewFAQDialog(false)}
+                className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCreateFAQ}
+                className={`${gradients.buttonOrange} text-white`}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Criar FAQ
               </Button>
             </div>
           </div>

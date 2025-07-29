@@ -10,11 +10,25 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
       return 'student'
     }
 
+    // Verificar se o usuário está autenticado primeiro
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error('❌ [ROLE] Erro de autenticação:', authError)
+      return 'student'
+    }
+
+    console.log('✅ [ROLE] Usuário autenticado:', user.id)
+
+    // Usar o ID do usuário autenticado se o userUuid fornecido for diferente
+    const userIdToUse = userUuid === user.id ? userUuid : user.id
+    console.log('🔍 [ROLE] Usando ID:', userIdToUse)
+
     // Buscar role diretamente sem verificar autenticação novamente
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', userUuid)
+      .eq('user_uuid', userIdToUse)
       .single()
 
     console.log('🔍 [ROLE] Resultado da busca:', { data, error })
@@ -35,6 +49,76 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
   } catch (error) {
     console.error('❌ [ROLE] Erro inesperado:', error)
     return 'student'
+  }
+}
+
+// Função otimizada para verificação rápida de autenticação e role
+export async function getAuthAndRole(): Promise<{ user: any; role: string; isAuthenticated: boolean }> {
+  try {
+    console.log('🔍 [AUTH] Verificação rápida de autenticação e role...')
+    const supabase = createClient()
+    
+    // Primeiro tentar obter a sessão diretamente
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('❌ [AUTH] Erro ao obter sessão:', sessionError)
+    }
+    
+    if (!session?.user) {
+      console.log('❌ [AUTH] Nenhuma sessão encontrada')
+      return { user: null, role: 'student', isAuthenticated: false }
+    }
+
+    console.log('✅ [AUTH] Sessão encontrada:', session.user.id)
+    console.log('✅ [AUTH] Email do usuário:', session.user.email)
+    
+    // Buscar role de forma otimizada
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_uuid', session.user.id)
+      .single()
+
+    if (error) {
+      console.log('ℹ️ [AUTH] Role não encontrada na tabela user_roles')
+      console.log('ℹ️ [AUTH] Erro:', error.message)
+      
+      // Se o usuário não tem role definido, vamos criar um padrão
+      if (error.code === 'PGRST116') {
+        console.log('ℹ️ [AUTH] Criando role padrão para o usuário...')
+        
+        try {
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_uuid: session.user.id,
+              role: 'student',
+              first_login: true,
+              profile_completed: false
+            })
+          
+          if (insertError) {
+            console.error('❌ [AUTH] Erro ao criar role padrão:', insertError)
+          } else {
+            console.log('✅ [AUTH] Role padrão criado com sucesso')
+          }
+        } catch (insertError) {
+          console.error('❌ [AUTH] Erro ao criar role padrão:', insertError)
+        }
+      }
+      
+      // Retornar student como padrão
+      return { user: session.user, role: 'student', isAuthenticated: true }
+    }
+
+    console.log('✅ [AUTH] Role encontrada:', data?.role)
+    return { user: session.user, role: data?.role || 'student', isAuthenticated: true }
+  } catch (error) {
+    console.error('❌ [AUTH] Erro na verificação rápida:', error)
+    console.error('❌ [AUTH] Tipo do erro:', typeof error)
+    console.error('❌ [AUTH] Mensagem do erro:', error instanceof Error ? error.message : 'Erro desconhecido')
+    return { user: null, role: 'student', isAuthenticated: false }
   }
 }
 

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Menu, X, User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage, AvatarWithAutoFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { getUserRoleClient } from "@/lib/get-user-role"
+import { getUserRoleClient, getAuthAndRole } from "@/lib/get-user-role"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -36,57 +36,105 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [isLoadingRole, setIsLoadingRole] = useState(true) // Novo estado para controlar loading
 
   useEffect(() => {
+    // Limpar cookies corrompidos do localStorage
+    const clearCorruptedCookies = () => {
+      try {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.includes('supabase') || key.includes('auth')) {
+            try {
+              JSON.parse(localStorage.getItem(key) || '')
+            } catch (error) {
+              console.log('Removendo cookie corrompido:', key)
+              localStorage.removeItem(key)
+            }
+          }
+        })
+      } catch (error) {
+        console.warn('Erro ao limpar cookies corrompidos:', error)
+      }
+    }
+
+    // Limpar cookies corrompidos imediatamente
+    clearCorruptedCookies()
+    
+    // Configurar limpeza periódica a cada 30 segundos
+    const cleanupInterval = setInterval(clearCorruptedCookies, 30000)
+    
     const getUser = async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (user) {
-        setUserEmail(user.email)
-        setUserInitials(user.email ? user.email.substring(0, 2).toUpperCase() : "US")
+      try {
+        console.log("🔍 [DASHBOARD] Iniciando carregamento do perfil...")
         
-        // Buscar role do usuário
-        try {
-          console.log("🔍 [DASHBOARD] Iniciando busca do role para:", user.email);
-          const role = await getUserRoleClient(user.id);
-          console.log("✅ [DASHBOARD] Role encontrado:", role);
-          setUserRole(role);
-        } catch (error) {
-          console.error("❌ [DASHBOARD] Erro ao buscar role:", error);
-          setUserRole("student");
-        } finally {
-          setIsLoadingRole(false);
+        // Primeiro, tentar obter a sessão diretamente
+        const supabase = createClient()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("❌ [DASHBOARD] Erro ao obter sessão:", sessionError)
         }
-      } else {
+        
+        if (session?.user) {
+          console.log("✅ [DASHBOARD] Sessão encontrada:", session.user.email)
+          setUserEmail(session.user.email)
+          setUserInitials(session.user.email ? session.user.email.substring(0, 2).toUpperCase() : "US")
+          
+          // Buscar role do usuário
+          try {
+            console.log("🔍 [DASHBOARD] Buscando role do usuário...")
+            const { role, isAuthenticated } = await getAuthAndRole()
+            console.log("✅ [DASHBOARD] Role encontrado:", role)
+            console.log("✅ [DASHBOARD] Usuário autenticado:", isAuthenticated)
+            setUserRole(role)
+          } catch (roleError) {
+            console.error("❌ [DASHBOARD] Erro ao buscar role:", roleError)
+            console.log("ℹ️ [DASHBOARD] Definindo role padrão como student")
+            setUserRole("student")
+          }
+        } else {
+          console.log("❌ [DASHBOARD] Nenhuma sessão encontrada")
+          setUserEmail(null)
+          setUserInitials(null)
+          setUserRole(null)
+        }
+      } catch (error) {
+        console.error("❌ [DASHBOARD] Erro ao carregar perfil:", error)
         setUserEmail(null)
         setUserInitials(null)
         setUserRole(null)
+      } finally {
         setIsLoadingRole(false)
       }
     }
+    
     getUser()
 
     const supabase = createClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("🔄 [DASHBOARD] Auth state change:", event, session?.user?.email)
+      
       if (session?.user) {
+        console.log("✅ [DASHBOARD] Sessão ativa, atualizando perfil...")
         setUserEmail(session.user.email)
         setUserInitials(session.user.email ? session.user.email.substring(0, 2).toUpperCase() : "US")
         
         // Buscar role do usuário quando a sessão mudar
         try {
-          console.log("🔄 [DASHBOARD] Sessão mudou, buscando role para:", session.user.email);
-          const role = await getUserRoleClient(session.user.id);
-          console.log("✅ [DASHBOARD] Role atualizado:", role);
-          setUserRole(role);
+          console.log("🔍 [DASHBOARD] Buscando role após mudança de estado...")
+          const { role, isAuthenticated } = await getAuthAndRole()
+          console.log("✅ [DASHBOARD] Role atualizado:", role)
+          console.log("✅ [DASHBOARD] Usuário autenticado:", isAuthenticated)
+          setUserRole(role)
         } catch (error) {
-          console.error("❌ [DASHBOARD] Erro ao buscar role:", error);
-          setUserRole("student");
+          console.error("❌ [DASHBOARD] Erro ao buscar role:", error)
+          console.log("ℹ️ [DASHBOARD] Definindo role padrão como student")
+          setUserRole("student")
         } finally {
-          setIsLoadingRole(false);
+          setIsLoadingRole(false)
         }
       } else {
+        console.log("❌ [DASHBOARD] Sessão encerrada")
         setUserEmail(null)
         setUserInitials(null)
         setUserRole(null)
@@ -96,6 +144,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
     return () => {
       subscription.unsubscribe()
+      clearInterval(cleanupInterval)
     }
   }, [])
 
@@ -180,10 +229,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
-                        <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
-                      </Avatar>
+                      <AvatarWithAutoFallback 
+                        email={userEmail ?? undefined}
+                        fallback={userInitials}
+                        size="sm"
+                        className="h-8 w-8"
+                      />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -235,7 +286,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Sidebar Desktop */}
       <div className={cn(
-        "hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30 bg-background border-r transition-all duration-300",
+        "hidden md:flex md:flex-col md:fixed md:inset-y-0 z-sidebar bg-background border-r transition-all duration-300",
         collapsed ? "w-16" : "w-72"
       )}>
         {/* Header do Sidebar */}
@@ -262,8 +313,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <SidebarNav items={sidebarNavItems} collapsed={collapsed} />
         </div>
 
-        {/* Footer do Sidebar Desktop */}
-        <div className="border-t p-3">
+        {/* Footer do Sidebar Desktop - Corrigido z-index e posicionamento */}
+        <div className="border-t p-3 relative z-20 bg-background">
           <div className={cn(
             "space-y-3",
             collapsed && "flex flex-col items-center space-y-2"
@@ -279,7 +330,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
             {!collapsed && <Separator />}
 
-            {/* User Profile */}
+            {/* User Profile - Corrigido z-index e posicionamento */}
             {userEmail && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -290,10 +341,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
                       collapsed && "w-10 h-10 p-0 justify-center"
                     )}
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
-                      <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
-                    </Avatar>
+                    <AvatarWithAutoFallback 
+                      email={userEmail ?? undefined}
+                      fallback={userInitials}
+                      size="sm"
+                      className="h-8 w-8"
+                    />
                     {!collapsed && (
                       <div className="ml-3 flex-1 text-left">
                         <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
@@ -305,10 +358,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                  className="w-56" 
+                  className="w-56 z-dropdown" 
                   align={collapsed ? "end" : "start"} 
                   side={collapsed ? "right" : "top"}
                   forceMount
+                  sideOffset={5}
                 >
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
@@ -343,7 +397,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Corrigido padding para evitar sobreposição */}
       <main className={cn(
         "flex-1 transition-all duration-300 md:pl-72",
         collapsed && "md:pl-16"

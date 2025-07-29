@@ -22,7 +22,8 @@ import {
   ClipboardCheck,
   Library,
   Users,
-  Archive
+  Archive,
+  Crown
 } from "lucide-react"
 import {
   Tooltip,
@@ -30,6 +31,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { createClient } from "@/lib/supabase/client"
+import { getAuthAndRole } from "@/lib/get-user-role"
+import { useState, useEffect } from "react"
 
 interface SidebarNavItem {
   href: string
@@ -45,11 +49,142 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 
 export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
   const pathname = usePathname()
+  const [userRole, setUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadUserRole = async () => {
+      try {
+        const { role } = await getAuthAndRole()
+        setUserRole(role)
+      } catch (error) {
+        console.error('Erro ao carregar role:', error)
+        setUserRole('student')
+      }
+    }
+
+    loadUserRole()
+  }, [])
+
+  // Função para obter os itens do menu baseados no role
+  const getMenuItems = (): SidebarNavItem[] => {
+    const isTeacher = userRole === 'teacher' || userRole === 'admin'
+    
+    if (isTeacher) {
+      return [
+        {
+          href: "/teacher",
+          title: "Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          href: "/cursos",
+          title: "Cursos",
+          icon: BookOpen,
+        },
+        {
+          href: "/flashcards",
+          title: "Flashcards",
+          icon: BookText,
+        },
+        {
+          href: "/quiz",
+          title: "Quiz",
+          icon: GraduationCap,
+        },
+        {
+          href: "/provas",
+          title: "Provas",
+          icon: FileText,
+        },
+        {
+          href: "/livros",
+          title: "Acervo Digital",
+          icon: Archive,
+        },
+        {
+          href: "/redacao",
+          title: "Redação",
+          icon: PenTool,
+        },
+        {
+          href: "/calendario",
+          title: "Calendário",
+          icon: Calendar,
+        },
+        {
+          href: "/community",
+          title: "Comunidade",
+          icon: Users2,
+        },
+        {
+          href: "/suporte",
+          title: "Suporte",
+          icon: HelpCircle,
+        },
+      ]
+    } else {
+      // Menu para estudantes
+      return [
+        {
+          href: "/dashboard",
+          title: "Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          href: "/cursos",
+          title: "Cursos",
+          icon: BookOpen,
+        },
+        {
+          href: "/flashcards",
+          title: "Flashcards",
+          icon: BookText,
+        },
+        {
+          href: "/quiz",
+          title: "Quiz",
+          icon: GraduationCap,
+        },
+        {
+          href: "/provas",
+          title: "Provas",
+          icon: FileText,
+        },
+        {
+          href: "/livros",
+          title: "Acervo Digital",
+          icon: Archive,
+        },
+        {
+          href: "/redacao",
+          title: "Redação",
+          icon: PenTool,
+        },
+        {
+          href: "/calendario",
+          title: "Calendário",
+          icon: Calendar,
+        },
+        {
+          href: "/community",
+          title: "Comunidade",
+          icon: Users2,
+        },
+        {
+          href: "/suporte",
+          title: "Suporte",
+          icon: HelpCircle,
+        },
+      ]
+    }
+  }
+
+  const menuItems = getMenuItems()
 
   return (
     <TooltipProvider>
       <nav className={cn("flex flex-col space-y-1", className)} {...props}>
-        {items.map((item) => {
+        {menuItems.map((item) => {
           const isActive = pathname === item.href || 
             (item.href !== "/" && pathname.startsWith(item.href))
           
@@ -97,6 +232,7 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
   )
 }
 
+// Mantendo a exportação original para compatibilidade
 export const sidebarNavItems: SidebarNavItem[] = [
   {
     href: "/dashboard",
@@ -120,7 +256,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
   },
   {
     href: "/livros",
-    title: "Acervo",
+    title: "Acervo Digital",
     icon: Archive,
   },
   {

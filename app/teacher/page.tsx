@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState, useEffect } from "react"
+import { gradients } from "@/lib/gradients"
 import {
   Users,
   FileText,
@@ -25,10 +30,38 @@ import {
   Calendar,
   Eye,
   Edit,
+  TrendingUp,
+  Award,
+  Zap,
+  Lightbulb,
+  BookOpen,
+  Headphones,
+  Activity,
+  Target,
+  Trophy,
+  Sparkles,
+  ArrowRight,
+  Filter,
+  MoreHorizontal,
+  Play,
+  Pause,
+  RefreshCw,
+  Bell,
+  Mail,
+  Shield,
+  Crown,
+  GraduationCap,
+  Clock3,
+  Timer,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRedacoesProfessor, getTurmasProfessor, getEstatisticasProfessor, corrigirRedacaoIA } from "@/app/actions"
 import { CorrecaoDetalhada } from "@/components/correcao-detalhada"
+import { toast } from "sonner"
 
 interface RedacaoProfessor {
   id: number
@@ -91,7 +124,6 @@ export default function TeacherDashboard() {
         getEstatisticasProfessor(),
       ])
 
-      // Garantir que redacoesData seja sempre um array
       setRedacoes(Array.isArray(redacoesData) ? redacoesData : [])
       setTurmas(Array.isArray(turmasData) ? turmasData : [])
       setStats(statsData || {
@@ -103,7 +135,6 @@ export default function TeacherDashboard() {
       })
     } catch (error) {
       console.error("Erro ao carregar dados:", error)
-      // Em caso de erro, definir arrays vazios
       setRedacoes([])
       setTurmas([])
       setStats({
@@ -122,9 +153,11 @@ export default function TeacherDashboard() {
     setCorrigindoIA(redacaoId)
     try {
       await corrigirRedacaoIA(redacaoId)
-      await loadData() // Recarregar dados
+      await loadData()
+      toast.success("Correção IA concluída!")
     } catch (error) {
       console.error("Erro na correção IA:", error)
+      toast.error("Erro na correção IA")
     } finally {
       setCorrigindoIA(null)
     }
@@ -137,15 +170,15 @@ export default function TeacherDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pendente":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
       case "em_correcao":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30"
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800"
       case "corrigida":
-        return "bg-green-500/20 text-green-700 border-green-500/30"
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800"
       case "revisada":
-        return "bg-purple-500/20 text-purple-700 border-purple-500/30"
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800"
       default:
-        return "bg-gray-500/20 text-gray-700 border-gray-500/30"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 border-gray-200 dark:border-gray-800"
     }
   }
 
@@ -180,7 +213,7 @@ export default function TeacherDashboard() {
       <DashboardShell>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
             <p className="text-muted-foreground">Carregando área do professor...</p>
           </div>
         </div>
@@ -188,7 +221,6 @@ export default function TeacherDashboard() {
     )
   }
 
-  // Se estiver em modo de correção detalhada
   if (correcaoDetalhada) {
     return (
       <CorrecaoDetalhada 
@@ -200,19 +232,43 @@ export default function TeacherDashboard() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Área do Professor</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie suas turmas, corrija redações e acompanhe o progresso dos alunos
-          </p>
+      {/* Header com gradiente */}
+      <div className={`${gradients.cardOrange} rounded-xl p-6 mb-6 border border-orange-200/20 dark:border-orange-800/20`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`${gradients.orange} p-3 rounded-lg`}>
+              <GraduationCap className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Área do Professor
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Gerencie suas turmas, corrija redações e acompanhe o progresso dos alunos
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+            <Button size="sm" className={`${gradients.buttonOrange} text-white`}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Turma
+            </Button>
+          </div>
         </div>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="correcoes">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 bg-orange-50 dark:bg-orange-950/30">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            <BarChart3 className="h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="correcoes" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            <Edit className="h-4 w-4" />
             Correções
             {stats.pendentes > 0 && (
               <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs">
@@ -220,66 +276,152 @@ export default function TeacherDashboard() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="turmas">Turmas</TabsTrigger>
-          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
-          <TabsTrigger value="configuracoes">Config</TabsTrigger>
+          <TabsTrigger value="turmas" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            <Users className="h-4 w-4" />
+            Turmas
+          </TabsTrigger>
+          <TabsTrigger value="relatorios" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            <BarChart3 className="h-4 w-4" />
+            Relatórios
+          </TabsTrigger>
+          <TabsTrigger value="configuracoes" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+            <Settings className="h-4 w-4" />
+            Config
+          </TabsTrigger>
         </TabsList>
 
         {/* Dashboard Tab */}
         <TabsContent value="dashboard" className="space-y-6">
-          {/* Cards de Estatísticas */}
+          {/* Cards de Estatísticas com gradientes */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="bg-gradient-to-b from-[#FF8800] to-[#FF4000] border-primary/50 text-white">
+            <Card className={`${gradients.cardOrange} border-orange-200/20 dark:border-orange-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white">Total de Redações</CardTitle>
-                <FileText className="h-4 w-4 text-white/80" />
+                <CardTitle className="text-sm font-medium">Total de Redações</CardTitle>
+                <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{stats.total_redacoes}</div>
-                <p className="text-xs text-white/70">Recebidas este mês</p>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {stats.total_redacoes}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recebidas este mês
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-b from-[#FF8800] to-[#FF4000] border-primary/50 text-white">
+            <Card className={`${gradients.cardBlue} border-blue-200/20 dark:border-blue-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white">Pendentes</CardTitle>
-                <Clock className="h-4 w-4 text-white/80" />
+                <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{stats.pendentes}</div>
-                <p className="text-xs text-white/70">Aguardando correção</p>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {stats.pendentes}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Aguardando correção
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-b from-[#FF8800] to-[#FF4000] border-primary/50 text-white">
+            <Card className={`${gradients.cardGreen} border-green-200/20 dark:border-green-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white">Corrigidas Hoje</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-white/80" />
+                <CardTitle className="text-sm font-medium">Corrigidas Hoje</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{stats.corrigidas_hoje}</div>
-                <p className="text-xs text-white/70">Meta: 10 por dia</p>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {stats.corrigidas_hoje}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Meta: 10 por dia
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-b from-[#FF8800] to-[#FF4000] border-primary/50 text-white">
+            <Card className={`${gradients.cardPurple} border-purple-200/20 dark:border-purple-800/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white">Total de Alunos</CardTitle>
-                <Users className="h-4 w-4 text-white/80" />
+                <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
+                <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{stats.total_alunos}</div>
-                <p className="text-xs text-white/70">Em todas as turmas</p>
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {stats.total_alunos}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Em todas as turmas
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Turmas e Ações Rápidas */}
+          {/* Seção de Ações Rápidas */}
+          <Card className="border-orange-200/20 dark:border-orange-800/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                Ações Rápidas
+              </CardTitle>
+              <CardDescription>
+                Ferramentas mais utilizadas para otimizar seu trabalho
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+                  onClick={() => setActiveTab("correcoes")}
+                >
+                  <Bot className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  <span className="font-medium">Correção IA</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Correção automática em massa
+                  </span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-blue-200 hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-950"
+                >
+                  <Download className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">Exportar</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Relatórios e dados
+                  </span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950"
+                >
+                  <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <span className="font-medium">Feedback</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Áudio e comentários
+                  </span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex-col gap-2 border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950"
+                >
+                  <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium">Agendar</span>
+                  <span className="text-xs text-muted-foreground text-center">
+                    Correções programadas
+                  </span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Turmas e Produtividade */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="bg-gradient-to-br from-primary/20 to-background border-primary/50">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                  <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   Minhas Turmas
                 </CardTitle>
                 <CardDescription>Visão geral das suas turmas ativas</CardDescription>
@@ -287,50 +429,64 @@ export default function TeacherDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {Array.isArray(turmas) ? turmas.slice(0, 3).map((turma) => (
-                    <div key={turma.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium">{turma.nome}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {turma.total_alunos} alunos • {turma.periodo}
-                        </p>
+                    <div key={turma.id} className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200/20">
+                      <div className="flex items-center gap-3">
+                        <div className={`${gradients.orange} p-2 rounded-lg`}>
+                          <Users className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{turma.nome}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {turma.total_alunos} alunos • {turma.periodo}
+                          </p>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <Badge variant="secondary">{turma.codigo_acesso}</Badge>
+                        <Badge variant="outline" className="mb-1">{turma.codigo_acesso}</Badge>
                         {turma.redacoes_pendentes > 0 && (
-                          <p className="text-xs text-orange-600 mt-1">
+                          <p className="text-xs text-orange-600 dark:text-orange-400">
                             {turma.redacoes_pendentes} pendente{turma.redacoes_pendentes !== 1 ? "s" : ""}
                           </p>
                         )}
                       </div>
                     </div>
-                  )) : null}
+                  )) : (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma turma encontrada</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-primary/20 to-background border-primary/50">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
-                <CardTitle>Ações Rápidas</CardTitle>
-                <CardDescription>Ferramentas mais utilizadas</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Produtividade
+                </CardTitle>
+                <CardDescription>Seu desempenho esta semana</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3">
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Bot className="h-4 w-4 mr-2" />
-                    Correção IA em Massa
-                  </Button>
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Exportar Relatório
-                  </Button>
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Feedback por Áudio
-                  </Button>
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Agendar Correções
-                  </Button>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Correções Realizadas</span>
+                    <span className="font-medium text-orange-600 dark:text-orange-400">28</span>
+                  </div>
+                  <Progress value={85} className="h-2" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Tempo Médio</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-400">12 min</span>
+                  </div>
+                  <Progress value={75} className="h-2" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Uso da IA</span>
+                    <span className="font-medium text-green-600 dark:text-green-400">85%</span>
+                  </div>
+                  <Progress value={85} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -340,77 +496,103 @@ export default function TeacherDashboard() {
         {/* Correções Tab */}
         <TabsContent value="correcoes" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Correções de Redação</h2>
+            <div>
+              <h2 className="text-2xl font-bold">Correções de Redação</h2>
+              <p className="text-muted-foreground mt-1">
+                Gerencie e corrija as redações dos seus alunos
+              </p>
+            </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                 <Bot className="h-4 w-4 mr-2" />
                 IA em Massa
               </Button>
-              <Button size="sm">
-                <Settings className="h-4 w-4 mr-2" />
+              <Button size="sm" className={`${gradients.buttonOrange} text-white`}>
+                <Filter className="h-4 w-4 mr-2" />
                 Filtros
               </Button>
             </div>
           </div>
 
-          {/* Filtros */}
-          <div className="flex flex-wrap items-center gap-4 p-4 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Buscar por aluno ou título..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-3 py-1 border rounded-md bg-background"
-              />
-            </div>
+          {/* Filtros Melhorados */}
+          <Card className="border-orange-200/20 dark:border-orange-800/20">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por aluno ou título..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-orange-200 focus:border-orange-500"
+                  />
+                </div>
 
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="px-3 py-1 border rounded-md bg-background"
-            >
-              <option value="todos">Todos os Status</option>
-              <option value="pendente">Pendente</option>
-              <option value="em_correcao">Em Correção</option>
-              <option value="corrigida">Corrigida</option>
-            </select>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="w-[180px] border-orange-200 focus:border-orange-500">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="em_correcao">Em Correção</SelectItem>
+                    <SelectItem value="corrigida">Corrigida</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <select
-              value={filtroTurma}
-              onChange={(e) => setFiltroTurma(e.target.value)}
-              className="px-3 py-1 border rounded-md bg-background"
-            >
-              <option value="todas">Todas as Turmas</option>
-              {Array.isArray(turmas) ? turmas.map((turma) => (
-                <option key={turma.id} value={turma.nome}>
-                  {turma.nome}
-                </option>
-              )) : null}
-            </select>
-          </div>
+                <Select value={filtroTurma} onValueChange={setFiltroTurma}>
+                  <SelectTrigger className="w-[180px] border-orange-200 focus:border-orange-500">
+                    <SelectValue placeholder="Turma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Turmas</SelectItem>
+                    {Array.isArray(turmas) ? turmas.map((turma) => (
+                      <SelectItem key={turma.id} value={turma.nome}>
+                        {turma.nome}
+                      </SelectItem>
+                    )) : null}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Lista de Redações */}
+          {/* Lista de Redações Melhorada */}
           <div className="space-y-4">
             {Array.isArray(redacoesFiltradas) ? redacoesFiltradas.map((redacao) => (
               <Card
                 key={redacao.id}
                 className={cn(
-                  "bg-gradient-to-br from-primary/10 to-background border-primary/30",
-                  redacao.urgente && "border-red-500/50 bg-red-500/5",
+                  "border-orange-200/20 dark:border-orange-800/20 hover:shadow-lg transition-all duration-200",
+                  redacao.urgente && "border-red-500/50 bg-red-50 dark:bg-red-950/20",
                 )}
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {redacao.titulo}
-                        {redacao.urgente && <Badge variant="destructive">Urgente</Badge>}
-                      </CardTitle>
-                      <CardDescription>
-                        {redacao.aluno_nome} • {redacao.turma_nome} • {redacao.tema}
-                      </CardDescription>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={`/avatars/${redacao.aluno_nome.toLowerCase().replace(' ', '-')}.jpg`} />
+                        <AvatarFallback className="bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
+                          {redacao.aluno_nome.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {redacao.titulo}
+                          {redacao.urgente && (
+                            <Badge variant="destructive" className="animate-pulse">
+                              Urgente
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <span>{redacao.aluno_nome}</span>
+                          <span>•</span>
+                          <span>{redacao.turma_nome}</span>
+                          <span>•</span>
+                          <span>{redacao.tema}</span>
+                        </CardDescription>
+                      </div>
                     </div>
                     <Badge className={getStatusColor(redacao.status)}>
                       {getStatusIcon(redacao.status)}
@@ -421,12 +603,20 @@ export default function TeacherDashboard() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>Enviado: {new Date(redacao.data_envio).toLocaleDateString()}</span>
-                      {redacao.nota_ia && <span>Nota IA: {redacao.nota_ia}/1000</span>}
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(redacao.data_envio).toLocaleDateString()}
+                      </span>
+                      {redacao.nota_ia && (
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          Nota IA: {redacao.nota_ia}/1000
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
                       </Button>
@@ -437,7 +627,7 @@ export default function TeacherDashboard() {
                             size="sm"
                             onClick={() => handleCorrecaoIA(redacao.id)}
                             disabled={corrigindoIA === redacao.id}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
                             <Bot className="h-4 w-4 mr-1" />
                             {corrigindoIA === redacao.id ? "Corrigindo..." : "IA"}
@@ -446,7 +636,7 @@ export default function TeacherDashboard() {
                           <Button
                             size="sm"
                             onClick={() => iniciarCorrecaoDetalhada(redacao.id)}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 text-white"
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Corrigir
@@ -455,13 +645,13 @@ export default function TeacherDashboard() {
                       )}
 
                       {redacao.correcao_ia && (
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                           <Edit className="h-4 w-4 mr-1" />
                           Revisar
                         </Button>
                       )}
 
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                         <Volume2 className="h-4 w-4 mr-1" />
                         Áudio
                       </Button>
@@ -483,7 +673,7 @@ export default function TeacherDashboard() {
             )) : null}
 
             {(!Array.isArray(redacoesFiltradas) || redacoesFiltradas.length === 0) && (
-              <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
+              <Card className="border-orange-200/20 dark:border-orange-800/20">
                 <CardContent className="text-center py-12">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">Nenhuma redação encontrada</h3>
@@ -497,8 +687,13 @@ export default function TeacherDashboard() {
         {/* Turmas Tab */}
         <TabsContent value="turmas" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Gerenciar Turmas</h2>
-            <Button>
+            <div>
+              <h2 className="text-2xl font-bold">Gerenciar Turmas</h2>
+              <p className="text-muted-foreground mt-1">
+                Visualize e gerencie suas turmas e alunos
+              </p>
+            </div>
+            <Button className={`${gradients.buttonOrange} text-white`}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Turma
             </Button>
@@ -506,11 +701,14 @@ export default function TeacherDashboard() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.isArray(turmas) ? turmas.map((turma) => (
-              <Card key={turma.id} className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
+              <Card key={turma.id} className="border-orange-200/20 dark:border-orange-800/20 hover:shadow-lg transition-all duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {turma.nome}
-                    <Badge variant="secondary">{turma.codigo_acesso}</Badge>
+                    <span className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      {turma.nome}
+                    </span>
+                    <Badge variant="outline">{turma.codigo_acesso}</Badge>
                   </CardTitle>
                   <CardDescription>Período: {turma.periodo}</CardDescription>
                 </CardHeader>
@@ -518,7 +716,7 @@ export default function TeacherDashboard() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Total de Alunos</span>
-                      <span className="font-medium">{turma.total_alunos}</span>
+                      <span className="font-medium text-orange-600 dark:text-orange-400">{turma.total_alunos}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Redações Pendentes</span>
@@ -527,11 +725,11 @@ export default function TeacherDashboard() {
                       </Badge>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                      <Button variant="outline" size="sm" className="flex-1 bg-transparent border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                         <Users className="h-4 w-4 mr-1" />
                         Alunos
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                      <Button variant="outline" size="sm" className="flex-1 bg-transparent border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                         <BarChart3 className="h-4 w-4 mr-1" />
                         Relatório
                       </Button>
@@ -539,23 +737,32 @@ export default function TeacherDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            )) : null}
+            )) : (
+              <div className="col-span-full text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma turma encontrada</h3>
+                <p className="text-muted-foreground">Crie sua primeira turma para começar.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         {/* Relatórios Tab */}
         <TabsContent value="relatorios" className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold mb-4">Relatórios e Análises</h2>
+            <h2 className="text-2xl font-bold mb-2">Relatórios e Análises</h2>
             <p className="text-muted-foreground">
               Acompanhe o desempenho dos seus alunos e turmas com relatórios detalhados
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-gradient-to-br from-primary/20 to-background border-primary/50">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
-                <CardTitle>Desempenho por Turma</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Desempenho por Turma
+                </CardTitle>
                 <CardDescription>Média de notas e evolução</CardDescription>
               </CardHeader>
               <CardContent>
@@ -568,29 +775,37 @@ export default function TeacherDashboard() {
                         <span className="text-sm text-muted-foreground">750/1000</span>
                       </div>
                     </div>
-                  )) : null}
+                  )) : (
+                    <div className="text-center py-8">
+                      <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">Nenhum dado disponível</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-primary/20 to-background border-primary/50">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
-                <CardTitle>Produtividade</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Produtividade
+                </CardTitle>
                 <CardDescription>Suas correções nos últimos 7 dias</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Correções Realizadas</span>
-                    <span className="font-medium">28</span>
+                    <span className="font-medium text-orange-600 dark:text-orange-400">28</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Tempo Médio por Correção</span>
-                    <span className="font-medium">12 min</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-400">12 min</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Uso da IA</span>
-                    <span className="font-medium">85%</span>
+                    <span className="font-medium text-green-600 dark:text-green-400">85%</span>
                   </div>
                 </div>
               </CardContent>
@@ -601,48 +816,54 @@ export default function TeacherDashboard() {
         {/* Configurações Tab */}
         <TabsContent value="configuracoes" className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold mb-4">Configurações</h2>
+            <h2 className="text-2xl font-bold mb-2">Configurações</h2>
             <p className="text-muted-foreground">Personalize sua experiência como professor</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
-                <CardTitle>Preferências de Correção</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Preferências de Correção
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Usar IA por padrão</span>
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" defaultChecked className="rounded border-orange-200" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Notificações por email</span>
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" defaultChecked className="rounded border-orange-200" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Feedback por áudio</span>
-                    <input type="checkbox" />
+                    <input type="checkbox" className="rounded border-orange-200" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/30">
+            <Card className="border-orange-200/20 dark:border-orange-800/20">
               <CardHeader>
-                <CardTitle>Critérios de Avaliação</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Critérios de Avaliação
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button variant="outline" className="w-full justify-start bg-transparent border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                     <Edit className="h-4 w-4 mr-2" />
                     Personalizar Critérios ENEM
                   </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button variant="outline" className="w-full justify-start bg-transparent border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                     <Download className="h-4 w-4 mr-2" />
                     Exportar Rubrica
                   </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button variant="outline" className="w-full justify-start bg-transparent border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                     <Settings className="h-4 w-4 mr-2" />
                     Configurar IA
                   </Button>
@@ -651,8 +872,7 @@ export default function TeacherDashboard() {
             </Card>
           </div>
         </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
     </DashboardShell>
   )
 }
