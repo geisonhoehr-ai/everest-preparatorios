@@ -18,9 +18,9 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { getUserRoleClient, getAuthAndRole } from "@/lib/get-user-role"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -30,165 +30,44 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const router = useRouter()
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [userInitials, setUserInitials] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<string | null>(null) // Mudança: null em vez de "student"
-  const [isLoadingRole, setIsLoadingRole] = useState(true) // Novo estado para controlar loading
-
-  useEffect(() => {
-    // Limpar cookies corrompidos do localStorage
-    const clearCorruptedCookies = () => {
-      try {
-        const keys = Object.keys(localStorage)
-        keys.forEach(key => {
-          if (key.includes('supabase') || key.includes('auth')) {
-            try {
-              JSON.parse(localStorage.getItem(key) || '')
-            } catch (error) {
-              console.log('Removendo cookie corrompido:', key)
-              localStorage.removeItem(key)
-            }
-          }
-        })
-      } catch (error) {
-        console.warn('Erro ao limpar cookies corrompidos:', error)
-      }
-    }
-
-    // Limpar cookies corrompidos imediatamente
-    clearCorruptedCookies()
-    
-    // Configurar limpeza periódica a cada 30 segundos
-    const cleanupInterval = setInterval(clearCorruptedCookies, 30000)
-    
-    const getUser = async () => {
-      try {
-        console.log("🔍 [DASHBOARD] Iniciando carregamento do perfil...")
-        
-        // Primeiro, tentar obter a sessão diretamente
-        const supabase = createClient()
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error("❌ [DASHBOARD] Erro ao obter sessão:", sessionError)
-        }
-        
-        if (session?.user) {
-          console.log("✅ [DASHBOARD] Sessão encontrada:", session.user.email)
-          setUserEmail(session.user.email)
-          setUserInitials(session.user.email ? session.user.email.substring(0, 2).toUpperCase() : "US")
-          
-          // Buscar role do usuário
-          try {
-            console.log("🔍 [DASHBOARD] Buscando role do usuário...")
-            const { role, isAuthenticated } = await getAuthAndRole()
-            console.log("✅ [DASHBOARD] Role encontrado:", role)
-            console.log("✅ [DASHBOARD] Usuário autenticado:", isAuthenticated)
-            setUserRole(role)
-          } catch (roleError) {
-            console.error("❌ [DASHBOARD] Erro ao buscar role:", roleError)
-            console.log("ℹ️ [DASHBOARD] Definindo role padrão como student")
-            setUserRole("student")
-          }
-        } else {
-          console.log("❌ [DASHBOARD] Nenhuma sessão encontrada")
-          setUserEmail(null)
-          setUserInitials(null)
-          setUserRole(null)
-        }
-      } catch (error) {
-        console.error("❌ [DASHBOARD] Erro ao carregar perfil:", error)
-        setUserEmail(null)
-        setUserInitials(null)
-        setUserRole(null)
-      } finally {
-        setIsLoadingRole(false)
-      }
-    }
-    
-    getUser()
-
-    const supabase = createClient();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 [DASHBOARD] Auth state change:", event, session?.user?.email)
-      
-      if (session?.user) {
-        console.log("✅ [DASHBOARD] Sessão ativa, atualizando perfil...")
-        setUserEmail(session.user.email)
-        setUserInitials(session.user.email ? session.user.email.substring(0, 2).toUpperCase() : "US")
-        
-        // Buscar role do usuário quando a sessão mudar
-        try {
-          console.log("🔍 [DASHBOARD] Buscando role após mudança de estado...")
-          const { role, isAuthenticated } = await getAuthAndRole()
-          console.log("✅ [DASHBOARD] Role atualizado:", role)
-          console.log("✅ [DASHBOARD] Usuário autenticado:", isAuthenticated)
-          setUserRole(role)
-        } catch (error) {
-          console.error("❌ [DASHBOARD] Erro ao buscar role:", error)
-          console.log("ℹ️ [DASHBOARD] Definindo role padrão como student")
-          setUserRole("student")
-        } finally {
-          setIsLoadingRole(false)
-        }
-      } else {
-        console.log("❌ [DASHBOARD] Sessão encerrada")
-        setUserEmail(null)
-        setUserInitials(null)
-        setUserRole(null)
-        setIsLoadingRole(false)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-      clearInterval(cleanupInterval)
-    }
-  }, [])
-
-  // Remover o useEffect duplicado que estava causando conflito
-  // useEffect(() => {
-  //   const forceRoleCheck = async () => {
-  //     const supabase = createClient();
-  //     const { data: { user } } = await supabase.auth.getUser();
-  //     if (user) {
-  //       try {
-  //         const role = await getUserRoleClient(user.id);
-  //         console.log("🔍 [FORCE CHECK] Role encontrado:", role);
-  //         setUserRole(role);
-  //       } catch (error) {
-  //         console.error("🔍 [FORCE CHECK] Erro ao buscar role:", error);
-  //       }
-  //     }
-  //   };
-    
-  //   // Aguardar um pouco para garantir que a autenticação foi carregada
-  //   setTimeout(forceRoleCheck, 1000);
-  // }, []);
+  const { user, role, isAuthenticated, isLoading, isInitialized } = useAuth()
 
   const handleLogout = async () => {
-    const supabase = createClient();
+    console.log("🔄 [DASHBOARD_SHELL] Iniciando logout...")
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/login")
   }
 
   // Função para traduzir o role
   const getRoleDisplay = (role: string | null) => {
-    if (isLoadingRole) {
-      return "Carregando...";
+    if (isLoading) {
+      return "Carregando..."
     }
     
     switch (role) {
       case "teacher":
-        return "Professor";
+        return "Professor"
       case "admin":
-        return "Administrador";
+        return "Administrador"
       case "student":
       default:
-        return "Estudante";
+        return "Estudante"
     }
+  }
+
+  // Mostrar loading apenas se ainda não inicializou
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="min-h-screen w-full flex bg-background">
+        <div className="flex items-center justify-center w-full">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -225,13 +104,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <div className="border-t p-3 space-y-3">
             <div className="flex items-center justify-between">
               <ThemeToggle />
-              {userEmail && (
+              {user?.email && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <AvatarWithAutoFallback 
-                        email={userEmail ?? undefined}
-                        fallback={userInitials}
+                        email={user.email}
+                        fallback={user.email ? user.email.substring(0, 2).toUpperCase() : "US"}
                         size="sm"
                         className="h-8 w-8"
                       />
@@ -240,9 +119,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
+                        <p className="text-sm font-medium leading-none truncate">{user.email}</p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                          {isLoading ? "Carregando..." : getRoleDisplay(role)}
                         </p>
                       </div>
                     </DropdownMenuLabel>
@@ -331,7 +210,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             {!collapsed && <Separator />}
 
             {/* User Profile - Corrigido z-index e posicionamento */}
-            {userEmail && (
+            {user?.email && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -342,16 +221,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
                     )}
                   >
                     <AvatarWithAutoFallback 
-                      email={userEmail ?? undefined}
-                      fallback={userInitials}
+                      email={user.email}
+                      fallback={user.email ? user.email.substring(0, 2).toUpperCase() : "US"}
                       size="sm"
                       className="h-8 w-8"
                     />
                     {!collapsed && (
                       <div className="ml-3 flex-1 text-left">
-                        <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
+                        <p className="text-sm font-medium leading-none truncate">{user.email}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                          {isLoading ? "Carregando..." : getRoleDisplay(role)}
                         </p>
                       </div>
                     )}
@@ -366,9 +245,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 >
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none truncate">{userEmail}</p>
+                      <p className="text-sm font-medium leading-none truncate">{user.email}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {isLoadingRole ? "Carregando..." : getRoleDisplay(userRole)}
+                        {isLoading ? "Carregando..." : getRoleDisplay(role)}
                       </p>
                     </div>
                   </DropdownMenuLabel>

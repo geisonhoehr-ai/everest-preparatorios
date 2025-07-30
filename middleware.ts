@@ -41,9 +41,47 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Refreshing the auth token
-    await supabase.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      console.warn('Error refreshing auth token in middleware:', error)
+    }
+    
+    // Se o usuário está autenticado, verificar se tem role definido
+    if (user) {
+      console.log('🔍 [MIDDLEWARE] Usuário autenticado:', user.email)
+      
+      // Verificar se tem role definido
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_uuid', user.id)
+        .single()
+      
+      if (roleError && roleError.code === 'PGRST116') {
+        // Usuário não tem role definido, criar um padrão
+        console.log('ℹ️ [MIDDLEWARE] Usuário sem role, criando padrão...')
+        
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_uuid: user.id,
+            role: 'student',
+            first_login: true,
+            profile_completed: false
+          })
+        
+        if (insertError) {
+          console.error('❌ [MIDDLEWARE] Erro ao criar role padrão:', insertError)
+        } else {
+          console.log('✅ [MIDDLEWARE] Role padrão criado com sucesso')
+        }
+      } else if (roleData) {
+        console.log('✅ [MIDDLEWARE] Role encontrado:', roleData.role)
+      }
+    }
   } catch (error) {
-    console.warn('Error refreshing auth token in middleware:', error)
+    console.warn('Error in middleware auth check:', error)
   }
 
   return supabaseResponse

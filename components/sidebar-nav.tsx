@@ -31,9 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { createClient } from "@/lib/supabase/client"
-import { getAuthAndRole } from "@/lib/get-user-role"
-import { useState, useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface SidebarNavItem {
   href: string
@@ -49,25 +47,11 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 
 export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
   const pathname = usePathname()
-  const [userRole, setUserRole] = useState<string | null>(null)
-
-  useEffect(() => {
-    const loadUserRole = async () => {
-      try {
-        const { role } = await getAuthAndRole()
-        setUserRole(role)
-      } catch (error) {
-        console.error('Erro ao carregar role:', error)
-        setUserRole('student')
-      }
-    }
-
-    loadUserRole()
-  }, [])
+  const { role } = useAuth()
 
   // Função para obter os itens do menu baseados no role
   const getMenuItems = (): SidebarNavItem[] => {
-    const isTeacher = userRole === 'teacher' || userRole === 'admin'
+    const isTeacher = role === 'teacher' || role === 'admin'
     
     if (isTeacher) {
       return [
@@ -107,14 +91,14 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           icon: PenTool,
         },
         {
-          href: "/calendario",
-          title: "Calendário",
-          icon: Calendar,
-        },
-        {
           href: "/community",
           title: "Comunidade",
           icon: Users2,
+        },
+        {
+          href: "/calendario",
+          title: "Calendário",
+          icon: Calendar,
         },
         {
           href: "/suporte",
@@ -123,17 +107,11 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
         },
       ]
     } else {
-      // Menu para estudantes
       return [
         {
           href: "/dashboard",
           title: "Dashboard",
-          icon: LayoutDashboard,
-        },
-        {
-          href: "/cursos",
-          title: "Cursos",
-          icon: BookOpen,
+          icon: Home,
         },
         {
           href: "/flashcards",
@@ -161,14 +139,14 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           icon: PenTool,
         },
         {
-          href: "/calendario",
-          title: "Calendário",
-          icon: Calendar,
-        },
-        {
           href: "/community",
           title: "Comunidade",
           icon: Users2,
+        },
+        {
+          href: "/calendario",
+          title: "Calendário",
+          icon: Calendar,
         },
         {
           href: "/suporte",
@@ -185,59 +163,55 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
     <TooltipProvider>
       <nav className={cn("flex flex-col space-y-1", className)} {...props}>
         {menuItems.map((item) => {
-          const isActive = pathname === item.href || 
-            (item.href !== "/" && pathname.startsWith(item.href))
-          
-          const navItem = (
+          const isActive = pathname === item.href
+          const Icon = item.icon
+
+          const linkContent = (
             <Link
-              key={item.href}
               href={item.href}
-              target={item.external ? "_blank" : undefined}
-              rel={item.external ? "noopener noreferrer" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
-                isActive 
-                  ? "bg-accent text-accent-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 collapsed && "justify-center px-2"
               )}
             >
-              <item.icon className={cn(
-                "flex-shrink-0",
-                collapsed ? "h-5 w-5" : "h-4 w-4"
-              )} />
-              {!collapsed && (
-                <span className="truncate">{item.title}</span>
-              )}
+              <Icon className={cn("h-4 w-4", collapsed && "h-5 w-5")} />
+              {!collapsed && <span>{item.title}</span>}
             </Link>
           )
 
           if (collapsed) {
             return (
-              <Tooltip key={item.href} delayDuration={0}>
+              <Tooltip key={item.href}>
                 <TooltipTrigger asChild>
-                  {navItem}
+                  {linkContent}
                 </TooltipTrigger>
-                <TooltipContent side="right" className="ml-2">
+                <TooltipContent side="right">
                   <p>{item.title}</p>
                 </TooltipContent>
               </Tooltip>
             )
           }
 
-          return navItem
+          return (
+            <div key={item.href}>
+              {linkContent}
+            </div>
+          )
         })}
       </nav>
     </TooltipProvider>
   )
 }
 
-// Mantendo a exportação original para compatibilidade
+// Itens padrão para compatibilidade
 export const sidebarNavItems: SidebarNavItem[] = [
   {
     href: "/dashboard",
     title: "Dashboard",
-    icon: LayoutDashboard,
+    icon: Home,
   },
   {
     href: "/flashcards",
@@ -265,14 +239,14 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: PenTool,
   },
   {
-    href: "/calendario",
-    title: "Calendário",
-    icon: Calendar,
-  },
-  {
     href: "/community",
     title: "Comunidade",
     icon: Users2,
+  },
+  {
+    href: "/calendario",
+    title: "Calendário",
+    icon: Calendar,
   },
   {
     href: "/suporte",
