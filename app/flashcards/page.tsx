@@ -563,7 +563,7 @@ export default function FlashcardsPage() {
     }
   }
 
-  const getStudyModeConfig = (mode: string) => {
+  const getStudyModeConfig = (mode: string, customQty?: number) => {
     switch (mode) {
       case "quick":
         return { quantity: 5, title: "Revisão Rápida", description: "5 cards para revisão rápida" }
@@ -574,7 +574,7 @@ export default function FlashcardsPage() {
       case "wrong":
         return { quantity: 999, title: "Cards Errados", description: "Revisar apenas cards que você errou" }
       case "custom":
-        return { quantity: customQuantity, title: "Quantidade Personalizada", description: `${customQuantity} cards selecionados` }
+        return { quantity: customQty || 10, title: "Quantidade Personalizada", description: `${customQty || 10} cards selecionados` }
       default:
         return { quantity: 20, title: "Sessão Completa", description: "Sessão completa de estudo" }
     }
@@ -601,7 +601,7 @@ export default function FlashcardsPage() {
         isValidStudyMode(mode) ? mode : "normal"
       
       // Configuração de estudo baseada no modo
-      const config = getStudyModeConfig(validMode)
+      const config = getStudyModeConfig(validMode, customQuantity)
       const quantity = customQuantity || config.quantity
       
       // Obter usuário atual
@@ -976,7 +976,11 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return
 
-      const result = await createFlashcard(user.id, selectedTopic, formQuestion, formAnswer)
+      const result = await createFlashcard(user.id, {
+        topic_id: selectedTopic,
+        question: formQuestion,
+        answer: formAnswer
+      })
       if (result.success) {
         setFormQuestion("")
         setFormAnswer("")
@@ -1002,7 +1006,10 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return
 
-      const result = await updateFlashcard(user.id, editingFlashcard.id, formQuestion, formAnswer)
+      const result = await updateFlashcard(user.id, editingFlashcard.id, {
+        question: formQuestion,
+        answer: formAnswer
+      })
       if (result.success) {
         setFormQuestion("")
         setFormAnswer("")
@@ -2277,7 +2284,7 @@ export default function FlashcardsPage() {
                   min="1"
                   max="50"
                   value={customQuantity}
-                  onChange={(e) => setCustomQuantity(parseInt(e.target.value))}
+                  onChange={(e) => setCustomQuantity(parseInt(e.target.value) || 1)}
                   className="flex-1"
                 />
                 <span className="w-12 text-center font-medium">{customQuantity}</span>

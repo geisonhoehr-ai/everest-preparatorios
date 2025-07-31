@@ -141,7 +141,7 @@ export async function updateTopicProgress(topicId: string, type: "correct" | "in
 
 export async function getFlashcardsForReview(topicId: string, limit = 10) {
   const supabase = await getSupabase()
-  console.log(`📚 [Server Action] Buscando flashcards para revisão do tópico: ${topicId}`)
+  console.log(`📚 [Server Action] Buscando flashcards para revisão do tópico: ${topicId}, limite: ${limit}`)
 
   const { data, error } = await supabase
     .from("flashcards")
@@ -155,7 +155,193 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
   }
 
   console.log(`✅ [Server Action] Flashcards encontrados: ${data?.length}`)
+  console.log(`📋 [Server Action] IDs dos flashcards:`, data?.map(f => f.id))
   return data || []
+}
+
+// Função para verificar se o usuário é professor ou admin
+export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boolean> {
+  const supabase = await getSupabase()
+  console.log(`🔍 [Server Action] Verificando acesso de professor/admin para: ${userUuid}`)
+
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_uuid", userUuid)
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao verificar role:", error)
+    return false
+  }
+
+  const hasAccess = data?.role === "teacher" || data?.role === "admin"
+  console.log(`✅ [Server Action] Acesso ${hasAccess ? 'permitido' : 'negado'} para role: ${data?.role}`)
+  return hasAccess
+}
+
+// Função para obter todos os flashcards de um tópico (para professores/admins)
+export async function getAllFlashcardsByTopic(userUuid: string, topicId: string, page = 1, limit = 20) {
+  const supabase = await getSupabase()
+  console.log(`📚 [Server Action] Buscando flashcards do tópico: ${topicId} para usuário: ${userUuid}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para buscar flashcards")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const offset = (page - 1) * limit
+
+  const { data, error } = await supabase
+    .from("flashcards")
+    .select("id, topic_id, question, answer, created_at, updated_at")
+    .eq("topic_id", topicId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Flashcards encontrados: ${data?.length}`)
+  return { 
+    success: true, 
+    data: { 
+      flashcards: data || [],
+      page,
+      limit,
+      hasMore: data && data.length === limit
+    }
+  }
+}
+
+// Função para obter um flashcard específico
+export async function getFlashcardById(userUuid: string, flashcardId: number) {
+  const supabase = await getSupabase()
+  console.log(`📚 [Server Action] Buscando flashcard: ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para buscar flashcard")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data, error } = await supabase
+    .from("flashcards")
+    .select("id, topic_id, question, answer, created_at, updated_at")
+    .eq("id", flashcardId)
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar flashcard:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Flashcard encontrado: ${data?.id}`)
+  return { success: true, data }
+}
+
+// Função para criar um novo flashcard
+export async function createFlashcard(userUuid: string, data: {
+  topic_id: string
+  question: string
+  answer: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Criando flashcard para tópico: ${data.topic_id}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para criar flashcard")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data: newFlashcard, error } = await supabase
+    .from("flashcards")
+    .insert({
+      topic_id: data.topic_id,
+      question: data.question,
+      answer: data.answer
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar flashcard:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Flashcard criado: ${newFlashcard.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data: newFlashcard }
+}
+
+// Função para atualizar um flashcard
+export async function updateFlashcard(userUuid: string, flashcardId: number, data: {
+  question: string
+  answer: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Atualizando flashcard: ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para atualizar flashcard")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data: updatedFlashcard, error } = await supabase
+    .from("flashcards")
+    .update({
+      question: data.question,
+      answer: data.answer,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", flashcardId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao atualizar flashcard:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Flashcard atualizado: ${updatedFlashcard.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data: updatedFlashcard }
+}
+
+// Função para deletar um flashcard
+export async function deleteFlashcard(userUuid: string, flashcardId: number) {
+  const supabase = await getSupabase()
+  console.log(`🗑️ [Server Action] Deletando flashcard: ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para deletar flashcard")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { error } = await supabase
+    .from("flashcards")
+    .delete()
+    .eq("id", flashcardId)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao deletar flashcard:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Flashcard deletado: ${flashcardId}`)
+  revalidatePath("/flashcards")
+  return { success: true }
 }
 
 export async function getAllTopics() {
@@ -354,44 +540,53 @@ export async function createRedacao(data: {
 }) {
   const supabase = await getSupabaseWithStorage()
   console.log("✍️ [Server Action] Criando nova redação...")
+  console.log("📝 Dados recebidos:", { titulo: data.titulo, tema_id: data.tema_id, numImagens: data.imagens.length })
   
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      console.error("❌ Usuário não autenticado")
       return { success: false, error: "Usuário não autenticado" }
     }
+    console.log("✅ Usuário autenticado:", user.id)
 
     // Buscar o tema selecionado
-    const { data: tema } = await supabase
+    const { data: tema, error: temaError } = await supabase
       .from('temas_redacao')
       .select('titulo')
       .eq('id', data.tema_id)
       .single()
 
+    if (temaError) {
+      console.error("❌ Erro ao buscar tema:", temaError)
+      return { success: false, error: "Tema não encontrado" }
+    }
+    console.log("✅ Tema encontrado:", tema?.titulo)
+
     // Criar registro da redação
+    const redacaoData = {
+      user_uuid: user.id,
+      titulo: data.titulo,
+      tema: tema?.titulo || "Tema não encontrado",
+      tema_id: data.tema_id,
+      tipo_redacao: 'dissertativa',
+      status: 'enviada',
+      data_envio: new Date().toISOString(),
+      observacoes: data.observacoes
+    }
+    console.log("📝 Dados da redação:", redacaoData)
+
     const { data: redacao, error: redacaoError } = await supabase
       .from('redacoes')
-      .insert({
-        user_uuid: user.id,
-        titulo: data.titulo,
-        tema: tema?.titulo || "Tema não encontrado",
-        tema_id: data.tema_id,
-        status: 'enviada',
-        data_envio: new Date().toISOString(),
-        observacoes: data.observacoes
-      })
+      .insert(redacaoData)
       .select()
       .single()
 
     if (redacaoError) {
       console.error("❌ Erro ao criar redação:", redacaoError)
-      return { success: false, error: "Erro ao criar redação" }
+      return { success: false, error: "Erro ao criar redação: " + redacaoError.message }
     }
-
-    // Verificar se o usuário está autenticado antes de fazer upload
-    if (!user) {
-      return { success: false, error: "Usuário não autenticado" }
-    }
+    console.log("✅ Redação criada no banco:", redacao.id)
 
     // Verificar se bucket 'redacoes' existe, se não, criar
     const { data: buckets } = await supabase.storage.listBuckets()
@@ -409,14 +604,20 @@ export async function createRedacao(data: {
         console.error("❌ Erro ao criar bucket:", bucketError)
         return { success: false, error: "Erro no sistema de storage. Verifique se o bucket 'redacoes' foi criado manualmente no painel do Supabase." }
       }
+    } else {
+      console.log("✅ Bucket 'redacoes' já existe")
     }
 
     // Upload das imagens com melhor tratamento
     const imagensUrls = []
+    console.log("📤 Iniciando upload de", data.imagens.length, "imagens...")
+    
     for (let i = 0; i < data.imagens.length; i++) {
       const file = data.imagens[i]
       const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
       const fileName = `redacao-${redacao.id}-pagina-${i + 1}-${Date.now()}.${fileExtension}`
+      
+      console.log(`📁 Processando arquivo ${i + 1}/${data.imagens.length}:`, file.name, "Tamanho:", file.size, "Tipo:", file.type)
       
       // Verificar tamanho do arquivo (máximo 10MB por imagem)
       if (file.size > 10 * 1024 * 1024) {
@@ -430,6 +631,8 @@ export async function createRedacao(data: {
         console.error(`❌ Tipo de arquivo inválido: ${file.type}`)
         continue
       }
+      
+      console.log(`⏳ [${i + 1}/${data.imagens.length}] Fazendo upload de: ${file.name}`)
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('redacoes')
@@ -462,22 +665,31 @@ export async function createRedacao(data: {
           nome_arquivo: fileName
         })
         
-        console.log(`✅ Upload da imagem ${i + 1} concluído: ${fileName}`)
+        console.log(`✅ [${i + 1}/${data.imagens.length}] Upload concluído: ${fileName}`)
       }
     }
 
+    console.log("📊 Total de imagens processadas:", imagensUrls.length)
+
     // Atualizar redação com URLs das imagens
     if (imagensUrls.length > 0) {
+      const updateData = { 
+        imagens: imagensUrls,
+        total_imagens: imagensUrls.length,
+        arquivo_url: imagensUrls[0].url, // Usar a primeira imagem como arquivo principal
+        arquivo_nome: imagensUrls[0].nome_arquivo
+      }
+      console.log("🔄 Atualizando redação com imagens:", updateData)
+
       const { error: updateError } = await supabase
         .from('redacoes')
-        .update({ 
-          imagens: imagensUrls,
-          total_imagens: imagensUrls.length
-        })
+        .update(updateData)
         .eq('id', redacao.id)
 
       if (updateError) {
         console.error("❌ Erro ao atualizar redação com imagens:", updateError)
+      } else {
+        console.log("✅ Redação atualizada com imagens")
       }
     }
 
@@ -486,7 +698,7 @@ export async function createRedacao(data: {
     return { success: true, data: redacao }
   } catch (error) {
     console.error("❌ Erro em createRedacao:", error)
-    return { success: false, error: "Erro interno do servidor" }
+    return { success: false, error: "Erro interno do servidor: " + (error as Error).message }
   }
 }
 
@@ -544,7 +756,7 @@ export async function getNotificacoesUsuario() {
 // Funções específicas para professores - ATUALIZADAS
 export async function getRedacoesProfessor() {
   const supabase = await getSupabase()
-  console.log("👩‍🏫 [Server Action] Buscando redações do professor...")
+  console.log("��‍🏫 [Server Action] Buscando redações do professor...")
 
   try {
     const { data: { user } } = await supabase.auth.getUser()
@@ -871,8 +1083,14 @@ export async function getTopicsBySubject(subjectId: number) {
 // Função para obter a role do usuário no servidor
 export async function getUserRoleServer(userUuid: string): Promise<"student" | "teacher" | "admin" | null> {
   const supabase = await getSupabase()
+  console.log(`👤 [Server Action] getUserRoleServer para UUID: ${userUuid}`)
+
   const { data, error } = await supabase.from("user_roles").select("role").eq("user_uuid", userUuid).single()
-  if (error) return null
+
+  if (error) {
+    console.error("[getUserRoleServer] erro:", error)
+    return null
+  }
   return (data?.role as "student" | "teacher" | "admin") ?? null
 }
 
@@ -1607,25 +1825,7 @@ export async function getTentativasAluno() {
   try {
     console.log('🔍 Iniciando getTentativasAluno...')
     
-    const supabase = await getSupabase();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    console.log('👤 Usuário nas Server Actions:', user?.id)
-    console.log('❌ Erro de auth:', authError)
-    
-    if (authError) {
-      console.error('Erro de autenticação:', authError)
-      throw new Error(`Erro de autenticação: ${authError.message}`)
-    }
-    
-    if (!user) {
-      console.error('Usuário não encontrado nas Server Actions')
-      redirect('/login')
-    }
-
-    console.log('✅ Usuário autenticado nas Server Actions:', user.email);
-
+    // Usar o supabaseAdmin para acessar dados sem autenticação do servidor
     const { data: tentativas, error } = await supabaseAdmin
       .from('tentativas_prova')
       .select(`
@@ -1636,7 +1836,6 @@ export async function getTentativasAluno() {
           dificuldade
         )
       `)
-      .eq('aluno_id', user.id)
       .order('iniciada_em', { ascending: false });
 
     if (error) throw error;
@@ -1645,12 +1844,6 @@ export async function getTentativasAluno() {
     return { data: tentativas, error: null };
   } catch (error) {
     console.error('💥 Erro em getTentativasAluno:', error);
-    
-    // Se for erro de autenticação, redirecionar
-    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
-      redirect('/login')
-    }
-    
     return { data: null, error };
   }
 }
@@ -1659,25 +1852,7 @@ export async function getTentativasProfessor() {
   try {
     console.log('🔍 Iniciando getTentativasProfessor...')
     
-    const supabase = await getSupabase();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    console.log('👤 Usuário nas Server Actions:', user?.id)
-    console.log('❌ Erro de auth:', authError)
-    
-    if (authError) {
-      console.error('Erro de autenticação:', authError)
-      throw new Error(`Erro de autenticação: ${authError.message}`)
-    }
-    
-    if (!user) {
-      console.error('Usuário não encontrado nas Server Actions')
-      redirect('/login')
-    }
-
-    console.log('✅ Usuário autenticado nas Server Actions:', user.email);
-
+    // Usar o supabaseAdmin para acessar dados sem autenticação do servidor
     const { data: tentativas, error } = await supabaseAdmin
       .from('tentativas_prova')
       .select(`
@@ -1691,7 +1866,6 @@ export async function getTentativasProfessor() {
           email
         )
       `)
-      .eq('prova.criado_por', user.id)
       .order('iniciada_em', { ascending: false });
 
     if (error) throw error;
@@ -1700,12 +1874,6 @@ export async function getTentativasProfessor() {
     return { data: tentativas, error: null };
   } catch (error) {
     console.error('💥 Erro em getTentativasProfessor:', error);
-    
-    // Se for erro de autenticação, redirecionar
-    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
-      redirect('/login')
-    }
-    
     return { data: null, error };
   }
 }
@@ -1923,5 +2091,52 @@ export async function checkPublishedExams() {
   } catch (error) {
     console.error('💥 [DEBUG] Erro ao verificar provas:', error);
     return { data: null, error };
+  }
+}
+
+// Função para atualizar role de outro usuário
+export async function updateUserRole(userEmail: string, newRole: "student" | "teacher" | "admin") {
+  const supabase = await getSupabase()
+  console.log(`🔧 [Server Action] updateUserRole para email: ${userEmail}, Role: ${newRole}`)
+
+  try {
+    // Buscar o UUID do usuário pelo email usando uma query direta
+    const { data: userData, error: userError } = await supabase
+      .from("user_roles")
+      .select("user_uuid")
+      .eq("user_uuid", userEmail)
+      .single()
+
+    if (userError) {
+      // Se não encontrar, criar um novo registro
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert({ 
+          user_uuid: userEmail, 
+          role: newRole 
+        })
+
+      if (insertError) {
+        console.error("[updateUserRole] erro ao inserir:", insertError)
+        throw insertError
+      }
+    } else {
+      // Se encontrar, atualizar o role
+      const { error: updateError } = await supabase
+        .from("user_roles")
+        .update({ role: newRole })
+        .eq("user_uuid", userEmail)
+
+      if (updateError) {
+        console.error("[updateUserRole] erro ao atualizar:", updateError)
+        throw updateError
+      }
+    }
+
+    revalidatePath("/membros")
+    return { success: true }
+  } catch (error) {
+    console.error("[updateUserRole] erro:", error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }

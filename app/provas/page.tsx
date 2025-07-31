@@ -117,8 +117,24 @@ export default function ProvasPage() {
     pontuacao: 1,
     ordem: 1,
     opcoes: ['', '', '', ''],
-    resposta_correta: ''
+    resposta_correta: '',
+    explicacao: '',
+    tempo_estimado: 60
   })
+
+  // Function to reset question form
+  const resetQuestaoForm = () => {
+    setQuestaoData({
+      tipo: 'multipla_escolha',
+      enunciado: '',
+      pontuacao: 1,
+      ordem: 1,
+      opcoes: ['', '', '', ''],
+      resposta_correta: '',
+      explicacao: '',
+      tempo_estimado: 60
+    })
+  }
   
   // Estados para tentativa
   const [tentativaAtual, setTentativaAtual] = useState<any>(null)
@@ -292,15 +308,10 @@ export default function ProvasPage() {
       
       if (result.data) {
         toast.success('Questão adicionada com sucesso!')
-        setShowQuestaoDialog(false)
-        setQuestaoData({
-          tipo: 'multipla_escolha',
-          enunciado: '',
-          pontuacao: 1,
-          ordem: 1,
-          opcoes: ['', '', '', ''],
-          resposta_correta: ''
-        })
+        // Reset form data
+        resetQuestaoForm()
+        // Keep dialog open for adding more questions
+        setShowQuestaoDialog(true)
         loadProvas() // Recarregar para mostrar a nova questão
       } else {
         toast.error('Erro ao adicionar questão')
@@ -319,14 +330,8 @@ export default function ProvasPage() {
         toast.success('Questão atualizada com sucesso!')
         setShowQuestaoDialog(false)
         setEditingQuestao(null)
-        setQuestaoData({
-          tipo: 'multipla_escolha',
-          enunciado: '',
-          pontuacao: 1,
-          ordem: 1,
-          opcoes: ['', '', '', ''],
-          resposta_correta: ''
-        })
+        // Reset form data
+        resetQuestaoForm()
         loadProvas()
       } else {
         toast.error('Erro ao atualizar questão')
@@ -608,7 +613,7 @@ export default function ProvasPage() {
                       id="tempo"
                       type="number"
                       value={provaData.tempo_limite}
-                      onChange={(e) => setProvaData({...provaData, tempo_limite: parseInt(e.target.value)})}
+                      onChange={(e) => setProvaData({...provaData, tempo_limite: parseInt(e.target.value) || 0})}
                     />
                   </div>
                   <div>
@@ -617,7 +622,7 @@ export default function ProvasPage() {
                       id="tentativas"
                       type="number"
                       value={provaData.tentativas_permitidas}
-                      onChange={(e) => setProvaData({...provaData, tentativas_permitidas: parseInt(e.target.value)})}
+                      onChange={(e) => setProvaData({...provaData, tentativas_permitidas: parseInt(e.target.value) || 0})}
                     />
                   </div>
                   <div>
@@ -626,7 +631,7 @@ export default function ProvasPage() {
                       id="nota"
                       type="number"
                       value={provaData.nota_minima}
-                      onChange={(e) => setProvaData({...provaData, nota_minima: parseInt(e.target.value)})}
+                      onChange={(e) => setProvaData({...provaData, nota_minima: parseInt(e.target.value) || 0})}
                     />
                   </div>
                 </div>
@@ -934,7 +939,7 @@ export default function ProvasPage() {
                   id="pontuacao"
                   type="number"
                   value={questaoData.pontuacao}
-                  onChange={(e) => setQuestaoData({...questaoData, pontuacao: parseInt(e.target.value)})}
+                  onChange={(e) => setQuestaoData({...questaoData, pontuacao: parseInt(e.target.value) || 0})}
                 />
               </div>
               <div>
@@ -943,7 +948,7 @@ export default function ProvasPage() {
                   id="ordem"
                   type="number"
                   value={questaoData.ordem}
-                  onChange={(e) => setQuestaoData({...questaoData, ordem: parseInt(e.target.value)})}
+                  onChange={(e) => setQuestaoData({...questaoData, ordem: parseInt(e.target.value) || 0})}
                 />
               </div>
               <div>
@@ -952,7 +957,7 @@ export default function ProvasPage() {
                   id="tempo"
                   type="number"
                   value={questaoData.tempo_estimado || 60}
-                  onChange={(e) => setQuestaoData({...questaoData, tempo_estimado: parseInt(e.target.value)})}
+                  onChange={(e) => setQuestaoData({...questaoData, tempo_estimado: parseInt(e.target.value) || 60})}
                 />
               </div>
             </div>
@@ -1092,9 +1097,21 @@ export default function ProvasPage() {
             </div>
             
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowQuestaoDialog(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowQuestaoDialog(false)
+                setEditingQuestao(null)
+                resetQuestaoForm()
+              }}>
                 Cancelar
               </Button>
+              {!editingQuestao && (
+                <Button variant="outline" onClick={() => {
+                  setShowQuestaoDialog(false)
+                  resetQuestaoForm()
+                }}>
+                  Finalizar
+                </Button>
+              )}
               <Button onClick={async () => {
                 try {
                   if (editingQuestao) {
@@ -1104,18 +1121,7 @@ export default function ProvasPage() {
                     const provaAtual = provas.find(p => p.status === 'rascunho') || provas[0]
                     if (provaAtual) {
                       await handleAdicionarQuestao(provaAtual.id)
-                      setShowQuestaoDialog(false)
-                      // Resetar o formulário
-                      setQuestaoData({
-                        tipo: 'multipla_escolha',
-                        enunciado: '',
-                        pontuacao: 1,
-                        ordem: 1,
-                        opcoes: ['', '', '', ''],
-                        resposta_correta: '',
-                        explicacao: '',
-                        tempo_estimado: 60
-                      })
+                      // Dialog stays open for adding more questions
                     } else {
                       toast.error('Nenhuma prova disponível para adicionar questão')
                     }

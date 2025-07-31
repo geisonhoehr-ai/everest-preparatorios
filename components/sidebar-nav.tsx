@@ -23,7 +23,10 @@ import {
   Library,
   Users,
   Archive,
-  Crown
+  Crown,
+  UserCheck,
+  GraduationCap as ClassIcon,
+  PlayCircle
 } from "lucide-react"
 import {
   Tooltip,
@@ -31,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/lib/auth-simple"
 
 interface SidebarNavItem {
   href: string
@@ -47,7 +50,8 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 
 export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
   const pathname = usePathname()
-  const { role } = useAuth()
+  const { user } = useAuth()
+  const role = user?.role || 'student'
 
   // Função para obter os itens do menu baseados no role
   const getMenuItems = (): SidebarNavItem[] => {
@@ -64,6 +68,12 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           href: "/cursos",
           title: "Cursos",
           icon: BookOpen,
+        },
+        {
+          href: "https://alunos.everestpreparatorios.com.br",
+          title: "Aulas",
+          icon: PlayCircle,
+          external: true,
         },
         {
           href: "/flashcards",
@@ -91,6 +101,16 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           icon: PenTool,
         },
         {
+          href: "/membros",
+          title: "Membros",
+          icon: UserCheck,
+        },
+        {
+          href: "/turmas",
+          title: "Turmas",
+          icon: ClassIcon,
+        },
+        {
           href: "/community",
           title: "Comunidade",
           icon: Users2,
@@ -112,6 +132,12 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           href: "/dashboard",
           title: "Dashboard",
           icon: Home,
+        },
+        {
+          href: "https://alunos.everestpreparatorios.com.br",
+          title: "Aulas",
+          icon: PlayCircle,
+          external: true,
         },
         {
           href: "/flashcards",
@@ -169,9 +195,11 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           const linkContent = (
             <Link
               href={item.href}
+              target={item.external ? "_blank" : undefined}
+              rel={item.external ? "noopener noreferrer" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
+                isActive && !item.external
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 collapsed && "justify-center px-2"
@@ -214,6 +242,12 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: Home,
   },
   {
+    href: "https://alunos.everestpreparatorios.com.br",
+    title: "Aulas",
+    icon: PlayCircle,
+    external: true,
+  },
+  {
     href: "/flashcards",
     title: "Flashcards",
     icon: BookText,
@@ -237,6 +271,16 @@ export const sidebarNavItems: SidebarNavItem[] = [
     href: "/redacao",
     title: "Redação",
     icon: PenTool,
+  },
+  {
+    href: "/membros",
+    title: "Membros",
+    icon: UserCheck,
+  },
+  {
+    href: "/turmas",
+    title: "Turmas",
+    icon: ClassIcon,
   },
   {
     href: "/community",

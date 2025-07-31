@@ -600,6 +600,16 @@ export default function AcervoPage() {
                 </SelectContent>
               </Select>
               <div className="flex gap-2">
+                {filtroCategoria !== "todas" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFiltroCategoria("todas")}
+                  >
+                    <X className="h-4 w-4" />
+                    Limpar
+                  </Button>
+                )}
                 <Button
                   variant={viewMode === "grid" ? "default" : "outline"}
                   size="sm"
@@ -622,7 +632,21 @@ export default function AcervoPage() {
         {/* Categorias */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categorias.map((categoria) => (
-            <Card key={categoria.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              key={categoria.id} 
+              className={cn(
+                "hover:shadow-md transition-all cursor-pointer",
+                filtroCategoria === categoria.nome && "ring-2 ring-primary shadow-lg"
+              )}
+              onClick={() => {
+                setFiltroCategoria(categoria.nome);
+                setActiveTab("todos");
+                // Scroll para a lista de arquivos
+                document.getElementById('arquivos-section')?.scrollIntoView({ 
+                  behavior: 'smooth' 
+                });
+              }}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -636,16 +660,48 @@ export default function AcervoPage() {
                   </div>
                   <Badge variant="secondary">{categoria.total_arquivos}</Badge>
                 </div>
+                {filtroCategoria === categoria.nome && (
+                  <div className="mt-2">
+                    <Badge className="bg-primary text-primary-foreground">
+                      Categoria Selecionada
+                    </Badge>
+                  </div>
+                )}
               </CardHeader>
             </Card>
           ))}
         </div>
 
         {/* Lista de Arquivos */}
-        <div className={cn(
+        <div id="arquivos-section" className={cn(
           "grid gap-4",
           viewMode === "grid" ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
         )}>
+          {filtroCategoria !== "todas" && (
+            <div className="col-span-full">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      <span className="font-medium">
+                        Mostrando arquivos da categoria: <span className="text-primary">{filtroCategoria}</span>
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFiltroCategoria("todas")}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Ver todas as categorias
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
           {arquivosFiltrados.map((arquivo) => {
             const FileIcon = getFileIcon(arquivo.formato_arquivo, arquivo.tipo);
             
@@ -866,7 +922,7 @@ export default function AcervoPage() {
                   id="ano"
                   type="number"
                   value={novoArquivo.ano}
-                  onChange={(e) => setNovoArquivo({...novoArquivo, ano: parseInt(e.target.value)})}
+                  onChange={(e) => setNovoArquivo({...novoArquivo, ano: parseInt(e.target.value) || 0})}
                   min="1900"
                   max={new Date().getFullYear()}
                 />
@@ -1038,7 +1094,7 @@ export default function AcervoPage() {
                   id="edit-ano"
                   type="number"
                   value={editandoArquivo.ano}
-                  onChange={(e) => setEditandoArquivo({...editandoArquivo, ano: parseInt(e.target.value)})}
+                  onChange={(e) => setEditandoArquivo({...editandoArquivo, ano: parseInt(e.target.value) || 0})}
                   min="1900"
                   max={new Date().getFullYear()}
                 />

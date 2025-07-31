@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Star, Share2, Copy, Settings, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Users, Shield } from "lucide-react"
+import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Star, Share2, Copy, Settings, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Users, Shield, Target, Clock, RefreshCw } from "lucide-react"
 import { 
   getAllTopics, 
   getQuizzesByTopic, 
@@ -123,7 +123,11 @@ export default function QuizPage() {
 
       } catch (error) {
         console.error("❌ [QUIZ PAGE] Erro ao carregar dados:", error)
-        toast.error("Erro ao carregar dados")
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados",
+          variant: "destructive"
+        })
       } finally {
         setIsLoading(false)
       }
@@ -182,6 +186,7 @@ export default function QuizPage() {
       setAdminQuizzes(data)
       setAdminTotal(total)
       setSelectedTopic(topicId)
+      setMode("quizzes") // Adicionar esta linha para definir o mode
     } catch (error) {
       console.error("Erro ao carregar quizzes do admin:", error)
       alert("Erro ao carregar quizzes. Tente novamente.")
@@ -203,6 +208,7 @@ export default function QuizPage() {
       const data = await getAllQuestionsByQuiz(user.id, quizId)
       setAdminQuestions(data)
       setSelectedQuiz(adminQuizzes.find(q => q.id === quizId) || null)
+      setMode("quiz") // Adicionar esta linha para definir o mode
     } catch (error) {
       console.error("Erro ao carregar questões do admin:", error)
       alert("Erro ao carregar questões. Tente novamente.")
@@ -306,7 +312,21 @@ export default function QuizPage() {
     setUserAnswers([])
     setShowResult(false)
     setQuizResult(null)
-    setIsAdminMode(false)
+    // Remover setIsAdminMode(false) para não interferir com o modo admin
+  }
+
+  // Função para resetar apenas o modo de estudo, mantendo o modo admin
+  const resetStudyMode = () => {
+    setMode("topics")
+    setSelectedTopic(null)
+    setSelectedQuiz(null)
+    setQuestions([])
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer("")
+    setUserAnswers([])
+    setShowResult(false)
+    setQuizResult(null)
+    setIsAdminMode(false) // Desativa o modo admin apenas quando resetar o estudo
   }
 
   // Funções do modo admin
@@ -762,7 +782,7 @@ export default function QuizPage() {
                 </div>
               </div>
               <div className="flex gap-4 justify-center mt-6">
-                <Button onClick={resetQuiz} variant="outline" className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
+                <Button onClick={resetStudyMode} variant="outline" className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
                   <RotateCcw className="mr-2 h-4 w-4" />
                   Fazer Outro Quiz
                 </Button>
@@ -793,7 +813,7 @@ export default function QuizPage() {
               Questão {currentQuestionIndex + 1} de {questions.length}
             </p>
           </div>
-          <Button variant="outline" onClick={resetQuiz} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
+          <Button variant="outline" onClick={resetStudyMode} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
             <RotateCcw className="mr-2 h-4 w-4" />
             Sair do Quiz
           </Button>
@@ -1242,7 +1262,7 @@ export default function QuizPage() {
 
                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
            {quizzes.map((quiz, index) => {
-             // Determinar nível baseado no título ou posição
+             // Sistema de cores por dificuldade baseado no título
              const getDifficultyLevel = (title: string, index: number) => {
                const lowerTitle = title.toLowerCase()
                if (lowerTitle.includes('básico') || lowerTitle.includes('iniciante') || lowerTitle.includes('fácil')) {
@@ -1256,47 +1276,99 @@ export default function QuizPage() {
 
              const level = getDifficultyLevel(quiz.title, index)
              
-             const levelConfig = {
-               easy: {
-                 gradient: 'from-green-400 via-green-500 to-green-600',
-                 border: 'border-green-200 dark:border-green-800',
-                 hoverBorder: 'hover:border-green-300 dark:hover:border-green-700',
-                 shadow: 'hover:shadow-green-100 dark:hover:shadow-green-900',
-                 icon: 'text-green-600',
-                 badge: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                 button: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-                 title: 'text-green-800 dark:text-green-200',
-                 levelText: 'Fácil',
-                 levelIcon: '🟢'
+             // Sistema de cores similar ao dos flashcards
+             const topicColors = [
+               {
+                 gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
+                 border: 'border-emerald-200 dark:border-emerald-800',
+                 hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+                 shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
+                 badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                 button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
+                 title: 'text-emerald-800 dark:text-emerald-200',
+                 iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20'
                },
-               medium: {
-                 gradient: 'from-yellow-400 via-orange-500 to-orange-600',
-                 border: 'border-orange-200 dark:border-orange-800',
-                 hoverBorder: 'hover:border-orange-300 dark:hover:border-orange-700',
-                 shadow: 'hover:shadow-orange-100 dark:hover:shadow-orange-900',
-                 icon: 'text-orange-600',
-                 badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-                 button: 'from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700',
-                 title: 'text-orange-800 dark:text-orange-200',
-                 levelText: 'Médio',
-                 levelIcon: '🟡'
+               {
+                 gradient: 'from-blue-400 via-blue-500 to-blue-600',
+                 border: 'border-blue-200 dark:border-blue-800',
+                 hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
+                 shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
+                 badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                 button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                 title: 'text-blue-800 dark:text-blue-200',
+                 iconBg: 'bg-blue-500/10 dark:bg-blue-500/20'
                },
-               hard: {
-                 gradient: 'from-red-400 via-red-500 to-red-600',
-                 border: 'border-red-200 dark:border-red-800',
-                 hoverBorder: 'hover:border-red-300 dark:hover:border-red-700',
-                 shadow: 'hover:shadow-red-100 dark:hover:shadow-red-900',
-                 icon: 'text-red-600',
-                 badge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                 button: 'from-red-500 to-red-600 hover:from-red-600 hover:to-red-700',
-                 title: 'text-red-800 dark:text-red-200',
-                 levelText: 'Difícil',
-                 levelIcon: '🔴'
+               {
+                 gradient: 'from-purple-400 via-purple-500 to-purple-600',
+                 border: 'border-purple-200 dark:border-purple-800',
+                 hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
+                 shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
+                 badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                 button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+                 title: 'text-purple-800 dark:text-purple-200',
+                 iconBg: 'bg-purple-500/10 dark:bg-purple-500/20'
+               },
+               {
+                 gradient: 'from-teal-400 via-teal-500 to-teal-600',
+                 border: 'border-teal-200 dark:border-teal-800',
+                 hoverBorder: 'hover:border-teal-300 dark:hover:border-teal-700',
+                 shadow: 'hover:shadow-teal-100 dark:hover:shadow-teal-900',
+                 badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+                 button: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
+                 title: 'text-teal-800 dark:text-teal-200',
+                 iconBg: 'bg-teal-500/10 dark:bg-teal-500/20'
+               },
+               {
+                 gradient: 'from-pink-400 via-pink-500 to-pink-600',
+                 border: 'border-pink-200 dark:border-pink-800',
+                 hoverBorder: 'hover:border-pink-300 dark:hover:border-pink-700',
+                 shadow: 'hover:shadow-pink-100 dark:hover:shadow-pink-900',
+                 badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+                 button: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
+                 title: 'text-pink-800 dark:text-pink-200',
+                 iconBg: 'bg-pink-500/10 dark:bg-pink-500/20'
+               },
+               {
+                 gradient: 'from-indigo-400 via-indigo-500 to-indigo-600',
+                 border: 'border-indigo-200 dark:border-indigo-800',
+                 hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-700',
+                 shadow: 'hover:shadow-indigo-100 dark:hover:shadow-indigo-900',
+                 badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+                 button: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
+                 title: 'text-indigo-800 dark:text-indigo-200',
+                 iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20'
+               }
+             ]
+
+             // Sistema de cores por dificuldade baseado no nível
+             const getDifficultyConfig = (level: string) => {
+               if (level === 'easy') {
+                 return {
+                   gradient: 'from-green-400 via-green-500 to-green-600',
+                   difficultyBadge: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                   difficultyText: 'Fácil',
+                   difficultyIcon: '🟢'
+                 }
+               } else if (level === 'medium') {
+                 return {
+                   gradient: 'from-yellow-400 via-orange-500 to-orange-600',
+                   difficultyBadge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+                   difficultyText: 'Médio',
+                   difficultyIcon: '🟡'
+                 }
+               } else {
+                 return {
+                   gradient: 'from-red-400 via-red-500 to-red-600',
+                   difficultyBadge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                   difficultyText: 'Difícil',
+                   difficultyIcon: '🔴'
+                 }
                }
              }
 
-             const config = levelConfig[level]
-
+             const config = topicColors[index % topicColors.length]
+             const difficultyConfig = getDifficultyConfig(level)
+             
              return (
                <Card 
                  key={quiz.id} 
@@ -1305,58 +1377,87 @@ export default function QuizPage() {
                    ${config.border} ${config.hoverBorder} ${config.shadow}
                    bg-gradient-to-br from-white via-gray-50 to-gray-100 
                    dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
-                   min-h-[280px] flex flex-col
+                   min-h-[380px] flex flex-col group
                  `}
                >
                  {/* Gradiente decorativo no topo */}
                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
                  
-                 <CardHeader className="flex-1 pb-2">
-                   <div className="flex items-start justify-between mb-3">
+                 {/* Badge de nível no canto */}
+                 <div className="absolute top-3 right-3 z-10">
+                   <Badge className={`bg-gradient-to-r ${config.gradient} text-white shadow-lg`}>
+                     Quiz
+                   </Badge>
+                 </div>
+
+                 <CardHeader className="pb-3">
+                   <div className="flex items-center gap-3 mb-3">
                      <div className={`p-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg`}>
                        <BrainCircuit className="h-6 w-6 text-white" />
                      </div>
-                     <div className="flex flex-col items-end gap-2">
-                       <Badge variant="secondary" className={`${config.badge} font-semibold px-3 py-1 text-xs`}>
+                     <div className="flex flex-col gap-1">
+                       <Badge variant="secondary" className={`${config.badge} font-semibold px-2 py-1 text-xs`}>
                          Quiz
                        </Badge>
-                       <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.badge}`}>
-                         <span>{config.levelIcon}</span>
-                         <span>{config.levelText}</span>
+                       <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${difficultyConfig.difficultyBadge}`}>
+                         <span>{difficultyConfig.difficultyIcon}</span>
+                         <span>{difficultyConfig.difficultyText}</span>
                        </div>
                      </div>
                    </div>
                    
-                   <CardTitle className={`text-xl font-bold ${config.title} leading-tight mb-3`}>
+                   <CardTitle className={`text-lg font-bold ${config.title} leading-tight mb-3 group-hover:scale-105 transition-transform duration-300`}>
                      {quiz.title}
                    </CardTitle>
                    
-                   <CardDescription className="text-gray-600 dark:text-gray-300 line-clamp-3 text-sm leading-relaxed">
-                     {quiz.description || "Teste seus conhecimentos neste quiz interativo e descubra o quanto você sabe sobre este tópico!"}
-                   </CardDescription>
+                   {/* Progresso e XP simulados */}
+                   <div className="space-y-3">
+                     <div className="flex items-center justify-between text-sm">
+                       <span className="text-muted-foreground">Dificuldade</span>
+                       <span className={`font-medium ${config.title}`}>
+                         {level === 'easy' ? '33%' : level === 'medium' ? '66%' : '100%'}
+                       </span>
+                     </div>
+                     <Progress value={level === 'easy' ? 33 : level === 'medium' ? 66 : 100} className={`h-2 [&>div]:bg-gradient-to-r [&>div]:${difficultyConfig.gradient}`} />
+                     
+                     <div className="flex items-center justify-between text-sm">
+                       <span className="text-muted-foreground">Questões</span>
+                       <span className={`font-medium ${config.title}`}>
+                         ~10
+                       </span>
+                     </div>
+                     <Progress value={70} className={`h-2 [&>div]:bg-gradient-to-r [&>div]:${config.gradient}`} />
+                   </div>
+
+                   {/* Stats adicionais */}
+                   <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                     <div className="flex items-center gap-1 text-muted-foreground">
+                       <Target className="h-3 w-3" />
+                       <span>Múltipla escolha</span>
+                     </div>
+                     <div className="flex items-center gap-1 text-muted-foreground">
+                       <Clock className="h-3 w-3" />
+                       <span>~15 min</span>
+                     </div>
+                     <div className={`flex items-center gap-1 ${config.title}`}>
+                       <Trophy className="h-3 w-3" />
+                       <span>Pontuação</span>
+                     </div>
+                     <div className="flex items-center gap-1 text-muted-foreground">
+                       <RefreshCw className="h-3 w-3" />
+                       <span>Interativo</span>
+                     </div>
+                   </div>
                  </CardHeader>
                  
-                 <CardContent className="pt-0">
-                   <div className="space-y-3">
-                     {/* Barra de progresso simulada baseada no nível */}
-                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                       <span>Dificuldade:</span>
-                       <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                         <div 
-                           className={`h-2 rounded-full bg-gradient-to-r ${config.gradient}`}
-                           style={{ 
-                             width: level === 'easy' ? '33%' : level === 'medium' ? '66%' : '100%' 
-                           }}
-                         />
-                       </div>
-                     </div>
-                     
+                 <CardContent className="flex-1 flex flex-col justify-end pt-0">
+                   <div className="space-y-2">
+                     {/* Botão principal */}
                      <Button 
                        onClick={() => startQuiz(quiz)} 
                        className={`
-                         w-full bg-gradient-to-r ${config.button} text-white font-semibold py-3 
-                         transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
-                         border-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
+                         w-full bg-gradient-to-r ${config.button} text-white border-0 transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg font-semibold py-3
+                         focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
                        `}
                      >
                        <Play className="mr-2 h-5 w-5" />
