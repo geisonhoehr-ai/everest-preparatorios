@@ -9,11 +9,16 @@ export default function TestPandavideoPage() {
   const [token, setToken] = useState<string>("")
   const [localStorageToken, setLocalStorageToken] = useState<string>("")
   const [cookies, setCookies] = useState<string>("")
+  const [currentUrl, setCurrentUrl] = useState<string>("")
 
   useEffect(() => {
+    // Verificar se estamos no navegador
+    if (typeof window === 'undefined') return
+
     // Capturar parâmetros da URL
     const params = window.location.search
     setUrlParams(params)
+    setCurrentUrl(window.location.href)
     
     // Verificar token na URL
     const urlParamsObj = new URLSearchParams(params)
@@ -36,6 +41,8 @@ export default function TestPandavideoPage() {
   }, [])
 
   const handleSaveToken = () => {
+    if (typeof window === 'undefined') return
+    
     if (token) {
       localStorage.setItem('pandavideo_access_token', token)
       setLocalStorageToken(token)
@@ -44,12 +51,16 @@ export default function TestPandavideoPage() {
   }
 
   const handleClearToken = () => {
+    if (typeof window === 'undefined') return
+    
     localStorage.removeItem('pandavideo_access_token')
     setLocalStorageToken("")
     console.log('🎥 [TEST] Token removido do localStorage')
   }
 
   const handleTestAPI = async () => {
+    if (typeof window === 'undefined') return
+    
     const storedToken = localStorage.getItem('pandavideo_access_token')
     if (!storedToken) {
       alert('Nenhum token encontrado')
@@ -90,7 +101,7 @@ export default function TestPandavideoPage() {
           <CardTitle>Informações da URL</CardTitle>
         </CardHeader>
         <CardContent>
-          <p><strong>URL atual:</strong> {window.location.href}</p>
+          <p><strong>URL atual:</strong> {currentUrl || 'Carregando...'}</p>
           <p><strong>Parâmetros:</strong> {urlParams}</p>
           <p><strong>Token na URL:</strong> {token ? `${token.substring(0, 20)}...` : 'Não encontrado'}</p>
         </CardContent>
@@ -98,15 +109,15 @@ export default function TestPandavideoPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>localStorage</CardTitle>
+          <CardTitle>LocalStorage</CardTitle>
         </CardHeader>
         <CardContent>
-          <p><strong>Token no localStorage:</strong> {localStorageToken ? `${localStorageToken.substring(0, 20)}...` : 'Não encontrado'}</p>
-          <div className="flex gap-2 mt-2">
+          <p><strong>Token salvo:</strong> {localStorageToken ? `${localStorageToken.substring(0, 20)}...` : 'Não encontrado'}</p>
+          <div className="flex gap-2 mt-4">
             <Button onClick={handleSaveToken} disabled={!token}>
-              Salvar Token da URL
+              Salvar Token
             </Button>
-            <Button onClick={handleClearToken} variant="outline">
+            <Button onClick={handleClearToken} variant="destructive">
               Limpar Token
             </Button>
           </div>
@@ -119,7 +130,7 @@ export default function TestPandavideoPage() {
         </CardHeader>
         <CardContent>
           <p><strong>Cookies:</strong></p>
-          <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+          <pre className="bg-gray-100 p-2 rounded text-sm overflow-auto">
             {cookies || 'Nenhum cookie encontrado'}
           </pre>
         </CardContent>
@@ -130,35 +141,9 @@ export default function TestPandavideoPage() {
           <CardTitle>Teste da API</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleTestAPI} disabled={!localStorageToken}>
+          <Button onClick={handleTestAPI}>
             Testar API Pandavideo
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Links de Teste</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p><strong>Teste com token:</strong></p>
-            <a 
-              href="/test-pandavideo?token=test_token_123&success=pandavideo_connected" 
-              className="text-blue-500 hover:underline block"
-            >
-              /test-pandavideo?token=test_token_123&success=pandavideo_connected
-            </a>
-            
-            <p className="mt-4"><strong>Teste OAuth2:</strong></p>
-            <a 
-              href="https://app.pandavideo.com.br/oauth/authorize?client_id=28444mbcl1t9570i0gfnod8l7i&redirect_uri=https%3A%2F%2Feverestpreparatorios.com.br%2Fapi%2Fpandavideo%2Fcallback&response_type=code&scope=read&state=test123" 
-              className="text-blue-500 hover:underline block"
-              target="_blank"
-            >
-              Conectar com Pandavideo (OAuth2)
-            </a>
-          </div>
         </CardContent>
       </Card>
     </div>
