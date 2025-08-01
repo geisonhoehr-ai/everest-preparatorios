@@ -552,14 +552,14 @@ export default function ProvasPage() {
                   Nova Prova
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Criar Nova Prova</DialogTitle>
-                  <DialogDescription>
-                    Preencha os dados da prova e adicione as questões
-                  </DialogDescription>
-                </DialogHeader>
-              <div className="space-y-4">
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Criar Nova Prova</DialogTitle>
+                    <DialogDescription>
+                      Preencha os dados da prova e adicione as questões
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
                 <div>
                   <Label htmlFor="titulo">Título</Label>
                   <Input
