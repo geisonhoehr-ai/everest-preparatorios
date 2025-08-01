@@ -1071,32 +1071,10 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return 0
 
-      // Verificar se é teacher/admin ou student
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser?.id) return 0
-
-      // Verificar role do usuário
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_uuid", currentUser.id)
-        .single()
-
-      const userRole = roleData?.role || "student"
-
-      if (userRole === "teacher" || userRole === "admin") {
-        // Para teachers/admins, usar getAllFlashcardsByTopic
-        const result = await getAllFlashcardsByTopic(user.id, topicId, 1, 1)
-        if (result && result.success && result.data) {
-          return result.data.flashcards.length
-        }
-      } else {
-        // Para estudantes, usar getFlashcardsForReview
-        const cards = await getFlashcardsForReview(topicId, 100) // Buscar mais para contar
-        return cards ? cards.length : 0
-      }
+      // Usar apenas getFlashcardsForReview para todos os usuários
+      const cards = await getFlashcardsForReview(topicId, 100) // Buscar mais para contar
+      return cards ? cards.length : 0
       
-      return 0
     } catch (error) {
       console.error("Erro ao buscar contagem de flashcards:", error)
       return 0
