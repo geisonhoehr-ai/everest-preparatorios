@@ -104,6 +104,8 @@ export default function QuizPage() {
         // Verificação otimizada de autenticação e role (mesmo padrão do flashcards)
         const { user, role, isAuthenticated } = await getAuthAndRole()
         
+        console.log("🔍 [QUIZ PAGE] getAuthAndRole result:", { user: !!user, role, isAuthenticated })
+        
         if (isAuthenticated && user) {
           console.log("✅ [QUIZ PAGE] Usuário autenticado:", user.email)
           console.log("✅ [QUIZ PAGE] Role do usuário:", role)
@@ -326,7 +328,21 @@ export default function QuizPage() {
     setUserAnswers([])
     setShowResult(false)
     setQuizResult(null)
-    setIsAdminMode(false) // Desativa o modo admin apenas quando resetar o estudo
+    // Não desativa o modo admin automaticamente
+  }
+
+  // Função para resetar completamente (incluindo modo admin)
+  const resetAll = () => {
+    setMode("topics")
+    setSelectedTopic(null)
+    setSelectedQuiz(null)
+    setQuestions([])
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer("")
+    setUserAnswers([])
+    setShowResult(false)
+    setQuizResult(null)
+    setIsAdminMode(false) // Desativa o modo admin
   }
 
   // Funções do modo admin
@@ -683,28 +699,126 @@ export default function QuizPage() {
             </p>
           </div>
           
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject) => (
-              <Card key={subject.id} className="hover:shadow-lg transition-shadow border-emerald-200 dark:border-emerald-800">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <BrainCircuit className="h-8 w-8 text-emerald-600" />
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Matéria</Badge>
-                  </div>
-                  <CardTitle className="text-lg text-emerald-800 dark:text-emerald-200">{subject.name}</CardTitle>
-                  <CardDescription>Escolha esta matéria para ver os tópicos disponíveis</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => setSelectedSubject(subject.id)} 
-                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    Selecionar Matéria
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {subjects.map((subject, index) => {
+              // Cores especiais para cada matéria seguindo o padrão do quiz
+              const subjectColors = {
+                'Português': {
+                  gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
+                  border: 'border-emerald-200 dark:border-emerald-800',
+                  hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+                  shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
+                  badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                  button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
+                  title: 'from-emerald-600 to-emerald-800',
+                  icon: '📚',
+                  desc: 'Domine gramática, interpretação de texto, literatura e redação com nossos quizzes interativos!'
+                },
+                'Regulamentos': {
+                  gradient: 'from-amber-400 via-amber-500 to-amber-600',
+                  border: 'border-amber-200 dark:border-amber-800',
+                  hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-700',
+                  shadow: 'hover:shadow-amber-100 dark:hover:shadow-amber-900',
+                  badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+                  button: 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700',
+                  title: 'from-amber-600 to-amber-800',
+                  icon: '⚖️',
+                  desc: 'Aprenda normas militares, legislação e regulamentos específicos de forma eficiente!'
+                }
+              }
+
+              const defaultColors = {
+                gradient: 'from-slate-400 via-slate-500 to-slate-600',
+                border: 'border-slate-200 dark:border-slate-800',
+                hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
+                shadow: 'hover:shadow-slate-100 dark:hover:shadow-slate-900',
+                badge: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
+                button: 'from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700',
+                title: 'from-slate-600 to-slate-800',
+                icon: '🎯',
+                desc: 'Estude quizzes interativos sobre os principais tópicos desta matéria.'
+              }
+
+              const config = subjectColors[subject.name as keyof typeof subjectColors] || defaultColors
+
+              return (
+                <Card 
+                  key={subject.id}
+                  className={`
+                    relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl 
+                    ${config.border} ${config.hoverBorder} ${config.shadow}
+                    bg-gradient-to-br from-white via-gray-50 to-gray-100 
+                    dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
+                    min-h-[320px] flex flex-col cursor-pointer group
+                  `}
+                  onClick={() => setSelectedSubject(subject.id)}
+                >
+                  {/* Gradiente decorativo no topo */}
+                  <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${config.gradient}`} />
+                  
+                  {/* Efeito de brilho no hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 group-hover:animate-pulse" />
+                  
+                  <CardHeader className="flex-1 relative text-center pb-4">
+                    <div className="flex justify-center mb-6">
+                      <div className={`p-4 rounded-2xl bg-gradient-to-r ${config.gradient} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
+                        <span className="text-3xl">{config.icon}</span>
+                      </div>
+                    </div>
+                    
+                    <Badge variant="secondary" className={`${config.badge} font-bold px-4 py-2 text-sm tracking-wide mb-4`}>
+                      Matéria
+                    </Badge>
+                    
+                    <CardTitle className={`text-3xl font-black bg-gradient-to-r ${config.title} bg-clip-text text-transparent leading-tight mb-4 group-hover:scale-105 transition-transform duration-300`}>
+                      {subject.name}
+                    </CardTitle>
+                    
+                    <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
+                      {config.desc}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0 relative text-center">
+                    <div className="space-y-4">
+                      {/* Estatísticas simuladas */}
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-2">
+                          <BrainCircuit className="h-4 w-4" />
+                          {subject.name.toLowerCase().includes('português') ? (
+                            <span>Gramática, Literatura, Redação</span>
+                          ) : (
+                            <span>Regulamentos, Legislação</span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          <span>Nível {Math.floor(Math.random() * 5) + 1}</span>
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 1000) + 100} estudantes</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 50) + 10} min</span>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      className={`w-full mt-6 bg-gradient-to-r ${config.button} text-white border-0 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
+                    >
+                      <Play className="mr-3 h-6 w-6" />
+                      Estudar {subject.name}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </DashboardShell>
@@ -1095,7 +1209,7 @@ export default function QuizPage() {
               <Plus className="mr-2 h-4 w-4" />
               Novo Quiz
             </Button>
-            <Button variant="outline" onClick={() => setMode("topics")}>
+            <Button variant="outline" onClick={() => resetStudyMode()}>
               <ArrowRight className="mr-2 h-4 w-4" />
               Voltar aos Tópicos
             </Button>
@@ -1236,6 +1350,9 @@ export default function QuizPage() {
   }
 
   if (mode === "quizzes") {
+    console.log("🔍 [QUIZ PAGE] userRole para renderização:", userRole)
+    console.log("🔍 [QUIZ PAGE] Deve mostrar botão admin:", userRole === 'teacher' || userRole === 'admin')
+    
     return (
       <DashboardShell>
         <div className="flex items-center justify-between mb-6">
@@ -1253,7 +1370,7 @@ export default function QuizPage() {
                 Modo Admin
               </Button>
             )}
-            <Button variant="outline" onClick={() => setMode("topics")} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
+            <Button variant="outline" onClick={() => isAdminMode ? resetStudyMode() : resetAll()} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
               <RotateCcw className="mr-2 h-4 w-4" />
               Voltar aos Tópicos
             </Button>

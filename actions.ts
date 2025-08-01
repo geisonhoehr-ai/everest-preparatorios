@@ -174,6 +174,8 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
     const supabase = await getSupabaseClient()
 
     console.log("🔍 [DEBUG] Buscando flashcards para tópico:", topicId)
+    console.log("🔍 [DEBUG] Limit:", limit)
+    
     const { data, error } = await supabase
       .from("flashcards")
       .select("id, topic_id, question, answer")
@@ -182,10 +184,14 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
 
     if (error) {
       console.error("❌ [DEBUG] Erro ao buscar flashcards:", error)
+      console.error("❌ [DEBUG] Detalhes do erro:", error.message)
       return []
     }
 
     console.log("✅ [DEBUG] Flashcards encontrados:", data?.length || 0)
+    if (data && data.length > 0) {
+      console.log("✅ [DEBUG] Primeiro flashcard:", data[0])
+    }
     return data || []
   } catch (error) {
     console.error("❌ [DEBUG] Erro inesperado ao buscar flashcards:", error)
@@ -825,14 +831,37 @@ export async function getAllSubjects() {
 export async function getTopicsBySubject(subjectId: number) {
   try {
     const supabase = await getSupabaseClient()
-    const { data, error } = await supabase.from("topics").select("id, name, subject_id").eq("subject_id", subjectId).order("name")
+    
+    console.log("🔍 [DEBUG] getTopicsBySubject - subjectId:", subjectId)
+    
+    // Primeiro, tentar buscar com subject_id
+    let { data, error } = await supabase
+      .from("topics")
+      .select("id, name, subject_id")
+      .eq("subject_id", subjectId)
+      .order("name")
+    
     if (error) {
-      console.error("Erro ao buscar tópicos por matéria:", error)
-      return []
+      console.log("⚠️ [DEBUG] Erro ao buscar com subject_id, tentando sem filtro:", error.message)
+      // Se falhar, buscar todos os tópicos (fallback)
+      const { data: allTopics, error: allError } = await supabase
+        .from("topics")
+        .select("id, name")
+        .order("name")
+      
+      if (allError) {
+        console.error("❌ [DEBUG] Erro ao buscar todos os tópicos:", allError)
+        return []
+      }
+      
+      console.log("✅ [DEBUG] Retornando todos os tópicos como fallback")
+      return allTopics || []
     }
+    
+    console.log("✅ [DEBUG] Tópicos encontrados com subject_id:", data?.length || 0)
     return data || []
   } catch (error) {
-    console.error("Erro inesperado ao buscar tópicos por matéria:", error)
+    console.error("❌ [DEBUG] Erro inesperado ao buscar tópicos por matéria:", error)
     return []
   }
 }
@@ -947,9 +976,15 @@ export async function deleteFlashcard(userUuid: string, flashcardId: number) {
 export async function getAllFlashcardsByTopic(userUuid: string, topicId: string, page = 1, limit = 20) {
   const supabase = await getSupabaseClient()
 
+  console.log("🔍 [DEBUG] getAllFlashcardsByTopic - userUuid:", userUuid)
+  console.log("🔍 [DEBUG] getAllFlashcardsByTopic - topicId:", topicId)
+
   // Verificar permissões
   const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  console.log("🔍 [DEBUG] hasAccess:", hasAccess)
+  
   if (!hasAccess) {
+    console.log("❌ [DEBUG] Acesso negado para getAllFlashcardsByTopic")
     return { success: false, error: "Acesso negado. Apenas professores e administradores podem ver todos os flashcards." }
   }
 
@@ -964,9 +999,11 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
     .range(offset, offset + limit - 1)
 
   if (flashcardsError) {
-    console.error("Erro ao buscar flashcards:", flashcardsError)
+    console.error("❌ [DEBUG] Erro ao buscar flashcards:", flashcardsError)
     return { success: false, error: flashcardsError.message }
   }
+
+  console.log("✅ [DEBUG] Flashcards encontrados:", flashcards?.length || 0)
 
   // Contar total de flashcards
   const { count, error: countError } = await supabase
@@ -975,9 +1012,11 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
     .eq("topic_id", topicId)
 
   if (countError) {
-    console.error("Erro ao contar flashcards:", countError)
+    console.error("❌ [DEBUG] Erro ao contar flashcards:", countError)
     return { success: false, error: countError.message }
   }
+
+  console.log("✅ [DEBUG] Total de flashcards no tópico:", count)
 
   return {
     success: true,
@@ -1105,10 +1144,16 @@ export async function deleteQuiz(userUuid: string, quizId: number) {
 export async function getAllQuizzesByTopic(userUuid: string, topicId: string, page: number = 1, limit: number = 10) {
   const supabase = await getSupabaseClient()
   
+  console.log("🔍 [DEBUG] getAllQuizzesByTopic - userUuid:", userUuid)
+  console.log("🔍 [DEBUG] getAllQuizzesByTopic - topicId:", topicId)
+  
   try {
     // Verificar se é professor ou admin
     const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+    console.log("🔍 [DEBUG] hasAccess para quizzes:", hasAccess)
+    
     if (!hasAccess) {
+      console.log("❌ [DEBUG] Acesso negado para getAllQuizzesByTopic")
       throw new Error("Acesso negado. Apenas professores e administradores podem acessar esta função.")
     }
 
@@ -1122,7 +1167,12 @@ export async function getAllQuizzesByTopic(userUuid: string, topicId: string, pa
       .order('id', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (quizzesError) throw quizzesError
+    if (quizzesError) {
+      console.error("❌ [DEBUG] Erro ao buscar quizzes:", quizzesError)
+      throw quizzesError
+    }
+
+    console.log("✅ [DEBUG] Quizzes encontrados:", quizzes?.length || 0)
 
     // Buscar total de quizzes
     const { count, error: countError } = await supabase
@@ -1130,14 +1180,19 @@ export async function getAllQuizzesByTopic(userUuid: string, topicId: string, pa
       .select('*', { count: 'exact', head: true })
       .eq('topic_id', topicId)
 
-    if (countError) throw countError
+    if (countError) {
+      console.error("❌ [DEBUG] Erro ao contar quizzes:", countError)
+      throw countError
+    }
+
+    console.log("✅ [DEBUG] Total de quizzes no tópico:", count)
 
     return {
       quizzes: quizzes || [],
       total: count || 0
     }
   } catch (error) {
-    console.error('Erro ao buscar quizzes do admin:', error)
+    console.error('❌ [DEBUG] Erro ao buscar quizzes do admin:', error)
     throw error
   }
 }
@@ -1243,10 +1298,16 @@ export async function deleteQuizQuestion(userUuid: string, questionId: number) {
 export async function getAllQuestionsByQuiz(userUuid: string, quizId: number) {
   const supabase = await getSupabaseClient()
   
+  console.log("🔍 [DEBUG] getAllQuestionsByQuiz - userUuid:", userUuid)
+  console.log("🔍 [DEBUG] getAllQuestionsByQuiz - quizId:", quizId)
+  
   try {
     // Verificar se é professor ou admin
     const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+    console.log("🔍 [DEBUG] hasAccess para questões:", hasAccess)
+    
     if (!hasAccess) {
+      console.log("❌ [DEBUG] Acesso negado para getAllQuestionsByQuiz")
       throw new Error("Acesso negado. Apenas professores e administradores podem acessar esta função.")
     }
 
@@ -1256,10 +1317,15 @@ export async function getAllQuestionsByQuiz(userUuid: string, quizId: number) {
       .eq('quiz_id', quizId)
       .order('id', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error("❌ [DEBUG] Erro ao buscar questões:", error)
+      throw error
+    }
+
+    console.log("✅ [DEBUG] Questões encontradas:", data?.length || 0)
     return data || []
   } catch (error) {
-    console.error('Erro ao buscar questões do quiz:', error)
+    console.error('❌ [DEBUG] Erro ao buscar questões do quiz:', error)
     throw error
   }
 }

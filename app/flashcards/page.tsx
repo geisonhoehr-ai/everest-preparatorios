@@ -615,15 +615,27 @@ export default function FlashcardsPage() {
       
       // Buscar flashcards do tópico baseado no role do usuário
       let cards = []
+      console.log("🔍 [DEBUG] userRole:", userRole)
+      console.log("🔍 [DEBUG] topicId:", topicId)
+      console.log("🔍 [DEBUG] quantity:", quantity)
+      
       if (userRole === "teacher" || userRole === "admin") {
         // Para professores e admins, usar função com paginação
+        console.log("🔍 [DEBUG] Usando getAllFlashcardsByTopic para professor/admin")
         const flashcardsResult = await getAllFlashcardsByTopic(user.id, topicId, 1, quantity)
+        console.log("🔍 [DEBUG] Resultado getAllFlashcardsByTopic:", flashcardsResult)
+        
         if (flashcardsResult && flashcardsResult.success && flashcardsResult.data) {
           cards = flashcardsResult.data.flashcards
+          console.log("✅ [DEBUG] Cards encontrados para professor/admin:", cards.length)
+        } else {
+          console.log("❌ [DEBUG] Falha ao buscar flashcards para professor/admin")
         }
       } else {
         // Para estudantes, usar função simples
+        console.log("🔍 [DEBUG] Usando getFlashcardsForReview para estudante")
         cards = await getFlashcardsForReview(topicId, quantity)
+        console.log("✅ [DEBUG] Cards encontrados para estudante:", cards.length)
       }
       
       // Verificar se há flashcards disponíveis

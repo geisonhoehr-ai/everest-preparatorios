@@ -153,26 +153,6 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           icon: GraduationCap,
         },
         {
-          href: "/provas",
-          title: "Provas",
-          icon: FileText,
-        },
-        {
-          href: "/livros",
-          title: "Acervo Digital",
-          icon: Archive,
-        },
-        {
-          href: "/redacao",
-          title: "Redação",
-          icon: PenTool,
-        },
-        {
-          href: "/community",
-          title: "Comunidade",
-          icon: Users2,
-        },
-        {
           href: "/calendario",
           title: "Calendário",
           icon: Calendar,

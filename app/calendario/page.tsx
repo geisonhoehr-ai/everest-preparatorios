@@ -264,7 +264,7 @@ export default function CalendarioPage() {
 
   const hasEventsOnDay = (day: number) => {
     return events.some(event => {
-      const eventDate = new Date(event.event_date);
+      const eventDate = new Date(event.event_date + 'T00:00:00');
       return eventDate.getDate() === day && 
              eventDate.getMonth() === currentDate.getMonth() &&
              eventDate.getFullYear() === currentDate.getFullYear();
@@ -273,7 +273,7 @@ export default function CalendarioPage() {
 
   const getEventsForDay = (day: number) => {
     return events.filter(event => {
-      const eventDate = new Date(event.event_date);
+      const eventDate = new Date(event.event_date + 'T00:00:00');
       return eventDate.getDate() === day && 
              eventDate.getMonth() === currentDate.getMonth() &&
              eventDate.getFullYear() === currentDate.getFullYear();
@@ -286,11 +286,34 @@ export default function CalendarioPage() {
 
   const canManageEvents = userRole === "teacher" || userRole === "admin";
 
+  // Separar eventos futuros e passados
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Reset para início do dia
+
+  const futureEvents = events
+    .filter(event => {
+      const eventDate = new Date(event.event_date + 'T00:00:00')
+      return eventDate >= today
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.event_date + 'T00:00:00')
+      const dateB = new Date(b.event_date + 'T00:00:00')
+      return dateA.getTime() - dateB.getTime()
+    })
+
+  const pastEvents = events
+    .filter(event => {
+      const eventDate = new Date(event.event_date + 'T00:00:00')
+      return eventDate < today
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.event_date + 'T00:00:00')
+      const dateB = new Date(b.event_date + 'T00:00:00')
+      return dateB.getTime() - dateA.getTime() // Ordem decrescente (mais recente primeiro)
+    })
+
   // Próximos eventos (limitado a 5)
-  const upcomingEvents = events
-    .filter(event => new Date(event.event_date) >= new Date())
-    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-    .slice(0, 5);
+  const upcomingEvents = futureEvents.slice(0, 5);
 
   return (
     <DashboardShell>
@@ -499,7 +522,7 @@ export default function CalendarioPage() {
         </div>
 
         <Tabs value={activeView} onValueChange={setActiveView} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200 dark:border-blue-800">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px] bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200 dark:border-blue-800">
             <TabsTrigger 
               value="month" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
@@ -510,7 +533,13 @@ export default function CalendarioPage() {
               value="list"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
             >
-              📋 Lista
+              📋 Próximos Eventos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+            >
+              📚 Histórico
             </TabsTrigger>
           </TabsList>
 
@@ -673,7 +702,7 @@ export default function CalendarioPage() {
                                     <div className="flex items-center gap-2 mt-1">
                                       <Clock className="h-3 w-3 text-muted-foreground" />
                                       <span className="text-xs text-muted-foreground">
-                                        {new Date(event.event_date).toLocaleDateString("pt-BR")}
+                                        {new Date(event.event_date + 'T00:00:00').toLocaleDateString("pt-BR")}
                                         {event.event_time && ` às ${event.event_time}`}
                                       </span>
                                     </div>
@@ -739,19 +768,19 @@ export default function CalendarioPage() {
                 </Card>
 
                 {/* Estatísticas do Mês */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Resumo do Mês</CardTitle>
-                  </CardHeader>
+                                 <Card className="border-0 shadow-lg">
+                   <CardHeader>
+                     <CardTitle className="text-lg">Próximos Eventos do Mês</CardTitle>
+                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {['live', 'simulado', 'prova', 'redacao', 'aula'].map(type => {
-                        const count = events.filter(e => {
-                          const eventDate = new Date(e.event_date);
-                          return e.event_type === type &&
-                                 eventDate.getMonth() === currentDate.getMonth() &&
-                                 eventDate.getFullYear() === currentDate.getFullYear();
-                        }).length;
+                                         <div className="space-y-3">
+                       {['live', 'simulado', 'prova', 'redacao', 'aula'].map(type => {
+                         const count = futureEvents.filter(e => {
+                           const eventDate = new Date(e.event_date + 'T00:00:00');
+                           return e.event_type === type &&
+                                  eventDate.getMonth() === currentDate.getMonth() &&
+                                  eventDate.getFullYear() === currentDate.getFullYear();
+                         }).length;
                         
                         const palette = getEventColorPalette(type as CalendarEvent["event_type"]);
                         
@@ -785,26 +814,24 @@ export default function CalendarioPage() {
                     </Card>
                   ))}
                 </div>
-              ) : events.length === 0 ? (
+              ) : futureEvents.length === 0 ? (
                 <Card className="border-dashed border-2">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <CalendarIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-semibold text-muted-foreground">Nenhum evento encontrado</h3>
+                    <h3 className="text-lg font-semibold text-muted-foreground">Nenhum evento próximo</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {canManageEvents ? "Clique em 'Novo Evento' para começar" : "Eventos serão exibidos aqui quando criados"}
+                      {canManageEvents ? "Clique em 'Novo Evento' para começar" : "Eventos futuros serão exibidos aqui"}
                     </p>
                   </CardContent>
                 </Card>
               ) : (
-                events.map(event => {
+                futureEvents.map(event => {
                   const palette = getEventColorPalette(event.event_type);
-                  const eventDate = new Date(event.event_date);
-                  const isUpcoming = eventDate >= new Date();
                   
                   return (
                     <Card 
                       key={event.id} 
-                      className={`${palette.card} ${palette.border} border transition-all duration-200 hover:shadow-lg ${!isUpcoming ? 'opacity-60' : ''}`}
+                      className={`${palette.card} ${palette.border} border transition-all duration-200 hover:shadow-lg`}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
@@ -841,7 +868,7 @@ export default function CalendarioPage() {
                                   <Clock className="h-4 w-4 text-muted-foreground" />
                                   <div>
                                     <div className="font-medium">
-                                      {eventDate.toLocaleDateString("pt-BR")}
+                                      {new Date(event.event_date + 'T00:00:00').toLocaleDateString("pt-BR")}
                                     </div>
                                     {event.event_time && (
                                       <div className="text-muted-foreground">
@@ -943,9 +970,185 @@ export default function CalendarioPage() {
                   );
                 })
               )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                         </div>
+           </TabsContent>
+
+           <TabsContent value="history" className="space-y-6">
+             <div className="grid gap-4">
+               {isLoading ? (
+                 <div className="space-y-4">
+                   {[1,2,3,4,5].map(i => (
+                     <Card key={i} className="animate-pulse">
+                       <CardContent className="p-4">
+                         <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                         <div className="h-4 bg-muted rounded w-1/2"></div>
+                       </CardContent>
+                     </Card>
+                   ))}
+                 </div>
+               ) : pastEvents.length === 0 ? (
+                 <Card className="border-dashed border-2">
+                   <CardContent className="flex flex-col items-center justify-center py-12">
+                     <CalendarIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                     <h3 className="text-lg font-semibold text-muted-foreground">Nenhum evento no histórico</h3>
+                     <p className="text-sm text-muted-foreground mt-1">
+                       Eventos passados aparecerão aqui para consulta
+                     </p>
+                   </CardContent>
+                 </Card>
+               ) : (
+                 pastEvents.map(event => {
+                   const palette = getEventColorPalette(event.event_type);
+                   
+                   return (
+                     <Card 
+                       key={event.id} 
+                       className={`${palette.card} ${palette.border} border transition-all duration-200 hover:shadow-lg opacity-75`}
+                     >
+                       <CardContent className="p-6">
+                         <div className="flex items-start justify-between">
+                           <div className="flex items-start gap-4">
+                             <div className={`p-3 rounded-lg ${palette.badge} border`}>
+                               {getEventIcon(event.event_type, "h-5 w-5")}
+                             </div>
+                             <div className="flex-1">
+                               <div className="flex items-center gap-2 mb-2">
+                                 <h3 className="font-semibold text-lg">{event.title}</h3>
+                                 <Badge className={palette.badge}>
+                                   {formatEventType(event.event_type)}
+                                 </Badge>
+                                 <Badge variant="secondary" className="bg-gray-500/20 text-gray-700 dark:text-gray-300">
+                                   <Clock className="h-3 w-3 mr-1" />
+                                   Concluído
+                                 </Badge>
+                                 {event.is_mandatory && (
+                                   <Badge variant="secondary" className="bg-red-500/20 text-red-700 dark:text-red-300">
+                                     <AlertCircle className="h-3 w-3 mr-1" />
+                                     Obrigatório
+                                   </Badge>
+                                 )}
+                                 {event.registration_required && (
+                                   <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                                     <UserCheck className="h-3 w-3 mr-1" />
+                                     Inscrição
+                                   </Badge>
+                                 )}
+                               </div>
+                               
+                               {event.description && (
+                                 <p className="text-muted-foreground mb-4">{event.description}</p>
+                               )}
+                               
+                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                 <div className="flex items-center gap-2">
+                                   <Clock className="h-4 w-4 text-muted-foreground" />
+                                   <div>
+                                     <div className="font-medium">
+                                       {new Date(event.event_date + 'T00:00:00').toLocaleDateString("pt-BR")}
+                                     </div>
+                                     {event.event_time && (
+                                       <div className="text-muted-foreground">
+                                         {event.event_time}
+                                       </div>
+                                     )}
+                                   </div>
+                                 </div>
+                                 
+                                 {event.instructor && (
+                                   <div className="flex items-center gap-2">
+                                     <Users className="h-4 w-4 text-muted-foreground" />
+                                     <div>
+                                       <div className="font-medium">Instrutor</div>
+                                       <div className="text-muted-foreground">{event.instructor}</div>
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {event.location && (
+                                   <div className="flex items-center gap-2">
+                                     <MapPin className="h-4 w-4 text-muted-foreground" />
+                                     <div>
+                                       <div className="font-medium">Local</div>
+                                       <div className="text-muted-foreground">{event.location}</div>
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {event.duration_minutes && (
+                                   <div className="flex items-center gap-2">
+                                     <Clock className="h-4 w-4 text-muted-foreground" />
+                                     <div>
+                                       <div className="font-medium">Duração</div>
+                                       <div className="text-muted-foreground">
+                                         {Math.floor(event.duration_minutes / 60)}h {event.duration_minutes % 60}min
+                                       </div>
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                               
+                               {event.event_url && (
+                                 <div className="mt-4">
+                                   <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={() => window.open(event.event_url, '_blank')}
+                                     className="hover:bg-primary/10"
+                                   >
+                                     <ExternalLink className="h-4 w-4 mr-2" />
+                                     Acessar Evento
+                                   </Button>
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                           
+                           {canManageEvents && (
+                             <div className="flex gap-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => {
+                                   setEditingEvent(event);
+                                   setFormData({
+                                     title: event.title,
+                                     description: event.description || "",
+                                     event_type: event.event_type,
+                                     event_date: event.event_date,
+                                     event_time: event.event_time || "",
+                                     duration_minutes: event.duration_minutes,
+                                     instructor: event.instructor || "",
+                                     location: event.location || "",
+                                     is_mandatory: event.is_mandatory,
+                                     max_participants: event.max_participants,
+                                     registration_required: event.registration_required,
+                                     event_url: event.event_url || ""
+                                   });
+                                   setIsModalOpen(true);
+                                 }}
+                                 className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
+                               >
+                                 <Edit2 className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => handleDeleteEvent(event.id!)}
+                                 className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           )}
+                         </div>
+                       </CardContent>
+                     </Card>
+                   );
+                 })
+               )}
+             </div>
+           </TabsContent>
+         </Tabs>
       </div>
     </DashboardShell>
   );
