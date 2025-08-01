@@ -1402,6 +1402,11 @@ export default function FlashcardsPage() {
 
   // 1. Seleção de matéria
   if (!selectedSubject) {
+    console.log("🔍 [RENDER] Renderizando seleção de matéria")
+    console.log("🔍 [RENDER] subjects.length:", subjects.length)
+    console.log("🔍 [RENDER] subjects:", subjects)
+    console.log("🔍 [RENDER] isLoading:", isLoading)
+    
     return (
       <DashboardShell>
         <div className="space-y-6 p-6">
@@ -1414,6 +1419,7 @@ export default function FlashcardsPage() {
           
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {subjects.map((subject, index) => {
+              console.log("🔍 [RENDER] Renderizando subject:", subject)
               // Cores especiais para cada matéria seguindo o padrão do quiz
               const subjectColors = {
                 'Português': {
@@ -1497,65 +1503,62 @@ export default function FlashcardsPage() {
                       {/* Estatísticas simuladas */}
                       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${config.gradient}`} />
-                          Flashcards disponíveis
+                          <BookOpen className="h-4 w-4" />
+                          {subject.name.toLowerCase().includes('português') ? (
+                            <span>Gramática, Literatura, Redação</span>
+                          ) : (
+                            <span>Regulamentos, Legislação</span>
+                          )}
                         </span>
-                        <span className="font-semibold">500+</span>
+                        <span className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          <span>Nível {Math.floor(Math.random() * 5) + 1}</span>
+                        </span>
                       </div>
                       
-                      <div className="flex justify-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        {subject.name.toLowerCase().includes('português') ? (
-                          <>
-                            <span>• Gramática</span>
-                            <span>• Literatura</span>
-                            <span>• Interpretação</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>• Normas</span>
-                            <span>• Legislação</span>
-                            <span>• Condutas</span>
-                          </>
-                        )}
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 1000) + 100} estudantes</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 50) + 10} min</span>
+                        </span>
                       </div>
-                      
-                      <Button 
-                        className={`
-                          w-full bg-gradient-to-r ${config.button} text-white font-bold py-4 text-lg
-                          transform transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl
-                          border-0 focus:ring-4 focus:ring-offset-2 focus:ring-opacity-50
-                          group-hover:animate-pulse
-                        `}
-                      >
-                        <Play className="mr-3 h-6 w-6" />
-                        Estudar {subject.name}
-                      </Button>
                     </div>
+                    
+                    <Button 
+                      className={`w-full mt-6 bg-gradient-to-r ${config.button} text-white border-0 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
+                    >
+                      <Play className="mr-3 h-6 w-6" />
+                      Estudar {subject.name}
+                    </Button>
                   </CardContent>
                 </Card>
               )
             })}
           </div>
 
-                  {subjects.length === 0 && (
-          <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
-            <CardContent>
-              <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
-                <BookOpenText className="h-16 w-16 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhuma matéria disponível</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
-                As matérias ainda não foram configuradas no sistema. Em breve novos conteúdos serão adicionados!
-              </p>
-              <Button asChild className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 px-8 py-3 text-lg font-semibold">
-                <Link href="/dashboard">
-                  <ArrowRight className="mr-3 h-5 w-5" />
-                  Voltar ao Dashboard
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+          {subjects.length === 0 && (
+            <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+              <CardContent>
+                <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
+                  <BookOpenText className="h-16 w-16 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhuma matéria disponível</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                  As matérias ainda não foram configuradas no sistema. Em breve novos conteúdos serão adicionados!
+                </p>
+                <Button asChild className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                  <Link href="/dashboard">
+                    <ArrowRight className="mr-3 h-5 w-5" />
+                    Voltar ao Dashboard
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DashboardShell>
     )
