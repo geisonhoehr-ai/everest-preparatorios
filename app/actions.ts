@@ -145,10 +145,10 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer, created_at")
+    .select("id, topic_id, question, answer")
     .eq("topic_id", topicId)
-    .order("created_at", { ascending: false })
-    .limit(limit)
+    .order("id", { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
@@ -197,9 +197,9 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer, created_at")
+    .select("id, topic_id, question, answer")
     .eq("topic_id", topicId)
-    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .range(offset, offset + limit - 1)
 
   if (error) {
@@ -233,7 +233,7 @@ export async function getFlashcardById(userUuid: string, flashcardId: number) {
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer, created_at")
+    .select("id, topic_id, question, answer")
     .eq("id", flashcardId)
     .single()
 
