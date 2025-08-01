@@ -36,10 +36,10 @@ async function getDebugInfo() {
   let userScoresData = null
   let userTopicProgressData = null
 
-  if (user?.id) {
-    const { data: scoresData } = await supabase.from("user_scores").select("*").eq("user_uuid", user.id)
+  if (user?.email) {
+    const { data: scoresData } = await supabase.from("user_scores").select("*").eq("user_uuid", user.email)
 
-    const { data: progressData } = await supabase.from("user_topic_progress").select("*").eq("user_uuid", user.id)
+    const { data: progressData } = await supabase.from("user_topic_progress").select("*").eq("user_uuid", user.email)
 
     userScoresData = scoresData
     userTopicProgressData = progressData

@@ -154,7 +154,7 @@ export default function CalendarioPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const role = await getUserRoleClient(user.id);
+        const role = await getUserRoleClient(user.email);
         setUserRole(role);
       }
     } catch (error) {
@@ -294,7 +294,7 @@ export default function CalendarioPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+              <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

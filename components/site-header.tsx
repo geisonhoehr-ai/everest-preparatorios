@@ -50,15 +50,15 @@ function HeaderMarquee() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-gradient-to-r from-blue-600 to-purple-600 backdrop-blur-lg shadow-lg">
-      <div className="container flex h-16 items-center justify-between py-4 gap-2">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-gradient-to-r from-blue-600 to-purple-600 backdrop-blur-lg shadow-lg" style={{ margin: 0, padding: 0 }}>
+      <div className="container flex h-16 items-center justify-between py-4 gap-2" style={{ margin: 0, padding: '0 1rem' }}>
         <div className="flex items-center space-x-2 min-w-fit flex-shrink-0">
           <Link href="/" className="flex items-center space-x-2 hover:opacity-90 transition-opacity">
             <Sparkles className="h-6 w-6 text-white flex-shrink-0" />
             <span className="font-bold text-lg text-white whitespace-nowrap">Everest Preparatórios</span>
           </Link>
         </div>
-        <HeaderMarquee />
+        
         <div className="flex items-center space-x-2 min-w-fit flex-shrink-0">
           <UserInfo />
         </div>

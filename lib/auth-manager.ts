@@ -189,7 +189,7 @@ class AuthManager {
     try {
       console.log('🔄 [AUTH_MANAGER] Atualizando estado:', user.email)
 
-      const role = await getUserRoleClient(user.id)
+      const role = await getUserRoleClient(user.email)
       
       this.currentAuthState = {
         user,
@@ -221,7 +221,7 @@ class AuthManager {
 
   private handlePostLogin() {
     // Redirecionar após login se estiver na página de login
-    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+    if (typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/login-simple')) {
       const urlParams = new URLSearchParams(window.location.search)
       const redirectTo = urlParams.get('redirect') || this.getDefaultRedirectUrl()
       
@@ -261,7 +261,7 @@ class AuthManager {
 
     // Redirecionar se não estiver em página pública
     if (typeof window !== 'undefined') {
-      const publicPages = ['/', '/login', '/signup', '/forgot-password']
+      const publicPages = ['/', '/login', '/login-simple', '/signup', '/signup-simple', '/forgot-password']
       if (!publicPages.includes(window.location.pathname)) {
         window.location.replace('/login')
       }

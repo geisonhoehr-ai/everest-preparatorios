@@ -160,7 +160,7 @@ export default function SuportePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        const role = await getUserRoleClient(user.id);
+        const role = await getUserRoleClient(user.email);
         setUserRole(role as any);
       }
       

@@ -160,7 +160,7 @@ export default function SuportePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        const role = await getUserRoleClient(user.id);
+        const role = await getUserRoleClient(user.email);
         setUserRole(role as any);
       }
       
@@ -644,12 +644,9 @@ export default function SuportePage() {
                         open={expandedFaqs.has(faq.id)}
                         onOpenChange={() => toggleFAQ(faq.id)}
                       >
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-4 h-auto hover:bg-orange-50 dark:hover:bg-orange-950"
-                          >
-                            <div className="text-left">
+                        <CollapsibleTrigger>
+                          <div className="w-full justify-between p-4 h-auto hover:bg-orange-50 dark:hover:bg-orange-950 flex items-center cursor-pointer">
+                            <div className="text-left flex-1">
                               <div className="font-medium">{faq.question}</div>
                               <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
@@ -684,7 +681,7 @@ export default function SuportePage() {
                                 <ChevronDown className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                               )}
                             </div>
-                          </Button>
+                          </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="px-4 pb-4">
                           <div className="text-sm text-muted-foreground leading-relaxed bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg">

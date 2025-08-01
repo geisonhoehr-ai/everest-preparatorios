@@ -3,6 +3,7 @@ import { Moon, Sun, Monitor, ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useMemo } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,13 +18,17 @@ interface ThemeIconsProps {
 export function ThemeIcons({ collapsed = false }: ThemeIconsProps) {
   const { theme, setTheme } = useTheme()
 
-  const themes = [
+  const themes = useMemo(() => [
     { value: "light", icon: Sun, label: "Claro" },
     { value: "dark", icon: Moon, label: "Escuro" },
     { value: "system", icon: Monitor, label: "Sistema" }
-  ]
+  ], [])
 
-  const currentTheme = themes.find(t => t.value === theme) || themes[2] // default to system
+  const currentTheme = useMemo(() => 
+    themes.find(t => t.value === theme) || themes[2], // default to system
+    [themes, theme]
+  )
+  
   const CurrentIcon = currentTheme.icon
 
   return (

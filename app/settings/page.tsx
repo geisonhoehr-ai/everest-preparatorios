@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 export default function SettingsPage() {
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-6 p-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">Configurações</h1>

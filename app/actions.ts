@@ -442,7 +442,7 @@ export async function getRedacoesUsuario() {
         *,
         temas_redacao(titulo)
       `)
-      .eq('user_uuid', user.id)
+      .eq('user_uuid', user.email)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -565,7 +565,7 @@ export async function createRedacao(data: {
 
     // Criar registro da redação
     const redacaoData = {
-      user_uuid: user.id,
+      user_uuid: user.email,
       titulo: data.titulo,
       tema: tema?.titulo || "Tema não encontrado",
       tema_id: data.tema_id,
@@ -1042,7 +1042,7 @@ export async function getUserRole() {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
-    .eq("user_uuid", user.id)
+    .eq("user_uuid", user.email)
     .single()
 
   return data?.role || "student"

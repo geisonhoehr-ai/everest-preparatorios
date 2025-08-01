@@ -51,7 +51,7 @@ export default function AuthGuard({
         console.log('✅ [AUTH_GUARD] Sessão encontrada:', session.user.email)
 
         // Se tem sessão, verificar role
-        const role = await getUserRoleClient(session.user.id)
+        const role = await getUserRoleClient(session.user.email)
         setUserRole(role)
         
         console.log('🔍 [AUTH_GUARD] Role do usuário:', role)
@@ -149,7 +149,7 @@ export function useAuthGuard() {
           return
         }
 
-        const role = await getUserRoleClient(session.user.id)
+        const role = await getUserRoleClient(session.user.email)
 
         setAuthState({
           isLoading: false,

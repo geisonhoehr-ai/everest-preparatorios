@@ -31,9 +31,13 @@ export default function LoginPage() {
         
         if (session?.user) {
           console.log("🔄 [LOGIN] Usuário já logado, redirecionando...");
+          console.log("🔄 [LOGIN] Email do usuário:", session.user.email);
           
-          const role = await getUserRoleClient(session.user.id);
+          const role = await getUserRoleClient(session.user.email);
+          console.log("🔄 [LOGIN] Role obtido:", role);
+          
           const redirectTo = searchParams.get('redirect') || (role === 'teacher' ? '/teacher' : '/dashboard');
+          console.log("🔄 [LOGIN] Redirecionando para:", redirectTo);
           
           window.location.replace(redirectTo);
         }
@@ -110,7 +114,7 @@ export default function LoginPage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         try {
-          const role = await getUserRoleClient(data.user.id);
+          const role = await getUserRoleClient(data.user.email);
           console.log("✅ [LOGIN] Role obtido:", role);
           
           // Obter URL de redirecionamento
@@ -125,6 +129,7 @@ export default function LoginPage() {
           console.error("❌ [LOGIN] Erro ao obter role:", roleError);
           // Se houver erro ao obter o role, redirecionar para dashboard mesmo assim
           const redirectTo = searchParams.get('redirect') || '/dashboard';
+          console.log("🔄 [LOGIN] Redirecionando para dashboard (fallback):", redirectTo);
           window.location.replace(redirectTo);
           return;
         }
@@ -178,6 +183,7 @@ export default function LoginPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
@@ -231,6 +237,7 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     value={password}

@@ -189,7 +189,7 @@ class AuthManager {
     try {
       console.log('🔄 [AUTH_MANAGER] Atualizando estado:', user.email)
 
-      const role = await getUserRoleClient(user.id)
+      const role = await getUserRoleClient(user.email)
       
       this.currentAuthState = {
         user,

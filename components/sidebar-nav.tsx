@@ -4,6 +4,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useMemo } from "react"
 import { 
   BookOpen, 
   Home, 
@@ -50,17 +51,18 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 
 export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+  
   const role = user?.role || 'student'
+  const isTeacher = role === 'teacher' || role === 'admin'
 
-  // Função para obter os itens do menu baseados no role
-  const getMenuItems = (): SidebarNavItem[] => {
-    const isTeacher = role === 'teacher' || role === 'admin'
-    
+  // Memoizar os itens do menu para evitar re-renderizações
+  const menuItems = useMemo((): SidebarNavItem[] => {
     if (isTeacher) {
+      console.log('👨‍🏫 [SIDEBAR] Mostrando menu de professor/admin')
       return [
         {
-          href: "/teacher",
+          href: "/dashboard",
           title: "Dashboard",
           icon: LayoutDashboard,
         },
@@ -127,6 +129,7 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
         },
       ]
     } else {
+      console.log('👨‍🎓 [SIDEBAR] Mostrando menu de estudante')
       return [
         {
           href: "/dashboard",
@@ -181,9 +184,7 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
         },
       ]
     }
-  }
-
-  const menuItems = getMenuItems()
+  }, [isTeacher])
 
   return (
     <TooltipProvider>

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Loader2, Mail, Lock, User, ArrowRight, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SimpleSignupPage() {
@@ -30,6 +30,11 @@ export default function SimpleSignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Mostrar erro informando sobre o problema temporário
+    setError('Criação de novas contas temporariamente indisponível. Use as credenciais de teste disponíveis na página de login.')
+    return
+
     if (!email || !password || !confirmPassword) return
 
     if (password !== confirmPassword) {
@@ -76,6 +81,21 @@ export default function SimpleSignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Alerta sobre problema temporário */}
+          <Alert className="mb-4 border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Atenção:</strong> Criação de novas contas temporariamente indisponível devido a manutenção no sistema.
+              <br />
+              <br />
+              <strong>Use as credenciais de teste:</strong>
+              <br />
+              • Admin: geisonhoehr@gmail.com / 123456
+              <br />
+              • Professor: professor@teste.com / 123456
+            </AlertDescription>
+          </Alert>
+
           <form onSubmit={handleSignup} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -101,6 +121,7 @@ export default function SimpleSignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required
+                  disabled
                 />
               </div>
             </div>
@@ -117,6 +138,7 @@ export default function SimpleSignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
                   required
+                  disabled
                 />
               </div>
             </div>
@@ -133,6 +155,7 @@ export default function SimpleSignupPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10"
                   required
+                  disabled
                 />
               </div>
             </div>
@@ -147,6 +170,7 @@ export default function SimpleSignupPage() {
                   onChange={(e) => setRole(e.target.value as any)}
                   className="w-full pl-10 pr-3 py-2 border rounded-md bg-background"
                   required
+                  disabled
                 >
                   <option value="student">Estudante</option>
                   <option value="teacher">Professor</option>
@@ -155,18 +179,9 @@ export default function SimpleSignupPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando conta...
-                </>
-              ) : (
-                <>
-                  Criar Conta
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
+            <Button type="submit" className="w-full" disabled={true}>
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Temporariamente Indisponível
             </Button>
           </form>
 

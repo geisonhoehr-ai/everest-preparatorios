@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { SidebarNav, sidebarNavItems } from "@/components/sidebar-nav"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { ChevronLeft, ChevronRight, Menu, X, User, Settings, LogOut, Sparkles, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeIcons } from "@/components/theme-icons"
@@ -32,7 +32,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const router = useRouter()
   const { user, signOut, isLoading } = useAuth()
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     console.log("🔄 [DASHBOARD_SHELL] Iniciando logout...")
     try {
       await signOut()
@@ -40,10 +40,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
     } catch (error) {
       console.error("❌ [DASHBOARD_SHELL] Erro no logout:", error)
     }
-  }
+  }, [signOut, router])
 
   // Função para traduzir o role
-  const getRoleDisplay = (role: string | null) => {
+  const getRoleDisplay = useCallback((role: string | null) => {
     if (isLoading) {
       return "Carregando..."
     }
@@ -57,18 +57,40 @@ export function DashboardShell({ children }: DashboardShellProps) {
       default:
         return "Estudante"
     }
-  }
+  }, [isLoading])
 
   // Função para obter iniciais do email
-  const getInitials = (email: string) => {
+  const getInitials = useCallback((email: string) => {
     return email.split('@')[0].substring(0, 2).toUpperCase()
-  }
+  }, [])
+
+  // Memoizar o conteúdo do usuário para evitar re-renderizações
+  const userContent = useMemo(() => {
+    if (!user) return null
+
+    return (
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-orange-100 text-orange-600">
+            {getInitials(user.email)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{user.email}</p>
+          <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleLogout}>
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
+    )
+  }, [user, getInitials, getRoleDisplay, handleLogout])
 
   // Mostrar loading apenas se ainda não inicializou
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex bg-background">
-        <div className="flex items-center justify-center w-full">
+      <div className="dashboard-layout bg-background">
+        <div className="flex items-center justify-center w-full h-screen">
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <p className="text-muted-foreground">Carregando...</p>
@@ -79,7 +101,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-background">
+    <div className="dashboard-layout bg-background" style={{ margin: 0, padding: 0 }}>
       {/* Overlay para mobile */}
       {mobileOpen && (
         <div 
@@ -90,10 +112,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Menu Mobile - Implementação mais simples */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-background border-r transform transition-transform duration-300 md:hidden",
+        "sidebar-stable md:hidden",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col bg-background border-r">
           <div className="flex h-16 items-center justify-between px-4 border-b">
             <span className="text-lg font-semibold">Menu</span>
             <Button
@@ -110,20 +132,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           {/* User section mobile */}
           {user && (
             <div className="border-t p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {getInitials(user.email)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              {userContent}
             </div>
           )}
         </div>
@@ -131,9 +140,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {/* Sidebar Desktop */}
       <div className={cn(
-        "hidden md:flex md:w-64 md:flex-col",
-        collapsed && "md:w-16"
-      )}>
+        "hidden md:flex md:flex-col sidebar-stable",
+        collapsed && "collapsed"
+      )} style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: collapsed ? '4rem' : '16rem',
+        zIndex: 50
+      }}>
         <div className="flex h-full flex-col border-r bg-background">
           {/* Header */}
           <div className="flex h-16 items-center justify-between px-4 border-b">
@@ -228,9 +244,20 @@ export function DashboardShell({ children }: DashboardShellProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "main-content-stable",
+        collapsed && "collapsed"
+      )} style={{ 
+        margin: 0, 
+        padding: 0, 
+        marginLeft: collapsed ? '4rem' : '16rem',
+        width: collapsed ? 'calc(100vw - 4rem)' : 'calc(100vw - 16rem)',
+        position: 'relative',
+        left: 0,
+        top: 0
+      }}>
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="content-wrapper" style={{ margin: 0, padding: '1rem 1.5rem' }}>
           {children}
         </main>
       </div>

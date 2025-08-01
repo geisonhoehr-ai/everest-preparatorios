@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', user.id)
+      .eq('user_uuid', user.email)
       .single()
 
     if (!userRole || !['teacher', 'admin'].includes(userRole.role)) {

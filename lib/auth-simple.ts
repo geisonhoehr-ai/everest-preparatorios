@@ -1,7 +1,8 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { getUserRoleClient } from './get-user-role'
 
 // Tipos simples
 export interface AuthUser {
@@ -25,8 +26,54 @@ export function useAuth() {
   })
 
   const supabase = createClient()
+  const isInitialized = useRef(false)
+
+  // Função para obter role do usuário
+  const getUserRole = useCallback(async (userEmail: string): Promise<string> => {
+    try {
+      console.log('🔍 [AUTH] Buscando role para:', userEmail)
+      const role = await getUserRoleClient(userEmail)
+      console.log('✅ [AUTH] Role encontrada:', role)
+      return role
+    } catch (error) {
+      console.error('❌ [AUTH] Erro ao obter role:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        type: typeof error,
+        error: error
+      })
+      return 'student' // fallback
+    }
+  }, [])
+
+  // Função para criar objeto de usuário
+  const createUserObject = useCallback(async (sessionUser: any): Promise<AuthUser> => {
+    try {
+      const userRole = await getUserRole(sessionUser.email || '')
+      return {
+        id: sessionUser.id,
+        email: sessionUser.email || '',
+        role: userRole as 'student' | 'teacher' | 'admin'
+      }
+    } catch (error) {
+      console.error('❌ [AUTH] Erro ao criar objeto de usuário:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        type: typeof error,
+        error: error
+      })
+      // Retornar usuário com role padrão em caso de erro
+      return {
+        id: sessionUser.id,
+        email: sessionUser.email || '',
+        role: 'student'
+      }
+    }
+  }, [getUserRole])
 
   useEffect(() => {
+    // Evitar múltiplas inicializações
+    if (isInitialized.current) return
+    isInitialized.current = true
+
     console.log('🔧 [AUTH] Iniciando verificação de sessão...')
     
     // Verificar sessão uma única vez
@@ -47,20 +94,9 @@ export function useAuth() {
         if (session?.user) {
           console.log('✅ [AUTH] Sessão encontrada:', session.user.email)
           
-          // Buscar role
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_uuid', session.user.id)
-            .single()
-
-          const user: AuthUser = {
-            id: session.user.id,
-            email: session.user.email || '',
-            role: (roleData?.role as any) || 'student'
-          }
-
+          const user = await createUserObject(session.user)
           console.log('👤 [AUTH] Usuário carregado:', user)
+          
           setAuthState({
             user,
             isLoading: false,
@@ -88,22 +124,11 @@ export function useAuth() {
 
     // Escutar mudanças
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: any) => {
         console.log('🔄 [AUTH] Evento:', event, session?.user?.email)
         
         if (event === 'SIGNED_IN' && session?.user) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_uuid', session.user.id)
-            .single()
-
-          const user: AuthUser = {
-            id: session.user.id,
-            email: session.user.email || '',
-            role: (roleData?.role as any) || 'student'
-          }
-
+          const user = await createUserObject(session.user)
           setAuthState({
             user,
             isLoading: false,
@@ -119,8 +144,11 @@ export function useAuth() {
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      subscription.unsubscribe()
+      isInitialized.current = false
+    }
+  }, [createUserObject])
 
   // Funções simples
   const signIn = async (email: string, password: string) => {
@@ -153,7 +181,7 @@ export function useAuth() {
         await supabase
           .from('user_roles')
           .insert({
-            user_uuid: data.user.id,
+            user_uuid: data.user.email,
             role
           })
       }

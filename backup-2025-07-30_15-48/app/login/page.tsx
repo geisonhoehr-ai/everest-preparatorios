@@ -32,7 +32,7 @@ export default function LoginPage() {
         if (session?.user) {
           console.log("🔄 [LOGIN] Usuário já logado, redirecionando...");
           
-          const role = await getUserRoleClient(session.user.id);
+          const role = await getUserRoleClient(session.user.email);
           const redirectTo = searchParams.get('redirect') || (role === 'teacher' ? '/teacher' : '/dashboard');
           
           window.location.replace(redirectTo);
@@ -110,7 +110,7 @@ export default function LoginPage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         try {
-          const role = await getUserRoleClient(data.user.id);
+          const role = await getUserRoleClient(data.user.email);
           console.log("✅ [LOGIN] Role obtido:", role);
           
           // Obter URL de redirecionamento

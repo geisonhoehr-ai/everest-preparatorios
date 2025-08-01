@@ -1404,7 +1404,7 @@ export default function FlashcardsPage() {
   if (!selectedSubject) {
     return (
       <DashboardShell>
-        <div className="space-y-8">
+        <div className="space-y-6 p-6">
           <div>
             <h1 className="text-3xl font-bold">Escolha a Matéria</h1>
             <p className="text-muted-foreground mt-1">
@@ -1564,7 +1564,7 @@ export default function FlashcardsPage() {
   // 4. Página principal de tópicos (após escolher matéria)
   return (
     <DashboardShell>
-      <div className="space-y-8">
+              <div className="space-y-6">
         {/* Header com Stats Globais */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>

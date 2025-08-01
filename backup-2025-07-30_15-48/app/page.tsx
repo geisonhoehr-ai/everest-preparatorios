@@ -21,7 +21,7 @@ export default function LandingPage() {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          const role = await getUserRoleClient(user.id);
+          const role = await getUserRoleClient(user.email);
           console.log("User role on landing page:", role);
           
           if (role === "teacher") {

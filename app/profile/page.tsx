@@ -46,14 +46,14 @@ export default function ProfilePage() {
       }
 
       if (profile) {
-        setUserAvatarUrl(profile.avatar_url)
+        setUserAvatarUrl(profile.avatar_url && typeof profile.avatar_url === 'string' ? profile.avatar_url : null)
       }
 
       // Obter role do usuário
       const { data: userRoleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_uuid', user.email)
         .single()
 
       if (roleError && roleError.code !== 'PGRST116') {

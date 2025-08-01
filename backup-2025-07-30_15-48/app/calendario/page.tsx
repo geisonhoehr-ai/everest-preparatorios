@@ -154,7 +154,7 @@ export default function CalendarioPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const role = await getUserRoleClient(user.id);
+        const role = await getUserRoleClient(user.email);
         setUserRole(role);
       }
     } catch (error) {

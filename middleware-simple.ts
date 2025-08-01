@@ -16,17 +16,17 @@ export async function middleware(req: NextRequest) {
   }
 
   // Rotas públicas
-  const publicRoutes = ['/login-simple', '/signup-simple', '/', '/test-session']
+  const publicRoutes = ['/login', '/login-simple', '/signup', '/signup-simple', '/', '/test-session']
   const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route))
 
   // Se não está logado e não é rota pública, redirecionar para login
   if (!session && !isPublicRoute) {
     console.log('🚫 [MIDDLEWARE] Não logado, redirecionando para login')
-    return NextResponse.redirect(new URL('/login-simple', req.url))
+    return NextResponse.redirect(new URL('/login', req.url))
   }
 
   // Se está logado e está em rota de login/signup, redirecionar para dashboard
-  if (session && (req.nextUrl.pathname === '/login-simple' || req.nextUrl.pathname === '/signup-simple')) {
+  if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/login-simple' || req.nextUrl.pathname === '/signup' || req.nextUrl.pathname === '/signup-simple')) {
     console.log('✅ [MIDDLEWARE] Logado, redirecionando para dashboard')
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
@@ -42,7 +42,7 @@ export async function middleware(req: NextRequest) {
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', session.user.id)
+      .eq('user_uuid', session.user.email)
       .single()
 
     const userRole = roleData?.role || 'student'

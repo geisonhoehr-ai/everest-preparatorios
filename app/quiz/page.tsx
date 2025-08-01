@@ -639,7 +639,7 @@ export default function QuizPage() {
   if (subjects.length === 0) {
     return (
       <DashboardShell>
-        <div className="space-y-8">
+        <div className="space-y-6 p-6">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
             <p className="text-muted-foreground mt-1">
@@ -675,7 +675,7 @@ export default function QuizPage() {
   if (!selectedSubject) {
     return (
       <DashboardShell>
-        <div className="space-y-8">
+        <div className="space-y-6 p-6">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
             <p className="text-muted-foreground mt-1">
@@ -1763,7 +1763,7 @@ export default function QuizPage() {
 
   return (
     <DashboardShell>
-      <div className="space-y-8">
+              <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>

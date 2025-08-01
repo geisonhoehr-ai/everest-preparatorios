@@ -242,6 +242,7 @@ export default function SignupPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="seu@email.com"
                   required
@@ -254,6 +255,7 @@ export default function SignupPage() {
                 <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
                   required
@@ -266,6 +268,7 @@ export default function SignupPage() {
                 <Label htmlFor="confirmPassword">Confirmar Senha</Label>
                 <Input
                   id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   placeholder="••••••••"
                   required

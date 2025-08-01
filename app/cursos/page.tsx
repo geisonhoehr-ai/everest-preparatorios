@@ -178,7 +178,7 @@ export default function CursosPage() {
           const { data: userRoleData } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_uuid', user.id)
+            .eq('user_uuid', user.email)
             .single()
           
           setUserRole(userRoleData?.role || 'student')

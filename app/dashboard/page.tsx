@@ -29,8 +29,6 @@ import {
   BarChart3,
   ArrowRight
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-simple";
-import { getOrCreateStudentProgress, StudentProgress } from "@/lib/student-progress";
 
 interface UserStats {
   totalFlashcards: number;
@@ -127,54 +125,19 @@ const getDifficultyColor = (level: number) => {
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth()
   const [userStats, setUserStats] = useState<UserStats>({
-    totalFlashcards: 0,
-    completedFlashcards: 0,
-    totalQuizzes: 0,
-    averageScore: 0,
-    currentStreak: 0,
-    totalStudyTime: 0,
-    rank: 0,
-    totalUsers: 0,
-    level: 1,
-    xp: 0,
-    nextLevelXp: 1000
+    totalFlashcards: 150,
+    completedFlashcards: 87,
+    totalQuizzes: 12,
+    averageScore: 78,
+    currentStreak: 5,
+    totalStudyTime: 1250,
+    rank: 23,
+    totalUsers: 156,
+    level: 7,
+    xp: 3420,
+    nextLevelXp: 4000
   });
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Carregar progresso real do aluno
-  useEffect(() => {
-    const loadStudentProgress = async () => {
-      if (!user?.id) return;
-
-      try {
-        setIsLoading(true);
-        const progress = await getOrCreateStudentProgress(user.id);
-        
-        // Converter progresso para formato do dashboard
-        setUserStats({
-          totalFlashcards: progress.total_flashcards,
-          completedFlashcards: progress.completed_flashcards,
-          totalQuizzes: progress.total_quizzes,
-          averageScore: progress.average_score,
-          currentStreak: progress.current_streak,
-          totalStudyTime: progress.total_study_time,
-          rank: 0, // TODO: Implementar ranking
-          totalUsers: 0, // TODO: Implementar contagem total
-          level: progress.current_level,
-          xp: progress.total_xp,
-          nextLevelXp: progress.current_level * 1000
-        });
-      } catch (error) {
-        console.error('Erro ao carregar progresso do aluno:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadStudentProgress();
-  }, [user?.id]);
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
@@ -222,56 +185,14 @@ export default function DashboardPage() {
   const progressPercentage = (userStats.completedFlashcards / userStats.totalFlashcards) * 100;
   const xpProgress = ((userStats.xp % 1000) / 1000) * 100;
 
-  // Atualizar conquistas baseadas no progresso real
-  useEffect(() => {
-    setAchievements([
-      {
-        id: "1",
-        title: "Primeira Vitória",
-        description: "Complete seu primeiro quiz",
-        icon: <Trophy className="h-8 w-8" />,
-        unlocked: userStats.totalQuizzes > 0,
-        progress: Math.min(userStats.totalQuizzes, 1),
-        maxProgress: 1,
-        category: userStats.totalQuizzes > 0 ? "unlocked" : "achievement"
-      },
-      {
-        id: "2",
-        title: "Maratonista",
-        description: "Estude por 7 dias seguidos",
-        icon: <Flame className="h-8 w-8" />,
-        unlocked: userStats.currentStreak >= 7,
-        progress: Math.min(userStats.currentStreak, 7),
-        maxProgress: 7,
-        category: userStats.currentStreak >= 7 ? "unlocked" : "achievement"
-      },
-      {
-        id: "3",
-        title: "Mestre dos Cards",
-        description: "Complete 100 flashcards",
-        icon: <Brain className="h-8 w-8" />,
-        unlocked: userStats.completedFlashcards >= 100,
-        progress: Math.min(userStats.completedFlashcards, 100),
-        maxProgress: 100,
-        category: userStats.completedFlashcards >= 100 ? "unlocked" : "achievement"
-      },
-      {
-        id: "4",
-        title: "Escritor Nato",
-        description: "Envie 10 redações",
-        icon: <PenTool className="h-8 w-8" />,
-        unlocked: false, // TODO: Implementar contagem de redações
-        progress: 0,
-        maxProgress: 10,
-        category: "achievement"
-      }
-    ]);
-  }, [userStats]);
-
-  // Add CSS effects for cards (without float animations)
+  // Add CSS animations
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
       @keyframes shimmer {
         0% { background-position: -200% 0; }
         100% { background-position: 200% 0; }
@@ -284,6 +205,7 @@ export default function DashboardPage() {
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.05); }
       }
+      .float-animation { animation: float 3s ease-in-out infinite; }
       .shimmer { 
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
         background-size: 200% 100%;
@@ -300,7 +222,9 @@ export default function DashboardPage() {
     `;
     document.head.appendChild(style);
     return () => {
-      document.head.removeChild(style);
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
     };
   }, []);
 
@@ -308,23 +232,9 @@ export default function DashboardPage() {
   const rankingPalette = getColorPalette('ranking');
   const progressPalette = getColorPalette('progress');
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-            <p className="text-muted-foreground">Carregando seu progresso...</p>
-          </div>
-        </div>
-      </DashboardShell>
-    );
-  }
-
   return (
     <DashboardShell>
-      <div className="space-y-8">
+      <div className="space-y-8 p-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -332,10 +242,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
-              {userStats.completedFlashcards === 0 
-                ? "Bem-vindo! Comece sua jornada rumo à aprovação no CIAAR"
-                : `Continue sua jornada! Você já completou ${userStats.completedFlashcards} flashcards`
-              }
+              Continue sua jornada rumo à aprovação no CIAAR
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -357,7 +264,7 @@ export default function DashboardPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Nível Atual</CardTitle>
-                <Crown className={`h-5 w-5 ${levelPalette.text} pulse-soft`} />
+                <Crown className={`h-5 w-5 ${levelPalette.text} float-animation`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -383,7 +290,7 @@ export default function DashboardPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Ranking Geral</CardTitle>
-                <Trophy className={`h-5 w-5 ${rankingPalette.text} pulse-soft`} />
+                <Trophy className={`h-5 w-5 ${rankingPalette.text} float-animation`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -403,24 +310,20 @@ export default function DashboardPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Progresso Total</CardTitle>
-                <Target className={`h-5 w-5 ${progressPalette.text} pulse-soft`} />
+                <Target className={`h-5 w-5 ${progressPalette.text} float-animation`} />
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold ${progressPalette.text}`}>
-                  {userStats.totalFlashcards === 0 ? 0 : Math.round(progressPercentage)}%
-                </span>
-                <span className="text-muted-foreground mb-1">
-                  {userStats.totalFlashcards === 0 ? 'comece a estudar' : 'concluído'}
-                </span>
+                <span className={`text-4xl font-bold ${progressPalette.text}`}>{Math.round(progressPercentage)}%</span>
+                <span className="text-muted-foreground mb-1">concluído</span>
               </div>
               <div className="relative">
-                <Progress value={userStats.totalFlashcards === 0 ? 0 : progressPercentage} className="h-3" />
+                <Progress value={progressPercentage} className="h-3" />
                 <div className="absolute inset-0 shimmer rounded-full"></div>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                {userStats.completedFlashcards} de {userStats.totalFlashcards || '∞'} cards
+                {userStats.completedFlashcards} de {userStats.totalFlashcards} cards
               </p>
             </CardContent>
           </Card>

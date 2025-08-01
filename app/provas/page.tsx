@@ -536,13 +536,14 @@ export default function ProvasPage() {
 
   return (
     <DashboardShell>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Provas Online</h1>
-          <p className="text-muted-foreground">
-            Pratique com provas simuladas e avalie seu conhecimento
-          </p>
-        </div>
+      <div className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Provas Online</h1>
+            <p className="text-muted-foreground">
+              Pratique com provas simuladas e avalie seu conhecimento
+            </p>
+          </div>
         {(userRole === 'teacher' || userRole === 'admin') && (
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
