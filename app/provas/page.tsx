@@ -651,35 +651,35 @@ export default function ProvasPage() {
 
                     {provaData.tem_texto_base && (
                       <div className="space-y-4 border-l-4 border-blue-500 pl-4 bg-blue-50 p-4 rounded">
-                      <div>
-                        <Label htmlFor="titulo_texto_base">Título do Texto Base</Label>
-                        <Input
-                          id="titulo_texto_base"
-                          value={provaData.titulo_texto_base}
-                          onChange={(e) => setProvaData({...provaData, titulo_texto_base: e.target.value})}
-                          placeholder="Ex: O que é voar?"
-                        />
+                        <div>
+                          <Label htmlFor="titulo_texto_base">Título do Texto Base</Label>
+                          <Input
+                            id="titulo_texto_base"
+                            value={provaData.titulo_texto_base}
+                            onChange={(e) => setProvaData({...provaData, titulo_texto_base: e.target.value})}
+                            placeholder="Ex: O que é voar?"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="texto_base">Texto Base</Label>
+                          <RichTextEditor
+                            value={provaData.texto_base}
+                            onChange={(value) => setProvaData({...provaData, texto_base: value})}
+                            placeholder="Cole aqui o texto que será usado para as questões de interpretação..."
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="fonte_texto_base">Fonte do Texto (Opcional)</Label>
+                          <Input
+                            id="fonte_texto_base"
+                            value={provaData.fonte_texto_base}
+                            onChange={(e) => setProvaData({...provaData, fonte_texto_base: e.target.value})}
+                            placeholder="Ex: AEROMAGAZINE. O que é voar? Disponível em: https://..."
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="texto_base">Texto Base</Label>
-                        <RichTextEditor
-                          value={provaData.texto_base}
-                          onChange={(value) => setProvaData({...provaData, texto_base: value})}
-                          placeholder="Cole aqui o texto que será usado para as questões de interpretação..."
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="fonte_texto_base">Fonte do Texto (Opcional)</Label>
-                        <Input
-                          id="fonte_texto_base"
-                          value={provaData.fonte_texto_base}
-                          onChange={(e) => setProvaData({...provaData, fonte_texto_base: e.target.value})}
-                          placeholder="Ex: AEROMAGAZINE. O que é voar? Disponível em: https://..."
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
