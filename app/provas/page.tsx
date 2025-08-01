@@ -552,90 +552,90 @@ export default function ProvasPage() {
                   Nova Prova
                 </Button>
               </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Criar Nova Prova</DialogTitle>
-                    <DialogDescription>
-                      Preencha os dados da prova e adicione as questões
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                <div>
-                  <Label htmlFor="titulo">Título</Label>
-                  <Input
-                    id="titulo"
-                    value={provaData.titulo}
-                    onChange={(e) => setProvaData({...provaData, titulo: e.target.value})}
-                    placeholder="Digite o título da prova"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="descricao">Descrição</Label>
-                  <Textarea
-                    id="descricao"
-                    value={provaData.descricao}
-                    onChange={(e) => setProvaData({...provaData, descricao: e.target.value})}
-                    placeholder="Digite a descrição da prova"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Nova Prova</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados da prova e adicione as questões
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="materia">Matéria</Label>
+                    <Label htmlFor="titulo">Título</Label>
                     <Input
-                      id="materia"
-                      value={provaData.materia}
-                      onChange={(e) => setProvaData({...provaData, materia: e.target.value})}
-                      placeholder="Ex: Português"
+                      id="titulo"
+                      value={provaData.titulo}
+                      onChange={(e) => setProvaData({...provaData, titulo: e.target.value})}
+                      placeholder="Digite o título da prova"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="dificuldade">Dificuldade</Label>
-                    <Select
-                      value={provaData.dificuldade}
-                      onValueChange={(value: 'facil' | 'medio' | 'dificil') => 
-                        setProvaData({...provaData, dificuldade: value})
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="facil">Fácil</SelectItem>
-                        <SelectItem value="medio">Médio</SelectItem>
-                        <SelectItem value="dificil">Difícil</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="tempo">Tempo (min)</Label>
-                    <Input
-                      id="tempo"
-                      type="number"
-                      value={provaData.tempo_limite}
-                      onChange={(e) => setProvaData({...provaData, tempo_limite: parseInt(e.target.value) || 0})}
+                    <Label htmlFor="descricao">Descrição</Label>
+                    <Textarea
+                      id="descricao"
+                      value={provaData.descricao}
+                      onChange={(e) => setProvaData({...provaData, descricao: e.target.value})}
+                      placeholder="Digite a descrição da prova"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="tentativas">Tentativas</Label>
-                    <Input
-                      id="tentativas"
-                      type="number"
-                      value={provaData.tentativas_permitidas}
-                      onChange={(e) => setProvaData({...provaData, tentativas_permitidas: parseInt(e.target.value) || 0})}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="materia">Matéria</Label>
+                      <Input
+                        id="materia"
+                        value={provaData.materia}
+                        onChange={(e) => setProvaData({...provaData, materia: e.target.value})}
+                        placeholder="Ex: Português"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dificuldade">Dificuldade</Label>
+                      <Select
+                        value={provaData.dificuldade}
+                        onValueChange={(value: 'facil' | 'medio' | 'dificil') => 
+                          setProvaData({...provaData, dificuldade: value})
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="facil">Fácil</SelectItem>
+                          <SelectItem value="medio">Médio</SelectItem>
+                          <SelectItem value="dificil">Difícil</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="nota">Nota Mínima</Label>
-                    <Input
-                      id="nota"
-                      type="number"
-                      value={provaData.nota_minima}
-                      onChange={(e) => setProvaData({...provaData, nota_minima: parseInt(e.target.value) || 0})}
-                    />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="tempo">Tempo (min)</Label>
+                      <Input
+                        id="tempo"
+                        type="number"
+                        value={provaData.tempo_limite}
+                        onChange={(e) => setProvaData({...provaData, tempo_limite: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tentativas">Tentativas</Label>
+                      <Input
+                        id="tentativas"
+                        type="number"
+                        value={provaData.tentativas_permitidas}
+                        onChange={(e) => setProvaData({...provaData, tentativas_permitidas: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nota">Nota Mínima</Label>
+                      <Input
+                        id="nota"
+                        type="number"
+                        value={provaData.nota_minima}
+                        onChange={(e) => setProvaData({...provaData, nota_minima: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
                   </div>
-                </div>
 
                 {/* Seção do Texto Base */}
                 <div className="space-y-4">
