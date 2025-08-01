@@ -852,12 +852,19 @@ export default function FlashcardsPage() {
           return
         }
       } else {
-        // Carregar novos cards do tópico
-        const allFlashcardsResult = await getAllFlashcardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
-        
-        if (allFlashcardsResult && allFlashcardsResult.success && allFlashcardsResult.data) {
-          moreCards = allFlashcardsResult.data.flashcards
+        // Carregar novos cards do tópico baseado no role do usuário
+        if (userRole === "teacher" || userRole === "admin") {
+          // Para professores e admins, usar função com paginação
+          const allFlashcardsResult = await getAllFlashcardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
+          if (allFlashcardsResult && allFlashcardsResult.success && allFlashcardsResult.data) {
+            moreCards = allFlashcardsResult.data.flashcards
+          }
         } else {
+          // Para estudantes, usar função simples
+          moreCards = await getFlashcardsForReview(selectedTopic, additionalCardsLimit)
+        }
+        
+        if (!moreCards || moreCards.length === 0) {
           // Modificação: Se não houver mais cards, finalizar sessão
           resetSession()
           setShowStatsModal(true)
