@@ -148,7 +148,7 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
     .select("id, topic_id, question, answer, created_at")
     .eq("topic_id", topicId)
     .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1)
+    .limit(limit)
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
