@@ -547,11 +547,11 @@ export default function ProvasPage() {
           {(userRole === 'teacher' || userRole === 'admin') && (
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Prova
-              </Button>
-            </DialogTrigger>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Prova
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Criar Nova Prova</DialogTitle>
