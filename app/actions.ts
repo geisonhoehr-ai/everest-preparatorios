@@ -145,9 +145,10 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer")
+    .select("id, topic_id, question, answer, created_at")
     .eq("topic_id", topicId)
-    .limit(limit)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
@@ -196,7 +197,7 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer, created_at, updated_at")
+    .select("id, topic_id, question, answer, created_at")
     .eq("topic_id", topicId)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1)
@@ -232,7 +233,7 @@ export async function getFlashcardById(userUuid: string, flashcardId: number) {
 
   const { data, error } = await supabase
     .from("flashcards")
-    .select("id, topic_id, question, answer, created_at, updated_at")
+    .select("id, topic_id, question, answer, created_at")
     .eq("id", flashcardId)
     .single()
 
@@ -300,8 +301,7 @@ export async function updateFlashcard(userUuid: string, flashcardId: number, dat
     .from("flashcards")
     .update({
       question: data.question,
-      answer: data.answer,
-      updated_at: new Date().toISOString()
+      answer: data.answer
     })
     .eq("id", flashcardId)
     .select()
