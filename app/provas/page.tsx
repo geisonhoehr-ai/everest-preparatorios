@@ -545,7 +545,7 @@ export default function ProvasPage() {
             </p>
           </div>
           {(userRole === 'teacher' || userRole === 'admin') && (
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
