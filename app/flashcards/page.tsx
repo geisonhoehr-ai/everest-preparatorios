@@ -1006,10 +1006,7 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return
 
-      const result = await updateFlashcard(user.id, editingFlashcard.id, {
-        question: formQuestion,
-        answer: formAnswer
-      })
+      const result = await updateFlashcard(user.id, editingFlashcard.id, formQuestion, formAnswer)
       if (result.success) {
         setFormQuestion("")
         setFormAnswer("")

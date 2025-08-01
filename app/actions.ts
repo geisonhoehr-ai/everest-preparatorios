@@ -283,10 +283,7 @@ export async function createFlashcard(userUuid: string, data: {
 }
 
 // Função para atualizar um flashcard
-export async function updateFlashcard(userUuid: string, flashcardId: number, data: {
-  question: string
-  answer: string
-}) {
+export async function updateFlashcard(userUuid: string, flashcardId: number, question: string, answer: string) {
   const supabase = await getSupabase()
   console.log(`📝 [Server Action] Atualizando flashcard: ${flashcardId}`)
 
@@ -300,8 +297,8 @@ export async function updateFlashcard(userUuid: string, flashcardId: number, dat
   const { data: updatedFlashcard, error } = await supabase
     .from("flashcards")
     .update({
-      question: data.question,
-      answer: data.answer
+      question: question.trim(),
+      answer: answer.trim()
     })
     .eq("id", flashcardId)
     .select()
