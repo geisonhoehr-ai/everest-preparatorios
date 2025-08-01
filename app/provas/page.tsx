@@ -637,9 +637,9 @@ export default function ProvasPage() {
                     </div>
                   </div>
 
-                {/* Seção do Texto Base */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
+                  {/* Seção do Texto Base */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       id="tem_texto_base"
