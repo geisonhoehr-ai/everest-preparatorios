@@ -640,17 +640,17 @@ export default function ProvasPage() {
                   {/* Seção do Texto Base */}
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="tem_texto_base"
-                      checked={provaData.tem_texto_base}
-                      onChange={(e) => setProvaData({...provaData, tem_texto_base: e.target.checked})}
-                    />
-                    <Label htmlFor="tem_texto_base">Esta prova tem texto base para interpretação</Label>
-                  </div>
+                      <input
+                        type="checkbox"
+                        id="tem_texto_base"
+                        checked={provaData.tem_texto_base}
+                        onChange={(e) => setProvaData({...provaData, tem_texto_base: e.target.checked})}
+                      />
+                      <Label htmlFor="tem_texto_base">Esta prova tem texto base para interpretação</Label>
+                    </div>
 
-                  {provaData.tem_texto_base && (
-                    <div className="space-y-4 border-l-4 border-blue-500 pl-4 bg-blue-50 p-4 rounded">
+                    {provaData.tem_texto_base && (
+                      <div className="space-y-4 border-l-4 border-blue-500 pl-4 bg-blue-50 p-4 rounded">
                       <div>
                         <Label htmlFor="titulo_texto_base">Título do Texto Base</Label>
                         <Input
