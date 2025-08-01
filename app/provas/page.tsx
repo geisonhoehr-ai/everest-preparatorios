@@ -544,7 +544,7 @@ export default function ProvasPage() {
               Pratique com provas simuladas e avalie seu conhecimento
             </p>
           </div>
-        {(userRole === 'teacher' || userRole === 'admin') && (
+          {(userRole === 'teacher' || userRole === 'admin') && (
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button>
