@@ -586,6 +586,60 @@ export default function ProvasPage() {
                       </Select>
                     </div>
                   </div>
+                  {/* Configuração de Prova Dissertativa */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="tem_texto_base"
+                        checked={provaData.tem_texto_base}
+                        onChange={(e) => setProvaData({...provaData, tem_texto_base: e.target.checked})}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="tem_texto_base" className="text-sm font-medium">
+                        Prova com Texto Base (Português/Redação)
+                      </Label>
+                    </div>
+                    
+                    {provaData.tem_texto_base && (
+                      <div className="space-y-4 mt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="titulo_texto_base">Título do Texto</Label>
+                            <Input
+                              id="titulo_texto_base"
+                              value={provaData.titulo_texto_base}
+                              onChange={(e) => setProvaData({...provaData, titulo_texto_base: e.target.value})}
+                              placeholder="Ex: A importância da leitura"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="fonte_texto_base">Fonte do Texto</Label>
+                            <Input
+                              id="fonte_texto_base"
+                              value={provaData.fonte_texto_base}
+                              onChange={(e) => setProvaData({...provaData, fonte_texto_base: e.target.value})}
+                              placeholder="Ex: Revista Veja, 2024"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="texto_base">Texto Base (Rich Text)</Label>
+                          <div className="mt-2 border rounded-lg">
+                            <RichTextEditor
+                              value={provaData.texto_base}
+                              onChange={(value) => setProvaData({...provaData, texto_base: value})}
+                              placeholder="Digite ou cole o texto base aqui. Os alunos poderão ler este texto durante a prova para responder as questões de interpretação..."
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            💡 Dica: Use este campo para textos de português, redação ou qualquer material que os alunos precisem ler antes de responder as questões.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <Label htmlFor="tempo">Tempo (min)</Label>
@@ -845,6 +899,253 @@ export default function ProvasPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Interface de fazer prova */}
+      {provaEmAndamento && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header da prova */}
+            <div className="bg-gray-50 px-6 py-4 border-b">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <h2 className="text-xl sm:text-2xl font-bold">{provaEmAndamento.titulo}</h2>
+                  <p className="text-sm text-gray-600">{provaEmAndamento.descricao}</p>
+                  <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span>Questão {questaoAtual + 1} de {provaEmAndamento.questoes?.length}</span>
+                    <span>Tempo: {provaEmAndamento.tempo_limite} min</span>
+                    <span>Nota mínima: {provaEmAndamento.nota_minima}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setProvaEmAndamento(null)
+                    setTentativaAtual(null)
+                    setQuestaoAtual(0)
+                    setRespostas({})
+                  }}>
+                    <X className="h-4 w-4 mr-2" />
+                    Sair
+                  </Button>
+                  <Button size="sm" onClick={finalizarProva}>
+                    Finalizar
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo da prova */}
+            <div className="flex h-[calc(90vh-120px)]">
+              {/* Painel do texto base (se existir) */}
+              {provaEmAndamento.tem_texto_base && provaEmAndamento.texto_base && (
+                <div className="w-1/2 border-r overflow-y-auto p-6 bg-gray-50">
+                  <div className="space-y-4">
+                    <div className="border-b pb-4">
+                      <h3 className="text-lg font-semibold mb-2">
+                        {provaEmAndamento.titulo_texto_base || 'Texto Base'}
+                      </h3>
+                      {provaEmAndamento.fonte_texto_base && (
+                        <p className="text-sm text-gray-500 italic">
+                          Fonte: {provaEmAndamento.fonte_texto_base}
+                        </p>
+                      )}
+                    </div>
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: provaEmAndamento.texto_base }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Painel da questão */}
+              <div className={`${provaEmAndamento.tem_texto_base && provaEmAndamento.texto_base ? 'w-1/2' : 'w-full'} overflow-y-auto p-6`}>
+                {provaEmAndamento.questoes && provaEmAndamento.questoes[questaoAtual] && (
+                  <div className="space-y-6">
+                    <div className="border-b pb-4">
+                      <h3 className="text-lg font-semibold mb-2">
+                        Questão {questaoAtual + 1}
+                      </h3>
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: provaEmAndamento.questoes[questaoAtual].enunciado }}
+                      />
+                    </div>
+
+                    {/* Área de resposta baseada no tipo de questão */}
+                    <div className="space-y-4">
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'multipla_escolha' && (
+                        <div className="space-y-3">
+                          {provaEmAndamento.questoes[questaoAtual].opcoes?.map((opcao, index) => (
+                            <label key={index} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`questao-${provaEmAndamento.questoes[questaoAtual].id}`}
+                                value={opcao}
+                                checked={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] === opcao}
+                                onChange={(e) => setRespostas({
+                                  ...respostas,
+                                  [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                                })}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <span className="text-sm">{opcao}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'verdadeiro_falso' && (
+                        <div className="space-y-3">
+                          {['Verdadeiro', 'Falso'].map((opcao) => (
+                            <label key={opcao} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`questao-${provaEmAndamento.questoes[questaoAtual].id}`}
+                                value={opcao}
+                                checked={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] === opcao}
+                                onChange={(e) => setRespostas({
+                                  ...respostas,
+                                  [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                                })}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <span className="text-sm">{opcao}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'completar' && (
+                        <div className="space-y-3">
+                          <Input
+                            placeholder="Digite sua resposta..."
+                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            onChange={(e) => setRespostas({
+                              ...respostas,
+                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                            })}
+                            className="text-base"
+                          />
+                          <p className="text-xs text-gray-500">
+                            💡 Dica: Use ___ no enunciado para indicar onde o aluno deve completar.
+                          </p>
+                        </div>
+                      )}
+
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'dissertativa' && (
+                        <div className="space-y-3">
+                          <Textarea
+                            placeholder="Digite sua resposta dissertativa..."
+                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            onChange={(e) => setRespostas({
+                              ...respostas,
+                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                            })}
+                            rows={8}
+                            className="text-base"
+                          />
+                        </div>
+                      )}
+
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'associacao' && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-gray-600">
+                            Associe os itens da coluna A com os da coluna B:
+                          </p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">Coluna A</h4>
+                              {provaEmAndamento.questoes[questaoAtual].opcoes?.slice(0, Math.floor((provaEmAndamento.questoes[questaoAtual].opcoes?.length || 0) / 2)).map((item, index) => (
+                                <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                                  {index + 1}. {item}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">Coluna B</h4>
+                              {provaEmAndamento.questoes[questaoAtual].opcoes?.slice(Math.floor((provaEmAndamento.questoes[questaoAtual].opcoes?.length || 0) / 2)).map((item, index) => (
+                                <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                                  {String.fromCharCode(65 + index)}. {item}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <Input
+                            placeholder="Ex: 1-A, 2-B, 3-C..."
+                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            onChange={(e) => setRespostas({
+                              ...respostas,
+                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                            })}
+                            className="text-base"
+                          />
+                        </div>
+                      )}
+
+                      {provaEmAndamento.questoes[questaoAtual].tipo === 'ordenacao' && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-gray-600">
+                            Ordene os itens corretamente:
+                          </p>
+                          <div className="space-y-2">
+                            {provaEmAndamento.questoes[questaoAtual].opcoes?.map((item, index) => (
+                              <div key={index} className="p-2 bg-gray-50 rounded text-sm">
+                                {index + 1}. {item}
+                              </div>
+                            ))}
+                          </div>
+                          <Input
+                            placeholder="Ex: 3,1,4,2,5"
+                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            onChange={(e) => setRespostas({
+                              ...respostas,
+                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                            })}
+                            className="text-base"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Navegação entre questões */}
+                    <div className="flex justify-between items-center pt-6 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          salvarRespostaAtual()
+                          setQuestaoAtual(Math.max(0, questaoAtual - 1))
+                        }}
+                        disabled={questaoAtual === 0}
+                      >
+                        Anterior
+                      </Button>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">
+                          {questaoAtual + 1} de {provaEmAndamento.questoes?.length}
+                        </span>
+                      </div>
+
+                      <Button
+                        onClick={() => {
+                          salvarRespostaAtual()
+                          if (questaoAtual < (provaEmAndamento.questoes?.length || 0) - 1) {
+                            setQuestaoAtual(questaoAtual + 1)
+                          } else {
+                            finalizarProva()
+                          }
+                        }}
+                      >
+                        {questaoAtual < (provaEmAndamento.questoes?.length || 0) - 1 ? 'Próxima' : 'Finalizar'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog para adicionar/editar questão */}
       <Dialog open={showQuestaoDialog} onOpenChange={setShowQuestaoDialog}>

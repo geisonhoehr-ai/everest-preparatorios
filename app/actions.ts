@@ -1952,12 +1952,15 @@ export async function adicionarQuestao(provaId: string, questaoData: {
 }
 
 export async function atualizarQuestao(questaoId: string, questaoData: {
-  tipo: 'multipla_escolha' | 'dissertativa';
+  tipo: 'multipla_escolha' | 'dissertativa' | 'verdadeiro_falso' | 'completar' | 'associacao' | 'ordenacao';
   enunciado: string;
   pontuacao: number;
   ordem: number;
   opcoes?: string[];
   resposta_correta?: string;
+  explicacao?: string;
+  imagem_url?: string;
+  tempo_estimado?: number;
 }) {
   try {
     const supabase = await getSupabase();
@@ -1972,7 +1975,10 @@ export async function atualizarQuestao(questaoId: string, questaoData: {
         tipo: questaoData.tipo,
         enunciado: questaoData.enunciado,
         pontuacao: questaoData.pontuacao,
-        ordem: questaoData.ordem
+        ordem: questaoData.ordem,
+        explicacao: questaoData.explicacao,
+        imagem_url: questaoData.imagem_url,
+        tempo_estimado: questaoData.tempo_estimado
       })
       .eq('id', questaoId)
       .select()
@@ -1980,20 +1986,21 @@ export async function atualizarQuestao(questaoId: string, questaoData: {
 
     if (questaoError) throw questaoError;
 
-    // Se for múltipla escolha, atualizar opções
-    if (questaoData.tipo === 'multipla_escolha' && questaoData.opcoes) {
-      // Deletar opções existentes
+    // Deletar opções existentes para todos os tipos que usam opções
+    if (['multipla_escolha', 'verdadeiro_falso', 'associacao', 'ordenacao'].includes(questaoData.tipo)) {
       await supabaseAdmin
         .from('opcoes_questao')
         .delete()
         .eq('questao_id', questaoId);
+    }
 
-      // Inserir novas opções
+    // Inserir novas opções para tipos que precisam
+    if (questaoData.opcoes && questaoData.opcoes.length > 0) {
       const opcoesData = questaoData.opcoes.map((opcao, index) => ({
         questao_id: questaoId,
         texto: opcao,
         ordem: index + 1,
-        is_correta: opcao === questaoData.resposta_correta
+        is_correta: questaoData.tipo === 'multipla_escolha' ? opcao === questaoData.resposta_correta : false
       }));
 
       const { error: opcoesError } = await supabaseAdmin
