@@ -1,0 +1,422 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* Animação float exclusiva para cards */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Layout responsivo melhorado */
+  .dashboard-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: row;
+    overflow-x: hidden;
+    position: relative;
+  }
+  
+  .main-content-stable {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
+  }
+  
+  /* Mobile First - Layout para mobile - SEM MARGEM À ESQUERDA */
+  .main-content-stable {
+    margin-left: 0 !important;
+    width: 100vw !important;
+  }
+  
+  /* Desktop - Ajustar margem para sidebar APENAS no desktop */
+  @media (min-width: 768px) {
+    .main-content-stable {
+      margin-left: 16rem !important;
+      width: calc(100vw - 16rem) !important;
+    }
+    
+    .main-content-stable.collapsed {
+      margin-left: 4rem !important;
+      width: calc(100vw - 4rem) !important;
+    }
+  }
+  
+  .content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem 1.5rem;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Mobile - Ajustar padding para header mobile */
+  @media (max-width: 767px) {
+    .content-wrapper {
+      padding: 4rem 1rem 1rem 1rem;
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+  }
+  
+  /* Melhorar responsividade para telas muito pequenas */
+  @media (max-width: 480px) {
+    .content-wrapper {
+      padding: 4rem 0.5rem 1rem 0.5rem;
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+  }
+  
+  .sidebar-stable {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 50;
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+    width: 16rem;
+  }
+  
+  .sidebar-stable.collapsed {
+    width: 4rem;
+  }
+  
+  /* Mobile - Sidebar sempre oculta por padrão */
+  @media (max-width: 767px) {
+    .sidebar-stable {
+      transform: translateX(-100%);
+      width: 20rem; /* Largura maior no mobile */
+    }
+    
+    .sidebar-stable.mobile-open {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Remover espaçamentos desnecessários */
+  .content-wrapper > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Header mobile fixo */
+  header.fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: hsl(var(--background));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  
+  /* Garantir que não há espaçamento extra */
+  .dashboard-layout > * {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Forçar layout lado a lado no desktop */
+  @media (min-width: 768px) {
+    .dashboard-layout {
+      display: flex !important;
+      flex-direction: row !important;
+    }
+    
+    .sidebar-stable {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      height: 100vh !important;
+      transform: none !important;
+    }
+  }
+  
+  /* Forçar o conteúdo principal a ficar ao lado no desktop */
+  @media (min-width: 768px) {
+    .main-content-stable {
+      position: relative !important;
+      left: 0 !important;
+      top: 0 !important;
+    }
+  }
+  
+  /* Melhorar transições */
+  .transition-transform {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-all {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Melhorar scroll no mobile */
+  @media (max-width: 767px) {
+    .content-wrapper {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
+  /* Garantir que o overlay funcione corretamente */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    backdrop-filter: blur(2px);
+  }
+  
+  /* Melhorar acessibilidade do menu mobile */
+  @media (max-width: 767px) {
+    .mobile-menu {
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Melhorar responsividade dos cards */
+  @media (max-width: 640px) {
+    .card {
+      margin-bottom: 0.5rem;
+    }
+    
+    .card-content {
+      padding: 1rem;
+    }
+  }
+
+  /* Melhorar responsividade dos grids */
+  @media (max-width: 480px) {
+    .grid {
+      gap: 0.5rem;
+    }
+  }
+
+  /* Melhorar responsividade dos textos */
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+    
+    h2 {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+    
+    h3 {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+    
+    p {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+  }
+
+  /* Melhorar responsividade dos botões */
+  @media (max-width: 640px) {
+    .btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Melhorar responsividade dos badges */
+  @media (max-width: 640px) {
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
+  /* Animações para efeito LED neon */
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes spin-slow-reverse {
+    from {
+      transform: rotate(360deg);
+    }
+    to {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes border-color-shift {
+    0% {
+      border-color: #3b82f6; /* blue */
+    }
+    16.66% {
+      border-color: #10b981; /* green */
+    }
+    33.33% {
+      border-color: #ef4444; /* red */
+    }
+    50% {
+      border-color: #eab308; /* yellow */
+    }
+    66.66% {
+      border-color: #f97316; /* orange */
+    }
+    83.33% {
+      border-color: #8b5cf6; /* purple */
+    }
+    100% {
+      border-color: #3b82f6; /* blue */
+    }
+  }
+
+  @keyframes gradient-shift {
+    0% {
+      background: linear-gradient(45deg, #3b82f6, #10b981, #ef4444, #eab308, #f97316, #8b5cf6);
+    }
+    16.66% {
+      background: linear-gradient(45deg, #10b981, #ef4444, #eab308, #f97316, #8b5cf6, #3b82f6);
+    }
+    33.33% {
+      background: linear-gradient(45deg, #ef4444, #eab308, #f97316, #8b5cf6, #3b82f6, #10b981);
+    }
+    50% {
+      background: linear-gradient(45deg, #eab308, #f97316, #8b5cf6, #3b82f6, #10b981, #ef4444);
+    }
+    66.66% {
+      background: linear-gradient(45deg, #f97316, #8b5cf6, #3b82f6, #10b981, #ef4444, #eab308);
+    }
+    83.33% {
+      background: linear-gradient(45deg, #8b5cf6, #3b82f6, #10b981, #ef4444, #eab308, #f97316);
+    }
+    100% {
+      background: linear-gradient(45deg, #3b82f6, #10b981, #ef4444, #eab308, #f97316, #8b5cf6);
+    }
+  }
+
+  @keyframes neon-border-clockwise {
+    0% {
+      background: conic-gradient(from 0deg, #3b82f6, #10b981, #ef4444, #eab308, #f97316, #8b5cf6, #3b82f6);
+    }
+    100% {
+      background: conic-gradient(from 360deg, #3b82f6, #10b981, #ef4444, #eab308, #f97316, #8b5cf6, #3b82f6);
+    }
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+
+  .animate-spin-slow-reverse {
+    animation: spin-slow-reverse 6s linear infinite;
+  }
+
+  .animate-border-color {
+    animation: border-color-shift 3s ease-in-out infinite;
+  }
+
+  .animate-gradient-shift {
+    animation: gradient-shift 4s ease-in-out infinite;
+    background-size: 400% 400%;
+  }
+
+  .animate-neon-clockwise {
+    animation: neon-border-clockwise 3s linear infinite;
+  }
+}
+
+/* Remover QUALQUER barra flutuante fixa/absoluta no rodapé */
+/* Comentado temporariamente para resolver problema de layout */
+/*
+body > div[style*="position: fixed"],
+body > div[style*="position: absolute"] {
+  display: none !important;
+}
+*/
