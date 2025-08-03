@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { supabaseAdmin } from '@/lib/supabaseServer'
 import { createClient } from '@/lib/supabase-server'
+import { addActivityXP, updateStudyStreak, createAchievement } from '@/lib/rpg-system'
 
 /**
  * Obtém uma instância do Supabase (server-side)
@@ -417,7 +418,65 @@ export async function submitQuizResult(
 ) {
   const supabase = await getSupabase()
   console.log(`💯 [Server Action] Submetendo resultado do quiz ${quizId}: Score ${score}`)
-  // Implementação da submissão
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    console.error("❌ [Server Action] Erro de autenticação:", authError)
+    return { success: false, error: "Usuário não autenticado" }
+  }
+
+  // Salvar resultado do quiz
+  const { error } = await supabase.from("quiz_results").insert({
+    user_uuid: user.id,
+    quiz_id: quizId,
+    score: score,
+    correct_answers: correct,
+    incorrect_answers: incorrect,
+    total_questions: total,
+    completed_at: new Date().toISOString()
+  })
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao salvar resultado do quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  // Sistema RPG: Adicionar XP baseado no score
+  try {
+    const baseXP = 15 // XP base por quiz
+    const perfectBonus = score === 100 ? 10 : 0 // Bônus por 100%
+    const totalXP = baseXP + perfectBonus
+
+    const result = await addActivityXP(user.id, 'quiz', totalXP)
+    
+    // Se subiu de nível, criar conquista
+    if (result.levelUp) {
+      await createAchievement(user.id, 'level_up', {
+        title: `Evolução Quiz`,
+        description: `Você evoluiu para ${result.newRank}!`,
+        icon: '🧠',
+        xp_reward: 50
+      })
+    }
+
+    // Se fez 100%, criar conquista de perfeição
+    if (score === 100) {
+      await createAchievement(user.id, 'perfect_score', {
+        title: 'Perfeição Absoluta',
+        description: 'Quiz com 100% de acerto!',
+        icon: '💯',
+        xp_reward: 150
+      })
+    }
+
+    // Atualizar streak de estudo
+    await updateStudyStreak(user.id)
+
+    console.log(`🎮 [RPG] XP adicionado: ${totalXP}, Novo nível: ${result.newLevel}`)
+  } catch (error) {
+    console.error("❌ [RPG] Erro ao adicionar XP:", error)
+  }
+
   revalidatePath("/")
   return { success: true }
 }

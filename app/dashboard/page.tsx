@@ -9,6 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LevelUpModal } from "@/components/level-up-modal";
+import { 
+  getUserRPGProgress, 
+  getGeneralRanking, 
+  getCategoryRanking,
+  getUserAchievements,
+  updateStudyStreak,
+  addActivityXP
+} from "@/lib/rpg-system";
 import { 
   Trophy, 
   Medal, 
@@ -42,6 +51,20 @@ interface UserStats {
   level: number;
   xp: number;
   nextLevelXp: number;
+  // RPG System
+  generalRank: string;
+  flashcardRank: string;
+  quizRank: string;
+  redacaoRank: string;
+  provaRank: string;
+  flashcardLevel: number;
+  quizLevel: number;
+  redacaoLevel: number;
+  provaLevel: number;
+  flashcardXP: number;
+  quizXP: number;
+  redacaoXP: number;
+  provaXP: number;
 }
 
 interface Achievement {
@@ -126,18 +149,183 @@ const getDifficultyColor = (level: number) => {
 
 export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats>({
-    totalFlashcards: 150,
-    completedFlashcards: 87,
-    totalQuizzes: 12,
-    averageScore: 78,
-    currentStreak: 5,
-    totalStudyTime: 1250,
-    rank: 23,
-    totalUsers: 156,
-    level: 7,
-    xp: 3420,
-    nextLevelXp: 4000
+    totalFlashcards: 0,
+    completedFlashcards: 0,
+    totalQuizzes: 0,
+    averageScore: 0,
+    currentStreak: 0,
+    totalStudyTime: 0,
+    rank: 0,
+    totalUsers: 0,
+    level: 1,
+    xp: 0,
+    nextLevelXp: 1000,
+    // RPG System
+    generalRank: 'Novato da Guilda',
+    flashcardRank: 'Novato da Guilda',
+    quizRank: 'Novato da Guilda',
+    redacaoRank: 'Novato da Guilda',
+    provaRank: 'Novato da Guilda',
+    flashcardLevel: 1,
+    quizLevel: 1,
+    redacaoLevel: 1,
+    provaLevel: 1,
+    flashcardXP: 0,
+    quizXP: 0,
+    redacaoXP: 0,
+    provaXP: 0
   });
+
+  const [loading, setLoading] = useState(true);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpData, setLevelUpData] = useState({
+    newLevel: 1,
+    newTitle: '',
+    insignia: '',
+    blessing: '',
+    activity: ''
+  });
+  const supabase = createClient();
+
+  // Função para carregar dados do usuário
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      
+      // Obter usuário atual
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Erro ao obter usuário:', authError);
+        return;
+      }
+
+      // Carregar perfil do aluno
+      const { data: studentProfile, error: profileError } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .eq('user_uuid', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Erro ao carregar perfil:', profileError);
+        return;
+      }
+
+      // Se não existe perfil, criar um novo com dados zerados
+      if (!studentProfile) {
+        const initialProfile = {
+          user_uuid: user.id,
+          nome_completo: 'Novo Aluno',
+          total_flashcards: 0,
+          completed_flashcards: 0,
+          total_quizzes: 0,
+          completed_quizzes: 0,
+          average_score: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          total_study_time: 0,
+          total_xp: 0,
+          current_level: 1,
+          last_login_at: new Date().toISOString()
+        };
+
+        const { data: newProfile, error: insertError } = await supabase
+          .from('student_profiles')
+          .insert(initialProfile)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Erro ao criar perfil inicial:', insertError);
+          return;
+        }
+
+        // Atualizar stats com dados zerados
+        setUserStats({
+          totalFlashcards: 0,
+          completedFlashcards: 0,
+          totalQuizzes: 0,
+          averageScore: 0,
+          currentStreak: 0,
+          totalStudyTime: 0,
+          rank: 0,
+          totalUsers: 0,
+          level: 1,
+          xp: 0,
+          nextLevelXp: 1000,
+          // RPG System
+          generalRank: 'Novato da Guilda',
+          flashcardRank: 'Novato da Guilda',
+          quizRank: 'Novato da Guilda',
+          redacaoRank: 'Novato da Guilda',
+          provaRank: 'Novato da Guilda',
+          flashcardLevel: 1,
+          quizLevel: 1,
+          redacaoLevel: 1,
+          provaLevel: 1,
+          flashcardXP: 0,
+          quizXP: 0,
+          redacaoXP: 0,
+          provaXP: 0
+        });
+      } else {
+        // Atualizar last_login_at
+        await supabase
+          .from('student_profiles')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('user_uuid', user.id);
+
+        // Carregar ranking geral
+        const { data: allProfiles, error: rankingError } = await supabase
+          .from('student_profiles')
+          .select('total_xp')
+          .order('total_xp', { ascending: false });
+
+                 if (!rankingError && allProfiles) {
+           const userRank = allProfiles.findIndex((profile: any) => profile.total_xp === studentProfile.total_xp) + 1;
+          const totalUsers = allProfiles.length;
+
+          // Atualizar stats com dados reais
+          setUserStats({
+            totalFlashcards: studentProfile.total_flashcards || 0,
+            completedFlashcards: studentProfile.completed_flashcards || 0,
+            totalQuizzes: studentProfile.total_quizzes || 0,
+            averageScore: studentProfile.average_score || 0,
+            currentStreak: studentProfile.current_streak || 0,
+            totalStudyTime: studentProfile.total_study_time || 0,
+            rank: userRank,
+            totalUsers: totalUsers,
+            level: studentProfile.current_level || 1,
+            xp: studentProfile.total_xp || 0,
+            nextLevelXp: ((studentProfile.current_level || 1) * 1000),
+            // RPG System
+            generalRank: studentProfile.general_rank || 'Novato da Guilda',
+            flashcardRank: studentProfile.flashcard_rank || 'Novato da Guilda',
+            quizRank: studentProfile.quiz_rank || 'Novato da Guilda',
+            redacaoRank: studentProfile.redacao_rank || 'Novato da Guilda',
+            provaRank: studentProfile.prova_rank || 'Novato da Guilda',
+            flashcardLevel: studentProfile.flashcard_level || 1,
+            quizLevel: studentProfile.quiz_level || 1,
+            redacaoLevel: studentProfile.redacao_level || 1,
+            provaLevel: studentProfile.prova_level || 1,
+            flashcardXP: studentProfile.flashcard_xp || 0,
+            quizXP: studentProfile.quiz_xp || 0,
+            redacaoXP: studentProfile.redacao_xp || 0,
+            provaXP: studentProfile.prova_xp || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do usuário:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Carregar dados quando o componente montar
+  useEffect(() => {
+    loadUserData();
+  }, []);
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
@@ -231,6 +419,20 @@ export default function DashboardPage() {
   const levelPalette = getColorPalette('level');
   const rankingPalette = getColorPalette('ranking');
   const progressPalette = getColorPalette('progress');
+
+  // Loading state
+  if (loading) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            <p className="mt-4 text-lg">Carregando seu progresso...</p>
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>
@@ -573,6 +775,17 @@ export default function DashboardPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Level Up */}
+      <LevelUpModal
+        open={showLevelUp}
+        onOpenChange={setShowLevelUp}
+        newLevel={levelUpData.newLevel}
+        newTitle={levelUpData.newTitle}
+        insignia={levelUpData.insignia}
+        blessing={levelUpData.blessing}
+        activity={levelUpData.activity}
+      />
     </DashboardShell>
   );
 } 
