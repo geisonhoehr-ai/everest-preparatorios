@@ -749,6 +749,31 @@ export async function createRedacao(data: {
       }
     }
 
+    // Sistema RPG - Adicionar XP por enviar redação
+    try {
+      const { addActivityXP, updateStudyStreak } = await import('@/lib/rpg-system')
+      const baseXP = 15 // XP base por enviar redação
+      const result = await addActivityXP(user.email, 'redacao', baseXP)
+      
+      if (result.levelUp) {
+        // Criar achievement de level up
+        const { createAchievement } = await import('@/lib/rpg-system')
+        await createAchievement(user.email, 'level_up', {
+          activity: 'redacao',
+          newLevel: result.newLevel,
+          newRank: result.newRank
+        })
+      }
+
+      // Atualizar streak de estudo
+      await updateStudyStreak(user.email)
+
+      console.log(`🎮 [RPG] XP adicionado por enviar redação: ${baseXP} pontos`)
+    } catch (rpgError) {
+      console.error("❌ Erro no sistema RPG:", rpgError)
+      // Não falhar o envio se o RPG falhar
+    }
+
     console.log("✅ Redação criada com sucesso:", redacao.id)
     revalidatePath('/redacao')
     return { success: true, data: redacao }
@@ -1005,7 +1030,7 @@ export async function salvarCorrecaoRedacao(data: {
       return { success: false, error: "Erro ao salvar correção" }
     }
 
-    // Criar notificação para o aluno
+    // Buscar dados do aluno para sistema RPG
     const { data: redacao } = await supabase
       .from('redacoes')
       .select('user_uuid, titulo')
@@ -1013,6 +1038,45 @@ export async function salvarCorrecaoRedacao(data: {
       .single()
 
     if (redacao) {
+      // Sistema RPG - Adicionar XP para redação
+      try {
+        const { addActivityXP } = await import('@/lib/rpg-system')
+        const baseXP = 25 // XP base para redação
+        const notaBonus = Math.floor(data.notaFinal / 100) * 5 // Bônus por centena de pontos
+        const totalXP = baseXP + notaBonus
+        
+        const result = await addActivityXP(redacao.user_uuid, 'redacao', totalXP)
+        
+        if (result.levelUp) {
+          // Criar achievement de level up
+          const { createAchievement } = await import('@/lib/rpg-system')
+          await createAchievement(redacao.user_uuid, 'level_up', {
+            activity: 'redacao',
+            newLevel: result.newLevel,
+            newRank: result.newRank
+          })
+        }
+
+        // Achievement para nota alta
+        if (data.notaFinal >= 800) {
+          const { createAchievement } = await import('@/lib/rpg-system')
+          await createAchievement(redacao.user_uuid, 'high_score', {
+            activity: 'redacao',
+            score: data.notaFinal
+          })
+        }
+
+        // Atualizar streak de estudo
+        const { updateStudyStreak } = await import('@/lib/rpg-system')
+        await updateStudyStreak(redacao.user_uuid)
+
+        console.log(`🎮 [RPG] XP adicionado para redação: ${totalXP} pontos`)
+      } catch (rpgError) {
+        console.error("❌ Erro no sistema RPG:", rpgError)
+        // Não falhar a correção se o RPG falhar
+      }
+
+      // Criar notificação para o aluno
       await supabase
         .from('notificacoes')
         .insert({

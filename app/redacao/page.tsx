@@ -58,6 +58,7 @@ import { cn } from "@/lib/utils"
 import { getUserRoleClient } from "@/lib/get-user-role"
 import { createClient } from "@/lib/supabase/client"
 import { getRedacoesUsuario, getTemasRedacao, getTemplatesRedacao, createRedacao, uploadAudioFeedback, salvarCorrecaoRedacao } from "@/app/actions"
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 // Tipos para as redações
 interface Redacao {
@@ -543,14 +544,14 @@ export default function RedacaoPage() {
 
   return (
     <DashboardShell>
-              <div className="space-y-6 p-6">
+      <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               🖍️ Redação
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {isTeacher 
                 ? "Gerencie e corrija redações dos seus alunos" 
                 : "Escreva, envie e acompanhe suas redações com correção profissional"
@@ -566,7 +567,7 @@ export default function RedacaoPage() {
                   Nova Redação
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-blue-500" />
@@ -580,7 +581,7 @@ export default function RedacaoPage() {
                 <div className="space-y-6">
                   {/* Formulário */}
                   <div className="grid gap-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="tema">Tema da Redação *</Label>
                         <Select value={formData.tema_id} onValueChange={(value) => setFormData({...formData, tema_id: value})}>
@@ -633,11 +634,11 @@ export default function RedacaoPage() {
                       </div>
                     </div>
                     
-                    <div className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+                    <div className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
                       <div className="text-center space-y-4">
-                        <div className="flex justify-center gap-4">
-                          <Camera className="h-12 w-12 text-blue-500" />
-                          <ImageIcon className="h-12 w-12 text-purple-500" />
+                        <div className="flex justify-center gap-2 sm:gap-4">
+                          <Camera className="h-8 w-8 sm:h-12 sm:w-12 text-blue-500" />
+                          <ImageIcon className="h-8 w-8 sm:h-12 sm:w-12 text-purple-500" />
                         </div>
                         <div>
                           <h3 className="font-medium mb-2">Adicionar Páginas</h3>
@@ -665,21 +666,21 @@ export default function RedacaoPage() {
 
                     {/* Preview dos arquivos */}
                     {selectedFiles.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
                         {selectedFiles.map((file, index) => (
                           <div key={index} className="relative group">
                             {file.type.startsWith('image/') ? (
                               <img
                                 src={URL.createObjectURL(file)}
                                 alt={`Página ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-lg border-2 border-blue-200 dark:border-blue-800"
+                                className="w-full h-24 sm:h-32 object-cover rounded-lg border-2 border-blue-200 dark:border-blue-800"
                               />
                             ) : (
-                              <div className="w-full h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-lg border-2 border-red-200 dark:border-red-800 flex items-center justify-center">
+                              <div className="w-full h-24 sm:h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-lg border-2 border-red-200 dark:border-red-800 flex items-center justify-center">
                                 <div className="text-center text-white">
-                                  <FileText className="h-8 w-8 mx-auto mb-1" />
+                                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-1" />
                                   <p className="text-xs font-medium">PDF</p>
-                                  <p className="text-xs opacity-75">{file.name}</p>
+                                  <p className="text-xs opacity-75 truncate">{file.name}</p>
                                 </div>
                               </div>
                             )}
@@ -743,28 +744,29 @@ export default function RedacaoPage() {
                   </div>
 
                   {/* Botões */}
-                  <div className="flex gap-3 justify-end">
+                  <div className="flex flex-col sm:flex-row gap-3 justify-end">
                     <Button
                       variant="outline"
                       onClick={() => setIsModalOpen(false)}
                       disabled={uploading}
+                      className="w-full sm:w-auto"
                     >
                       Cancelar
                     </Button>
                     <Button
                       onClick={handleSubmitRedacao}
                       disabled={uploading || !formData.titulo || !formData.tema_id || selectedFiles.length === 0}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white w-full sm:w-auto"
                     >
                       {uploading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Enviando...
+                          <span className="text-sm">Enviando...</span>
                         </>
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          Enviar Redação
+                          <span className="text-sm">Enviar Redação</span>
                         </>
                       )}
                     </Button>
@@ -772,11 +774,11 @@ export default function RedacaoPage() {
 
                   {/* Indicador de Progresso */}
                   {uploading && (
-                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                       <div className="space-y-3">
                         {/* Barra de Progresso */}
                         <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs sm:text-sm">
                             <span className="font-medium text-blue-700 dark:text-blue-300">
                               {uploadStatus}
                             </span>
@@ -793,7 +795,7 @@ export default function RedacaoPage() {
                         </div>
 
                         {/* Status Detalhado */}
-                        <div className="text-sm text-blue-600 dark:text-blue-400">
+                        <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                           {currentStep === "preparando" && (
                             <div className="flex items-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -835,7 +837,7 @@ export default function RedacaoPage() {
                         {/* Dicas para o usuário */}
                         <div className="text-xs text-muted-foreground bg-white/50 dark:bg-gray-800/50 p-2 rounded">
                           <p className="font-medium mb-1">💡 Dica:</p>
-                          <p>Não feche esta janela durante o upload. O processo pode levar alguns segundos dependendo do tamanho dos arquivos.</p>
+                          <p className="text-xs">Não feche esta janela durante o upload. O processo pode levar alguns segundos dependendo do tamanho dos arquivos.</p>
                         </div>
                       </div>
                     </div>
@@ -847,34 +849,34 @@ export default function RedacaoPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 lg:w-[600px] bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-200 dark:border-blue-800">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:w-[600px] bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-200 dark:border-blue-800">
             <TabsTrigger 
               value="dashboard"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               📊 Dashboard
             </TabsTrigger>
             <TabsTrigger 
               value="temas"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               📝 Temas
             </TabsTrigger>
             <TabsTrigger 
               value="historico"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               📚 {isTeacher ? "Correções" : "Histórico"}
             </TabsTrigger>
             <TabsTrigger 
               value="templates"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               📄 Templates
             </TabsTrigger>
             <TabsTrigger 
               value="ia"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               🤖 IA
             </TabsTrigger>
@@ -883,14 +885,14 @@ export default function RedacaoPage() {
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
             {/* Cards de Estatísticas */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500/20 to-blue-600/30 border-blue-500/20 hover:shadow-2xl transition-all duration-300">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total de Redações</CardTitle>
-                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
                   <p className="text-xs text-muted-foreground">
                     {isTeacher ? "Redações recebidas" : "Redações enviadas"}
                   </p>
@@ -902,10 +904,10 @@ export default function RedacaoPage() {
                   <CardTitle className="text-sm font-medium">
                     {isTeacher ? "Para Corrigir" : "Pendentes"}
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 dark:text-yellow-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendentes}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.pendentes}</div>
                   <p className="text-xs text-muted-foreground">
                     {isTeacher ? "Aguardando correção" : "Em análise"}
                   </p>
@@ -915,10 +917,10 @@ export default function RedacaoPage() {
               <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500/20 to-green-600/30 border-green-500/20 hover:shadow-2xl transition-all duration-300">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Corrigidas</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.corrigidas}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.corrigidas}</div>
                   <p className="text-xs text-muted-foreground">Com feedback</p>
                 </CardContent>
               </Card>
@@ -928,10 +930,10 @@ export default function RedacaoPage() {
                   <CardTitle className="text-sm font-medium">
                     {isTeacher ? "Média Geral" : "Sua Média"}
                   </CardTitle>
-                  <Award className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {stats.mediaNotas ? stats.mediaNotas.toFixed(0) : "--"}
                   </div>
                   <p className="text-xs text-muted-foreground">Pontos (máx. 1000)</p>
@@ -1087,7 +1089,7 @@ export default function RedacaoPage() {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {temas.map((tema) => (
                 <Card key={tema.id} className="border-0 shadow-xl bg-gradient-to-br from-background to-muted/20 hover:shadow-2xl transition-all duration-300 group">
                   <CardHeader className="pb-4">
@@ -1105,7 +1107,7 @@ export default function RedacaoPage() {
                         </Badge>
                       </div>
                     </div>
-                    <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {tema.titulo}
                     </CardTitle>
                     <CardDescription className="line-clamp-3 text-muted-foreground">
@@ -1140,7 +1142,7 @@ export default function RedacaoPage() {
                         )}
                       </div>
 
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -1149,8 +1151,8 @@ export default function RedacaoPage() {
                             // Visualizar tema completo
                           }}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver Tema
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="text-xs sm:text-sm">Ver Tema</span>
                         </Button>
                         {!isTeacher && (
                           <Button 
@@ -1161,8 +1163,8 @@ export default function RedacaoPage() {
                               setIsModalOpen(true)
                             }}
                           >
-                            <Edit3 className="h-4 w-4 mr-1" />
-                            Escrever
+                            <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="text-xs sm:text-sm">Escrever</span>
                           </Button>
                         )}
                       </div>
@@ -1313,7 +1315,7 @@ export default function RedacaoPage() {
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {templates.map((template) => (
                 <Card key={template.id} className="border-0 shadow-xl bg-gradient-to-br from-background to-muted/20 hover:shadow-2xl transition-all duration-300 group">
                   <CardHeader>
@@ -1336,21 +1338,21 @@ export default function RedacaoPage() {
                         <span>Formato oficial {template.tipo}</span>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="flex-1 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Visualizar
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="text-xs sm:text-sm">Visualizar</span>
                         </Button>
                         <Button 
                           size="sm" 
                           className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transform transition-all duration-200 hover:scale-105"
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          Baixar
+                          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="text-xs sm:text-sm">Baixar</span>
                         </Button>
                       </div>
                     </div>
