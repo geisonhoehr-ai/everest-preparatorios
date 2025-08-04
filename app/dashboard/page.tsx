@@ -480,8 +480,7 @@ export default function DashboardPage() {
                   <span className={levelPalette.text}>{userStats.xp} / {userStats.nextLevelXp}</span>
                 </div>
                 <div className="relative">
-                  <Progress value={xpProgress} className="h-2 sm:h-3" />
-                  <div className="absolute inset-0 shimmer rounded-full"></div>
+                  <Progress value={xpProgress} className="h-2 sm:h-3 relative z-10" />
                 </div>
               </div>
             </CardContent>
@@ -521,8 +520,7 @@ export default function DashboardPage() {
                 <span className="text-xs sm:text-sm text-muted-foreground mb-1">concluído</span>
               </div>
               <div className="relative">
-                <Progress value={progressPercentage} className="h-2 sm:h-3" />
-                <div className="absolute inset-0 shimmer rounded-full"></div>
+                <Progress value={progressPercentage} className="h-2 sm:h-3 relative z-10" />
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                 {userStats.completedFlashcards} de {userStats.totalFlashcards} cards
@@ -581,9 +579,8 @@ export default function DashboardPage() {
                             <div className="relative">
                               <Progress 
                                 value={(achievement.progress / achievement.maxProgress) * 100} 
-                                className="h-2"
+                                className="h-2 relative z-10"
                               />
-                              {achievement.unlocked && <div className="absolute inset-0 shimmer rounded-full"></div>}
                             </div>
                           </div>
                         </div>
@@ -688,8 +685,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="relative mb-4">
-                    <Progress value={30} className="h-2 sm:h-3" />
-                    <div className="absolute inset-0 shimmer rounded-full"></div>
+                    <Progress value={30} className="h-2 sm:h-3 relative z-10" />
                   </div>
                   <Link href="/flashcards">
                     <Button className={`w-full ${getColorPalette('flashcards').button} shadow-lg text-sm`}>

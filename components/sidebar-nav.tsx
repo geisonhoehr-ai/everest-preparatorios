@@ -202,7 +202,7 @@ export function SidebarNav({ className, items, collapsed = false, onItemClick, .
                 "md:px-3 md:py-2 px-4 py-3"
               )}
             >
-              <Icon className={cn("h-4 w-4", collapsed && "h-5 w-5")} />
+              <Icon className={cn("h-4 w-4", collapsed && "h-5 w-5", "text-current", "flex-shrink-0")} />
               {!collapsed && <span className="truncate">{item.title}</span>}
             </Link>
           )
