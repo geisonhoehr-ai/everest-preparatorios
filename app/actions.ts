@@ -367,6 +367,38 @@ export async function getSm2ProgressForCard(flashcardId: number) {
 export async function updateSm2Progress(flashcardId: number, progress: any) {
   const supabase = await getSupabase()
   console.log(`🔄 [Server Action] Atualizando progresso SM2 para card: ${flashcardId}`)
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    console.error("❌ [Server Action] Usuário não autenticado")
+    return { success: false, error: "Usuário não autenticado" }
+  }
+
+  // Sistema RPG: Adicionar XP por estudar flashcard
+  try {
+    const { addActivityXP, updateStudyStreak } = await import('@/lib/rpg-system')
+    const baseXP = 5 // XP base por flashcard estudado
+    const result = await addActivityXP(user.id, 'flashcard', baseXP)
+    
+    if (result.levelUp) {
+      // Criar achievement de level up
+      const { createAchievement } = await import('@/lib/rpg-system')
+      await createAchievement(user.id, 'level_up', {
+        activity: 'flashcard',
+        newLevel: result.newLevel,
+        newRank: result.newRank
+      })
+    }
+
+    // Atualizar streak de estudo
+    await updateStudyStreak(user.id)
+
+    console.log(`🎮 [RPG] XP adicionado por flashcard: ${baseXP} pontos`)
+  } catch (rpgError) {
+    console.error("❌ Erro no sistema RPG:", rpgError)
+    // Não falhar a operação principal
+  }
+
   // Implementação do SM2
   return { success: true }
 }
@@ -1934,6 +1966,53 @@ export async function finalizarTentativa(tentativaId: string) {
       .single();
 
     if (error) throw error;
+
+    // Sistema RPG: Adicionar XP por completar prova
+    try {
+      const { addActivityXP, updateStudyStreak } = await import('@/lib/rpg-system')
+      const baseXP = 30 // XP base por completar prova
+      const notaBonus = Math.floor(notaPercentual) * 2 // Bônus por ponto na nota
+      const totalXP = baseXP + notaBonus
+      
+      const result = await addActivityXP(user.id, 'prova', totalXP)
+      
+      if (result.levelUp) {
+        // Criar achievement de level up
+        const { createAchievement } = await import('@/lib/rpg-system')
+        await createAchievement(user.id, 'level_up', {
+          activity: 'prova',
+          newLevel: result.newLevel,
+          newRank: result.newRank
+        })
+      }
+
+      // Achievement para nota alta
+      if (notaPercentual >= 8.0) {
+        const { createAchievement } = await import('@/lib/rpg-system')
+        await createAchievement(user.id, 'high_score', {
+          activity: 'prova',
+          score: notaPercentual
+        })
+      }
+
+      // Achievement para nota perfeita
+      if (notaPercentual >= 9.5) {
+        const { createAchievement } = await import('@/lib/rpg-system')
+        await createAchievement(user.id, 'perfect_score', {
+          activity: 'prova',
+          score: notaPercentual
+        })
+      }
+
+      // Atualizar streak de estudo
+      await updateStudyStreak(user.id)
+
+      console.log(`🎮 [RPG] XP adicionado por prova: ${totalXP} pontos (nota: ${notaPercentual.toFixed(1)})`)
+    } catch (rpgError) {
+      console.error("❌ Erro no sistema RPG:", rpgError)
+      // Não falhar a operação principal
+    }
+
     return { data, error: null };
   } catch (error) {
     console.error('Erro ao finalizar tentativa:', error);
