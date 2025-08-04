@@ -288,27 +288,14 @@ export default function RedacaoPage() {
       const redacoesBucket = buckets?.find(bucket => bucket.name === 'redacoes')
       
       if (!redacoesBucket) {
-        console.log("📦 [Client] Criando bucket 'redacoes'...")
-        setUploadStatus("Configurando sistema de armazenamento...")
-        setUploadProgress(20)
-        
-        // Criar bucket se não existir
-        const { error: bucketError } = await supabase.storage.createBucket('redacoes', {
-          public: false,
-          allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-          fileSizeLimit: 50 * 1024 * 1024 // 50MB
-        })
-        
-        if (bucketError) {
-          console.error("❌ [Client] Erro ao criar bucket:", bucketError)
-          setUploadStatus("Erro no sistema de storage")
-          setUploadProgress(0)
-          toast.error("Erro no sistema de storage. Verifique as permissões.")
-          setUploading(false)
-          return
-        }
+        console.error("❌ [Client] Bucket 'redacoes' não encontrado")
+        setUploadStatus("Erro: Bucket não configurado")
+        setUploadProgress(0)
+        toast.error("Erro no sistema de storage. Contate o administrador.")
+        setUploading(false)
+        return
       } else {
-        console.log("✅ [Client] Bucket 'redacoes' já existe")
+        console.log("✅ [Client] Bucket 'redacoes' encontrado")
       }
 
       setUploadStatus("Enviando redação para correção...")
