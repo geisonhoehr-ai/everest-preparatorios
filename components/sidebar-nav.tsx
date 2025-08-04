@@ -154,6 +154,11 @@ export function SidebarNav({ className, items, collapsed = false, onItemClick, .
           icon: GraduationCap,
         },
         {
+          href: "/redacao",
+          title: "Redação",
+          icon: PenTool,
+        },
+        {
           href: "/calendario",
           title: "Calendário",
           icon: Calendar,
