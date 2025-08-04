@@ -285,17 +285,20 @@ export default function RedacaoPage() {
       setCurrentStep("verificando_bucket")
       
       const { data: buckets } = await supabase.storage.listBuckets()
+      console.log("🔍 [Client] Buckets encontrados:", buckets?.map(b => b.name))
+      
       const redacoesBucket = buckets?.find(bucket => bucket.name === 'redacoes')
       
       if (!redacoesBucket) {
         console.error("❌ [Client] Bucket 'redacoes' não encontrado")
+        console.error("❌ [Client] Buckets disponíveis:", buckets?.map(b => b.name))
         setUploadStatus("Erro: Bucket não configurado")
         setUploadProgress(0)
         toast.error("Erro no sistema de storage. Contate o administrador.")
         setUploading(false)
         return
       } else {
-        console.log("✅ [Client] Bucket 'redacoes' encontrado")
+        console.log("✅ [Client] Bucket 'redacoes' encontrado:", redacoesBucket)
       }
 
       setUploadStatus("Enviando redação para correção...")
