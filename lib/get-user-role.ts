@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/client'
 
 // Cache para evitar múltiplas requisições
 const userRoleCache = new Map<string, { role: string; timestamp: number }>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+const CACHE_DURATION = 10 * 60 * 1000 // 10 minutos (aumentado)
 
 // A função DEVE receber o email do usuário, não o ID
 export async function getUserRoleClient(userEmail: string): Promise<string> {

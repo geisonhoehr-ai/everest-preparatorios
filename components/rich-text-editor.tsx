@@ -230,7 +230,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       {/* Editor */}
       <div
         ref={editorRef}
-        className="min-h-[120px] max-h-[300px] overflow-y-auto p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="min-h-[200px] max-h-[400px] overflow-y-auto p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
         contentEditable
         onKeyUp={handleKeyUp}
         onMouseUp={handleMouseUp}

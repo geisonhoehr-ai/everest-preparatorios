@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LevelUpModal } from "@/components/level-up-modal";
+import { useAuth } from "@/lib/auth-simple";
 import { 
   getUserRPGProgress, 
   getGeneralRanking, 
@@ -36,7 +38,9 @@ import {
   Timer,
   Calendar,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  GraduationCap,
+  FileText
 } from "lucide-react";
 
 interface UserStats {
@@ -148,6 +152,9 @@ const getDifficultyColor = (level: number) => {
 };
 
 export default function DashboardPage() {
+  const { user } = useAuth()
+  const isTeacher = user?.role === 'teacher' || user?.role === 'admin'
+  
   const [userStats, setUserStats] = useState<UserStats>({
     totalFlashcards: 0,
     completedFlashcards: 0,
@@ -187,7 +194,7 @@ export default function DashboardPage() {
   });
   const supabase = createClient();
 
-  // Função para carregar dados do usuário
+  // Função para carregar dados do usuário (OTIMIZADA)
   const loadUserData = async () => {
     try {
       setLoading(true);
@@ -199,12 +206,22 @@ export default function DashboardPage() {
         return;
       }
 
-      // Carregar perfil do aluno
-      const { data: studentProfile, error: profileError } = await supabase
-        .from('student_profiles')
-        .select('*')
-        .eq('user_uuid', user.id)
-        .single();
+      // Carregar perfil do aluno e ranking em paralelo
+      const [profileResult, rankingResult] = await Promise.all([
+        supabase
+          .from('student_profiles')
+          .select('*')
+          .eq('user_uuid', user.id)
+          .single(),
+        supabase
+          .from('student_profiles')
+          .select('total_xp')
+          .order('total_xp', { ascending: false })
+          .limit(100) // Limitar para performance
+      ]);
+
+      const { data: studentProfile, error: profileError } = profileResult;
+      const { data: allProfiles, error: rankingError } = rankingResult;
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Erro ao carregar perfil:', profileError);
@@ -249,7 +266,7 @@ export default function DashboardPage() {
           currentStreak: 0,
           totalStudyTime: 0,
           rank: 0,
-          totalUsers: 0,
+          totalUsers: allProfiles?.length || 0,
           level: 1,
           xp: 0,
           nextLevelXp: 1000,
@@ -269,20 +286,16 @@ export default function DashboardPage() {
           provaXP: 0
         });
       } else {
-        // Atualizar last_login_at
-        await supabase
+        // Atualizar last_login_at em background (não bloquear)
+        supabase
           .from('student_profiles')
           .update({ last_login_at: new Date().toISOString() })
-          .eq('user_uuid', user.id);
+          .eq('user_uuid', user.id)
+          .then(() => console.log('✅ [DASHBOARD] Last login atualizado'))
+          .catch((err: any) => console.error('❌ [DASHBOARD] Erro ao atualizar last login:', err));
 
-        // Carregar ranking geral
-        const { data: allProfiles, error: rankingError } = await supabase
-          .from('student_profiles')
-          .select('total_xp')
-          .order('total_xp', { ascending: false });
-
-                 if (!rankingError && allProfiles) {
-           const userRank = allProfiles.findIndex((profile: any) => profile.total_xp === studentProfile.total_xp) + 1;
+        if (!rankingError && allProfiles) {
+          const userRank = allProfiles.findIndex((profile: any) => profile.total_xp === studentProfile.total_xp) + 1;
           const totalUsers = allProfiles.length;
 
           // Atualizar stats com dados reais
@@ -322,9 +335,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Carregar dados quando o componente montar
+  // Carregar dados quando o componente montar (OTIMIZADO)
   useEffect(() => {
-    loadUserData();
+    const timer = setTimeout(() => {
+      loadUserData();
+    }, 100); // Pequeno delay para evitar bloqueio da UI
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const [achievements, setAchievements] = useState<Achievement[]>([
@@ -420,15 +437,16 @@ export default function DashboardPage() {
   const rankingPalette = getColorPalette('ranking');
   const progressPalette = getColorPalette('progress');
 
-  // Loading state
+  // Loading state otimizado
   if (loading) {
     return (
       <DashboardShell>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-            <p className="mt-4 text-lg">Carregando seu progresso...</p>
-          </div>
+          <LoadingSpinner 
+            size="lg" 
+            text="Carregando seu progresso..." 
+            className="text-center"
+          />
         </div>
       </DashboardShell>
     );
@@ -441,10 +459,13 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div className="w-full sm:w-auto">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Dashboard
+              {isTeacher ? 'Dashboard do Professor' : 'Dashboard'}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Continue sua jornada rumo à aprovação no CIAAR
+              {isTeacher 
+                ? 'Gerencie suas turmas, redações e conteúdo'
+                : 'Continue sua jornada rumo à aprovação no CIAAR'
+              }
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -528,6 +549,80 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Seção Específica para Professores */}
+        {isTeacher && (
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap className="h-5 w-5 text-orange-500" />
+              <h2 className="text-xl sm:text-2xl font-bold text-orange-600">Área do Professor</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Card de Redações Pendentes */}
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all hover:scale-105">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                    <FileText className="h-5 w-5" />
+                    Redações Pendentes
+                  </CardTitle>
+                  <CardDescription className="text-orange-600 dark:text-orange-400">
+                    Redações aguardando correção
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">12</div>
+                  <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white">
+                    Ver Redações
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Card de Turmas */}
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all hover:scale-105">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <Users className="h-5 w-5" />
+                    Minhas Turmas
+                  </CardTitle>
+                  <CardDescription className="text-blue-600 dark:text-blue-400">
+                    Gerencie suas turmas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">3</div>
+                  <Link href="/turmas">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                      Gerenciar Turmas
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              {/* Card de Estatísticas */}
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700 hover:shadow-lg transition-all hover:scale-105">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <BarChart3 className="h-5 w-5" />
+                    Estatísticas
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-400">
+                    Desempenho dos alunos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">85%</div>
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                    Ver Estatísticas
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* Tabs com Conquistas e Estatísticas - Melhorado para mobile */}
         <Tabs defaultValue="achievements" className="w-full">

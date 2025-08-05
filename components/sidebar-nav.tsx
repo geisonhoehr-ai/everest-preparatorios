@@ -113,6 +113,7 @@ export function SidebarNav({ className, items, collapsed = false, onItemClick, .
           title: "Turmas",
           icon: ClassIcon,
         },
+
         {
           href: "/community",
           title: "Comunidade",

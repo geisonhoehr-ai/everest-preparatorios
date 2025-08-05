@@ -531,14 +531,14 @@ export default function ProvasPage() {
                   Nova Prova
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Criar Nova Prova</DialogTitle>
                   <DialogDescription>
                     Preencha os dados da prova e adicione as questões
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 overflow-y-auto flex-1 pr-2">
                   <div>
                     <Label htmlFor="titulo">Título</Label>
                     <Input
@@ -679,7 +679,7 @@ export default function ProvasPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end space-x-2 pt-4 border-t mt-4">
                   <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                     Cancelar
                   </Button>
@@ -973,18 +973,18 @@ export default function ProvasPage() {
 
                     {/* Área de resposta baseada no tipo de questão */}
                     <div className="space-y-4">
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'multipla_escolha' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'multipla_escolha' && (
                         <div className="space-y-3">
-                          {provaEmAndamento.questoes[questaoAtual].opcoes?.map((opcao, index) => (
+                          {provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.map((opcao, index) => (
                             <label key={index} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                               <input
                                 type="radio"
-                                name={`questao-${provaEmAndamento.questoes[questaoAtual].id}`}
+                                name={`questao-${provaEmAndamento.questoes?.[questaoAtual]?.id}`}
                                 value={opcao}
-                                checked={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] === opcao}
+                                checked={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] === opcao}
                                 onChange={(e) => setRespostas({
                                   ...respostas,
-                                  [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                                  [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                                 })}
                                 className="h-4 w-4 text-blue-600"
                               />
@@ -994,18 +994,18 @@ export default function ProvasPage() {
                         </div>
                       )}
 
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'verdadeiro_falso' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'verdadeiro_falso' && (
                         <div className="space-y-3">
                           {['Verdadeiro', 'Falso'].map((opcao) => (
                             <label key={opcao} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                               <input
                                 type="radio"
-                                name={`questao-${provaEmAndamento.questoes[questaoAtual].id}`}
+                                name={`questao-${provaEmAndamento.questoes?.[questaoAtual]?.id}`}
                                 value={opcao}
-                                checked={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] === opcao}
+                                checked={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] === opcao}
                                 onChange={(e) => setRespostas({
                                   ...respostas,
-                                  [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                                  [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                                 })}
                                 className="h-4 w-4 text-blue-600"
                               />
@@ -1015,14 +1015,14 @@ export default function ProvasPage() {
                         </div>
                       )}
 
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'completar' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'completar' && (
                         <div className="space-y-3">
                           <Input
                             placeholder="Digite sua resposta..."
-                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            value={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] || ''}
                             onChange={(e) => setRespostas({
                               ...respostas,
-                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                              [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                             })}
                             className="text-base"
                           />
@@ -1032,14 +1032,14 @@ export default function ProvasPage() {
                         </div>
                       )}
 
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'dissertativa' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'dissertativa' && (
                         <div className="space-y-3">
                           <Textarea
                             placeholder="Digite sua resposta dissertativa..."
-                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            value={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] || ''}
                             onChange={(e) => setRespostas({
                               ...respostas,
-                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                              [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                             })}
                             rows={8}
                             className="text-base"
@@ -1047,7 +1047,7 @@ export default function ProvasPage() {
                         </div>
                       )}
 
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'associacao' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'associacao' && (
                         <div className="space-y-3">
                           <p className="text-sm text-gray-600">
                             Associe os itens da coluna A com os da coluna B:
@@ -1055,7 +1055,7 @@ export default function ProvasPage() {
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <h4 className="font-medium text-sm">Coluna A</h4>
-                              {provaEmAndamento.questoes[questaoAtual].opcoes?.slice(0, Math.floor((provaEmAndamento.questoes[questaoAtual].opcoes?.length || 0) / 2)).map((item, index) => (
+                              {provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.slice(0, Math.floor((provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.length || 0) / 2)).map((item, index) => (
                                 <div key={index} className="p-2 bg-gray-50 rounded text-sm">
                                   {index + 1}. {item}
                                 </div>
@@ -1063,7 +1063,7 @@ export default function ProvasPage() {
                             </div>
                             <div className="space-y-2">
                               <h4 className="font-medium text-sm">Coluna B</h4>
-                              {provaEmAndamento.questoes[questaoAtual].opcoes?.slice(Math.floor((provaEmAndamento.questoes[questaoAtual].opcoes?.length || 0) / 2)).map((item, index) => (
+                              {provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.slice(Math.floor((provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.length || 0) / 2)).map((item, index) => (
                                 <div key={index} className="p-2 bg-gray-50 rounded text-sm">
                                   {String.fromCharCode(65 + index)}. {item}
                                 </div>
@@ -1072,23 +1072,23 @@ export default function ProvasPage() {
                           </div>
                           <Input
                             placeholder="Ex: 1-A, 2-B, 3-C..."
-                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            value={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] || ''}
                             onChange={(e) => setRespostas({
                               ...respostas,
-                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                              [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                             })}
                             className="text-base"
                           />
                         </div>
                       )}
 
-                      {provaEmAndamento.questoes[questaoAtual].tipo === 'ordenacao' && (
+                      {provaEmAndamento.questoes?.[questaoAtual]?.tipo === 'ordenacao' && (
                         <div className="space-y-3">
                           <p className="text-sm text-gray-600">
                             Ordene os itens corretamente:
                           </p>
                           <div className="space-y-2">
-                            {provaEmAndamento.questoes[questaoAtual].opcoes?.map((item, index) => (
+                            {provaEmAndamento.questoes?.[questaoAtual]?.opcoes?.map((item, index) => (
                               <div key={index} className="p-2 bg-gray-50 rounded text-sm">
                                 {index + 1}. {item}
                               </div>
@@ -1096,10 +1096,10 @@ export default function ProvasPage() {
                           </div>
                           <Input
                             placeholder="Ex: 3,1,4,2,5"
-                            value={(respostas as any)[provaEmAndamento.questoes[questaoAtual].id!] || ''}
+                            value={(respostas as any)[provaEmAndamento.questoes?.[questaoAtual]?.id!] || ''}
                             onChange={(e) => setRespostas({
                               ...respostas,
-                              [provaEmAndamento.questoes[questaoAtual].id!]: e.target.value
+                              [provaEmAndamento.questoes?.[questaoAtual]?.id!]: e.target.value
                             })}
                             className="text-base"
                           />

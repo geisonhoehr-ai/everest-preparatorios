@@ -35,7 +35,7 @@ export default function AuthGuard({
           console.log('❌ [AUTH_GUARD] Nenhuma sessão encontrada')
           
           // Rotas públicas que não precisam de autenticação
-          const publicRoutes = ['/', '/login', '/login-simple', '/signup', '/signup-simple', '/forgot-password']
+          const publicRoutes = ['/', '/login', '/login-simple', '/forgot-password']
           
           if (!publicRoutes.includes(pathname)) {
             console.log('🔄 [AUTH_GUARD] Redirecionando para login')
@@ -56,9 +56,9 @@ export default function AuthGuard({
         
         console.log('🔍 [AUTH_GUARD] Role do usuário:', role)
 
-        // Verificar se usuário logado está tentando acessar login/signup
-        if (pathname === '/login' || pathname === '/login-simple' || pathname === '/signup' || pathname === '/signup-simple') {
-          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login/signup')
+        // Verificar se usuário logado está tentando acessar login
+        if (pathname === '/login' || pathname === '/login-simple') {
+          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login')
           
           const redirectTo = role === 'teacher' ? '/teacher' : '/dashboard'
           router.replace(redirectTo)

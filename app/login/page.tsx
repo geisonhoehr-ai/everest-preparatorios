@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserRoleClient } from "@/lib/get-user-role";
+
+// Cache temporário para otimização
+const userRoleCache = new Map<string, { role: string; timestamp: number }>();
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +25,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Verificar se usuário já está logado
+  // Verificar se usuário já está logado (OTIMIZADO)
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
@@ -33,10 +36,12 @@ export default function LoginPage() {
           console.log("🔄 [LOGIN] Usuário já logado, redirecionando...");
           console.log("🔄 [LOGIN] Email do usuário:", session.user.email);
           
-          const role = await getUserRoleClient(session.user.email);
+          // Usar cache para role (mais rápido)
+          const cached = userRoleCache.get(session.user.email || '');
+          const role = cached?.role || await getUserRoleClient(session.user.email);
           console.log("🔄 [LOGIN] Role obtido:", role);
           
-          const redirectTo = searchParams.get('redirect') || (role === 'teacher' ? '/teacher' : '/dashboard');
+          const redirectTo = searchParams.get('redirect') || '/dashboard';
           console.log("🔄 [LOGIN] Redirecionando para:", redirectTo);
           
           window.location.replace(redirectTo);
@@ -118,7 +123,7 @@ export default function LoginPage() {
           console.log("✅ [LOGIN] Role obtido:", role);
           
           // Obter URL de redirecionamento
-          const redirectTo = searchParams.get('redirect') || (role === 'teacher' ? '/teacher' : '/dashboard');
+          const redirectTo = searchParams.get('redirect') || '/dashboard';
           
           console.log("🔄 [LOGIN] Redirecionando para:", redirectTo);
           
@@ -288,10 +293,7 @@ export default function LoginPage() {
 
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-muted-foreground text-center">
-            Ainda não tem uma conta?{" "}
-            <Link href="/signup" className="text-orange-500 hover:text-orange-600 font-medium">
-              Cadastre-se
-            </Link>
+            Acesso restrito. Entre em contato com o suporte para obter suas credenciais.
           </div>
           {step === "password" && (
             <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground">

@@ -79,10 +79,23 @@ export function useAuth() {
     // Verificar sessão uma única vez
     const checkSession = async () => {
       try {
+        // Primeiro, tentar obter a sessão atual
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('❌ [AUTH] Erro:', error)
+          console.error('❌ [AUTH] Erro ao obter sessão:', error)
+          
+          // Se o erro for relacionado ao refresh token, limpar a sessão
+          if (error.message?.includes('Refresh Token') || error.message?.includes('Invalid Refresh Token')) {
+            console.log('🔄 [AUTH] Token expirado, limpando sessão...')
+            try {
+              await supabase.auth.signOut()
+              console.log('✅ [AUTH] Sessão limpa com sucesso')
+            } catch (signOutError) {
+              console.error('❌ [AUTH] Erro ao limpar sessão:', signOutError)
+            }
+          }
+          
           setAuthState({
             user: null,
             isLoading: false,
@@ -111,7 +124,15 @@ export function useAuth() {
           })
         }
       } catch (error) {
-        console.error('❌ [AUTH] Erro:', error)
+        console.error('❌ [AUTH] Erro geral:', error)
+        
+        // Em caso de erro, tentar limpar a sessão
+        try {
+          await supabase.auth.signOut()
+        } catch (signOutError) {
+          console.error('❌ [AUTH] Erro ao fazer logout:', signOutError)
+        }
+        
         setAuthState({
           user: null,
           isLoading: false,
@@ -134,11 +155,18 @@ export function useAuth() {
             isLoading: false,
             isAuthenticated: true
           })
-        } else if (event === 'SIGNED_OUT') {
+        } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
           setAuthState({
             user: null,
             isLoading: false,
             isAuthenticated: false
+          })
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          const user = await createUserObject(session.user)
+          setAuthState({
+            user,
+            isLoading: false,
+            isAuthenticated: true
           })
         }
       }
@@ -167,31 +195,7 @@ export function useAuth() {
     }
   }
 
-  const signUp = async (email: string, password: string, role: 'student' | 'teacher' = 'student') => {
-    try {
-      console.log('📝 [AUTH] Signup:', email)
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-      })
 
-      if (error) throw error
-
-      if (data.user) {
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_uuid: data.user.email,
-            role
-          })
-      }
-
-      return { success: true }
-    } catch (error: any) {
-      console.error('❌ [AUTH] Erro signup:', error)
-      return { success: false, error: error.message }
-    }
-  }
 
   const signOut = async () => {
     try {
@@ -208,7 +212,6 @@ export function useAuth() {
   return {
     ...authState,
     signIn,
-    signUp,
     signOut
   }
 } 

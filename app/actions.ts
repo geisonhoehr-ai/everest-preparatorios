@@ -975,7 +975,7 @@ export async function uploadAudioFeedback(redacaoId: number, audioBlob: Blob) {
 
     console.log(`✅ Áudio de feedback salvo com sucesso: ${publicUrl}`)
     revalidatePath("/redacao")
-    revalidatePath("/teacher")
+    revalidatePath("/dashboard")
     
     return { success: true, audioUrl: publicUrl }
   } catch (error) {
@@ -1013,7 +1013,7 @@ export async function corrigirRedacaoIA(redacaoId: number) {
     }
 
     console.log("✅ [Server Action] Correção IA salva para redação", redacaoId)
-    revalidatePath("/teacher")
+    revalidatePath("/dashboard")
     revalidatePath("/redacao")
     
     return { success: true, correcao: correcaoSimulada }
@@ -1122,7 +1122,7 @@ export async function salvarCorrecaoRedacao(data: {
 
     console.log(`✅ Correção salva com sucesso para redação ${data.redacaoId}`)
     revalidatePath("/redacao")
-    revalidatePath("/teacher")
+    revalidatePath("/dashboard")
     
     return { success: true }
   } catch (error) {
@@ -1351,7 +1351,7 @@ export async function criarTurma(data: {
     console.log(`✅ Turma criada com sucesso: ${data.nome}`)
     console.log(`🔑 Código de acesso: ${codigoAcesso}`)
 
-    revalidatePath("/teacher")
+    revalidatePath("/dashboard")
     return { 
       success: true, 
       turma: novaTurma,
@@ -1456,7 +1456,7 @@ export async function vincularAlunoTurma(data: {
 
     console.log(`✅ Aluno ${data.nomeCompleto} vinculado à turma ${turma.nome}`)
 
-    revalidatePath("/teacher")
+    revalidatePath("/dashboard")
     return { 
       success: true, 
       message: `${data.nomeCompleto} foi adicionado à turma "${turma.nome}"`,

@@ -12,7 +12,23 @@ export function createClient() {
 
   supabaseInstance = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'everest-preparatorios'
+        }
+      },
+      db: {
+        schema: 'public'
+      }
+    }
   )
 
   console.log('✅ [SUPABASE] Cliente criado')

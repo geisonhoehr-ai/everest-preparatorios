@@ -43,9 +43,7 @@ export default function LoginSimplePage() {
             console.warn('⚠️ [LOGIN] Erro ao buscar role, redirecionando para dashboard')
             router.push('/dashboard')
           } else {
-            if (roleData.role === 'teacher') {
-              router.push('/teacher')
-            } else if (roleData.role === 'admin') {
+            if (roleData.role === 'admin') {
               router.push('/admin')
             } else {
               router.push('/dashboard')
