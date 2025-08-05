@@ -27,6 +27,7 @@ export function useAuth() {
 
   const supabase = createClient()
   const isInitialized = useRef(false)
+  const userCache = useRef<Map<string, AuthUser>>(new Map())
 
   // Função para obter role do usuário
   const getUserRole = useCallback(async (userEmail: string): Promise<string> => {
@@ -48,12 +49,29 @@ export function useAuth() {
   // Função para criar objeto de usuário
   const createUserObject = useCallback(async (sessionUser: any): Promise<AuthUser> => {
     try {
-      const userRole = await getUserRole(sessionUser.email || '')
-      return {
+      const userEmail = sessionUser.email || ''
+      
+      // Verificar cache primeiro
+      const cachedUser = userCache.current.get(userEmail)
+      if (cachedUser) {
+        console.log('✅ [AUTH] Usando cache para usuário:', userEmail)
+        return cachedUser
+      }
+      
+      console.log('🔍 [AUTH] Buscando role para usuário:', userEmail)
+      const userRole = await getUserRole(userEmail)
+      
+      const userObject = {
         id: sessionUser.id,
-        email: sessionUser.email || '',
+        email: userEmail,
         role: userRole as 'student' | 'teacher' | 'admin'
       }
+      
+      // Salvar no cache
+      userCache.current.set(userEmail, userObject)
+      console.log('💾 [AUTH] Usuário salvo no cache:', userEmail)
+      
+      return userObject
     } catch (error) {
       console.error('❌ [AUTH] Erro ao criar objeto de usuário:', {
         message: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -61,11 +79,16 @@ export function useAuth() {
         error: error
       })
       // Retornar usuário com role padrão em caso de erro
-      return {
+      const fallbackUser = {
         id: sessionUser.id,
         email: sessionUser.email || '',
         role: 'student'
       }
+      
+      // Salvar fallback no cache
+      userCache.current.set(sessionUser.email || '', fallbackUser)
+      
+      return fallbackUser
     }
   }, [getUserRole])
 
@@ -156,6 +179,9 @@ export function useAuth() {
             isAuthenticated: true
           })
         } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          // Limpar cache ao fazer logout
+          userCache.current.clear()
+          console.log('🧹 [AUTH] Cache limpo após logout')
           setAuthState({
             user: null,
             isLoading: false,
