@@ -152,8 +152,15 @@ const getDifficultyColor = (level: number) => {
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const isTeacher = user?.role === 'teacher' || user?.role === 'admin'
+  
+  console.log('🏠 [DASHBOARD] Renderizando dashboard:', {
+    user: user?.email,
+    role: user?.role,
+    isTeacher,
+    authLoading
+  })
   
   const [userStats, setUserStats] = useState<UserStats>({
     totalFlashcards: 0,
@@ -206,7 +213,44 @@ export default function DashboardPage() {
         return;
       }
 
-      // Carregar perfil do aluno e ranking em paralelo
+      // Verificar se é professor
+      const isTeacherUser = user?.role === 'teacher' || user?.role === 'admin';
+      
+      if (isTeacherUser) {
+        // Para professores, apenas definir dados básicos
+        console.log('👨‍🏫 [DASHBOARD] Carregando dados do professor');
+        setUserStats({
+          totalFlashcards: 0,
+          completedFlashcards: 0,
+          totalQuizzes: 0,
+          averageScore: 0,
+          currentStreak: 0,
+          totalStudyTime: 0,
+          rank: 0,
+          totalUsers: 0,
+          level: 1,
+          xp: 0,
+          nextLevelXp: 1000,
+          // RPG System
+          generalRank: 'Professor',
+          flashcardRank: 'Professor',
+          quizRank: 'Professor',
+          redacaoRank: 'Professor',
+          provaRank: 'Professor',
+          flashcardLevel: 1,
+          quizLevel: 1,
+          redacaoLevel: 1,
+          provaLevel: 1,
+          flashcardXP: 0,
+          quizXP: 0,
+          redacaoXP: 0,
+          provaXP: 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Para alunos, carregar perfil e ranking em paralelo
       const [profileResult, rankingResult] = await Promise.all([
         supabase
           .from('student_profiles')
@@ -337,12 +381,26 @@ export default function DashboardPage() {
 
   // Carregar dados quando o componente montar (OTIMIZADO)
   useEffect(() => {
+    // Não carregar dados se ainda estiver carregando a autenticação
+    if (authLoading) {
+      console.log('⏳ [DASHBOARD] Aguardando autenticação...')
+      return;
+    }
+    
+    // Não carregar dados se não há usuário
+    if (!user) {
+      console.log('❌ [DASHBOARD] Nenhum usuário autenticado')
+      setLoading(false);
+      return;
+    }
+    
+    console.log('🚀 [DASHBOARD] Iniciando carregamento de dados...')
     const timer = setTimeout(() => {
       loadUserData();
     }, 100); // Pequeno delay para evitar bloqueio da UI
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [user, authLoading]);
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
