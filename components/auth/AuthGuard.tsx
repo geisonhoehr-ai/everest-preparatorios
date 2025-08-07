@@ -173,7 +173,7 @@ export function useAuthGuard() {
 
     // Listener para mudanças de autenticação
     const supabase = createClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       console.log('🔄 [USE_AUTH_GUARD] Auth change:', event)
       checkAuth()
     })
