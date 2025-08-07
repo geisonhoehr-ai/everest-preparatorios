@@ -60,7 +60,7 @@ export default function AuthGuard({
         if (pathname === '/login' || pathname === '/login-simple') {
           console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login')
           
-          const redirectTo = role === 'teacher' ? '/teacher' : '/dashboard'
+          const redirectTo = '/dashboard'
           router.replace(redirectTo)
           return
         }
@@ -81,8 +81,8 @@ export default function AuthGuard({
         if (!authorized) {
           console.log('❌ [AUTH_GUARD] Usuário não autorizado')
           
-          // Redirecionar para página apropriada baseada no role
-          const redirectTo = role === 'teacher' ? '/teacher' : '/dashboard'
+          // Redirecionar para dashboard principal
+          const redirectTo = '/dashboard'
           router.replace(redirectTo)
           return
         }

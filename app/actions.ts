@@ -149,7 +149,7 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
     .select("id, topic_id, question, answer")
     .eq("topic_id", topicId)
     .order("id", { ascending: false })
-    .range(offset, offset + limit - 1)
+    .limit(limit)
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
@@ -381,13 +381,8 @@ export async function updateSm2Progress(flashcardId: number, progress: any) {
     const result = await addActivityXP(user.id, 'flashcard', baseXP)
     
     if (result.levelUp) {
-      // Criar achievement de level up
-      const { createAchievement } = await import('@/lib/rpg-system')
-      await createAchievement(user.id, 'level_up', {
-        activity: 'flashcard',
-        newLevel: result.newLevel,
-        newRank: result.newRank
-      })
+      // Achievement de level up - comentado temporariamente
+      console.log(`🎉 [RPG] Usuário subiu de nível! Novo nível: ${result.newLevel}`)
     }
 
     // Atualizar streak de estudo
@@ -785,7 +780,7 @@ export async function createRedacao(data: {
     try {
       const { addActivityXP, updateStudyStreak } = await import('@/lib/rpg-system')
       const baseXP = 15 // XP base por enviar redação
-      const result = await addActivityXP(user.email, 'redacao', baseXP)
+      const result = await addActivityXP(user.email || user.id, 'redacao', baseXP)
       
       if (result.levelUp) {
         // Criar achievement de level up

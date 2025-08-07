@@ -5,17 +5,13 @@ import { cookies } from "next/headers"
 
 // Função de debug para testar o sistema de roles
 export async function debugUserSystem(email: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: (name: string, value: string, options: CookieOptions) => cookieStore.set({ name, value, ...options }),
-        remove: (name: string, options: CookieOptions) => cookieStore.set({ name, value: "", ...options }),
-      },
+      cookies: cookieStore,
     },
   )
 
@@ -78,17 +74,13 @@ export async function debugUserSystem(email: string) {
 
 // Função simplificada para criar perfil
 export async function createSimpleProfile(email: string, role: "student" | "teacher") {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: (name: string, value: string, options: CookieOptions) => cookieStore.set({ name, value, ...options }),
-        remove: (name: string, options: CookieOptions) => cookieStore.set({ name, value: "", ...options }),
-      },
+      cookies: cookieStore,
     },
   )
 

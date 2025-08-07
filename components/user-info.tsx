@@ -33,7 +33,8 @@ export function UserInfo() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      router.push('/login-simple')
+      // Redirecionar para a home externa após logout
+      window.location.href = "https://everestpreparatorios.com.br"
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
     }

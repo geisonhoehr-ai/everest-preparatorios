@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Mail, Lock, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowRight, Sparkles, CheckCircle2, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -22,6 +22,8 @@ export default function LoginPage() {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [step, setStep] = useState<"email" | "password">("email");
+  const [userAlreadyLoggedIn, setUserAlreadyLoggedIn] = useState(false);
+  const [loggedInEmail, setLoggedInEmail] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -33,18 +35,11 @@ export default function LoginPage() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          console.log("🔄 [LOGIN] Usuário já logado, redirecionando...");
+          console.log("🔄 [LOGIN] Usuário já logado, mas permitindo novo login");
           console.log("🔄 [LOGIN] Email do usuário:", session.user.email);
           
-          // Usar cache para role (mais rápido)
-          const cached = userRoleCache.get(session.user.email || '');
-          const role = cached?.role || await getUserRoleClient(session.user.email);
-          console.log("🔄 [LOGIN] Role obtido:", role);
-          
-          const redirectTo = searchParams.get('redirect') || '/dashboard';
-          console.log("🔄 [LOGIN] Redirecionando para:", redirectTo);
-          
-          window.location.replace(redirectTo);
+          setUserAlreadyLoggedIn(true);
+          setLoggedInEmail(session.user.email || "");
         }
       } catch (error) {
         console.error("Erro ao verificar sessão existente:", error);
@@ -180,6 +175,40 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
+          {userAlreadyLoggedIn && (
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span className="text-sm font-medium text-green-600">Usuário já logado</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                Você já está logado como <strong>{loggedInEmail}</strong>
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => window.location.href = '/dashboard'}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Ir para o Dashboard
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    const supabase = createClient();
+                    await supabase.auth.signOut();
+                    setUserAlreadyLoggedIn(false);
+                    setLoggedInEmail("");
+                  }}
+                  className="flex-1"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Fazer Logout
+                </Button>
+              </div>
+            </div>
+          )}
+          
           {step === "email" ? (
             <form onSubmit={checkEmail} className="space-y-4">
               <div className="space-y-2">

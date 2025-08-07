@@ -8,13 +8,13 @@ import { PostCard } from "@/components/community/post-card" // Reutilizando Post
 export const dynamic = "force-dynamic" // Ensure this page is dynamic
 
 interface PostPageProps {
-  params: {
+  params: Promise<{
     postId: string
-  }
+  }>
 }
 
 export default async function CommunityPostPage({ params }: PostPageProps) {
-  const postId = params.postId
+  const { postId } = await params
   const post = await getCommunityPostById(postId)
   const comments = await getCommunityCommentsByPostId(postId)
 

@@ -8,8 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowRight, Play, Clock, Award, Medal, TrendingUp, BarChart3, Brain, CheckSquare, Moon, Video, FileText, Headphones, MessageCircle, Gift, Bookmark, Calendar, XCircle } from "lucide-react";
 
 export default function LandingPage() {
-  console.log('🏠 [HOME] Página principal carregada')
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155] text-white">
       {/* Header/Navigation */}

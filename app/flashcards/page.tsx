@@ -358,12 +358,9 @@ export default function FlashcardsPage() {
   const [showContinueModal, setShowContinueModal] = useState(false)
 
   useEffect(() => {
-    console.log("🔍 [DEBUG] useEffect triggered, selectedSubject:", selectedSubject)
     if (selectedSubject) {
-      console.log("🔍 [DEBUG] selectedSubject existe, chamando loadTopicsBySubject()")
       loadTopicsBySubject()
     } else {
-      console.log("🔍 [DEBUG] selectedSubject é null, chamando loadSubjects()")
       loadSubjects()
     }
   }, [selectedSubject])
@@ -372,15 +369,11 @@ export default function FlashcardsPage() {
   useEffect(() => {
     const checkAuthAndRole = async () => {
       try {
-        console.log('🔍 [DEBUG] Verificando autenticação...')
         const { user, role, isAuthenticated } = await getAuthAndRole()
         
         if (isAuthenticated && user) {
-          console.log('✅ [DEBUG] Usuário autenticado:', user.id)
-          console.log('✅ [DEBUG] Role definida:', role)
           setUserRole(role)
         } else {
-          console.log('❌ [DEBUG] Usuário não autenticado')
           setUserRole('student')
         }
       } catch (error) {
@@ -405,13 +398,24 @@ export default function FlashcardsPage() {
   const loadWrongCardsCount = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) {
-        const counts: { [topicId: string]: number } = {}
-        for (const topic of topics) {
-          const count = await getWrongCardsCount(user.id, topic.id)
-          counts[topic.id] = count
+      if (user?.id && topics.length > 0) {
+        // Otimização: fazer uma única query para todos os tópicos
+        const topicIds = topics.map(topic => topic.id);
+        const { data: wrongCardsData, error } = await supabase
+          .from('flashcard_progress')
+          .select('topic_id, count')
+          .eq('user_uuid', user.id)
+          .in('topic_id', topicIds)
+          .eq('status', 'wrong');
+
+        if (!error && wrongCardsData) {
+          const counts: { [topicId: string]: number } = {};
+          topics.forEach(topic => {
+            const topicData = wrongCardsData.find((item: any) => item.topic_id === topic.id);
+            counts[topic.id] = topicData?.count || 0;
+          });
+          setWrongCardsCount(counts);
         }
-        setWrongCardsCount(counts)
       }
     } catch (error) {
       console.error("Erro ao carregar contagem de cards errados:", error)

@@ -52,11 +52,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
     console.log("🔄 [DASHBOARD_SHELL] Iniciando logout...")
     try {
       await signOut()
-      router.push("/login-simple")
+      // Redirecionar para a home externa após logout
+      window.location.href = "https://everestpreparatorios.com.br"
     } catch (error) {
       console.error("❌ [DASHBOARD_SHELL] Erro no logout:", error)
     }
-  }, [signOut, router])
+  }, [signOut])
 
   // Função para traduzir o role
   const getRoleDisplay = useCallback((role: string | null) => {
