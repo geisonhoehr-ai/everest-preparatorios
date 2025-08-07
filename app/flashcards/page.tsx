@@ -618,7 +618,7 @@ export default function FlashcardsPage() {
       }
       
       // Buscar flashcards do tópico baseado no role do usuário
-      let cards = []
+      let cards: Flashcard[] = []
       console.log("🔍 [DEBUG] userRole:", userRole)
       console.log("🔍 [DEBUG] topicId:", topicId)
       console.log("🔍 [DEBUG] quantity:", quantity)
