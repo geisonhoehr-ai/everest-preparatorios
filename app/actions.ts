@@ -1515,9 +1515,9 @@ export async function getAlunosDaTurma(turmaId: string) {
 
     const alunosFormatados = alunos?.map(item => ({
       id: item.user_uuid,
-      nome: item.student_profiles?.nome_completo || 'Nome não definido',
-      escola: item.student_profiles?.escola || 'Escola não definida',
-      ano_escolar: item.student_profiles?.ano_escolar || '3ano',
+      nome: item.student_profiles?.[0]?.nome_completo || 'Nome não definido',
+      escola: item.student_profiles?.[0]?.escola || 'Escola não definida',
+      ano_escolar: item.student_profiles?.[0]?.ano_escolar || '3ano',
       data_entrada: item.data_entrada
     })) || []
 
