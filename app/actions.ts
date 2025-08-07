@@ -161,6 +161,131 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
   return data || []
 }
 
+// Função para salvar um card errado
+export async function saveWrongCard(userUuid: string, flashcardId: number, topicId: string) {
+  const supabase = await getSupabase()
+  console.log(`❌ [Server Action] Salvando card errado: ${flashcardId} para usuário: ${userUuid}`)
+
+  const { error } = await supabase
+    .from("wrong_cards")
+    .upsert({
+      user_uuid: userUuid,
+      flashcard_id: flashcardId,
+      topic_id: topicId,
+      created_at: new Date().toISOString(),
+      reviewed: false
+    }, {
+      onConflict: "user_uuid,flashcard_id"
+    })
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao salvar card errado:", error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+  }
+
+  console.log(`✅ [Server Action] Card errado salvo com sucesso`)
+  return { success: true }
+}
+
+// Função para buscar cards errados do usuário por tópico
+export async function getWrongCardsByTopic(userUuid: string, topicId: string, page = 1, limit = 20) {
+  const supabase = await getSupabase()
+  console.log(`📚 [Server Action] Buscando cards errados do tópico: ${topicId} para usuário: ${userUuid}`)
+
+  const offset = (page - 1) * limit
+
+  const { data, error } = await supabase
+    .from("wrong_cards")
+    .select(`
+      flashcard_id,
+      flashcards:flashcard_id (
+        id,
+        topic_id,
+        question,
+        answer
+      )
+    `)
+    .eq("user_uuid", userUuid)
+    .eq("topic_id", topicId)
+    .eq("reviewed", false)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar cards errados:", error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+  }
+
+  // Contar total de cards errados
+  const { count, error: countError } = await supabase
+    .from("wrong_cards")
+    .select("*", { count: "exact", head: true })
+    .eq("user_uuid", userUuid)
+    .eq("topic_id", topicId)
+    .eq("reviewed", false)
+
+  if (countError) {
+    console.error("❌ [Server Action] Erro ao contar cards errados:", countError)
+    return { success: false, error: countError instanceof Error ? countError.message : 'Erro desconhecido' }
+  }
+
+  // Transformar os dados para o formato esperado
+  const flashcards = data?.map(item => item.flashcards).filter(Boolean) || []
+
+  console.log(`✅ [Server Action] Cards errados encontrados: ${flashcards.length}`)
+  return {
+    success: true,
+    data: {
+      flashcards,
+      total: count || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((count || 0) / limit)
+    }
+  }
+}
+
+// Função para marcar cards errados como revisados
+export async function markWrongCardsAsReviewed(userUuid: string, flashcardIds: number[]) {
+  const supabase = await getSupabase()
+  console.log(`✅ [Server Action] Marcando cards como revisados: ${flashcardIds.length} cards para usuário: ${userUuid}`)
+
+  const { error } = await supabase
+    .from("wrong_cards")
+    .update({ reviewed: true, reviewed_at: new Date().toISOString() })
+    .eq("user_uuid", userUuid)
+    .in("flashcard_id", flashcardIds)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao marcar cards como revisados:", error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+  }
+
+  console.log(`✅ [Server Action] Cards marcados como revisados com sucesso`)
+  return { success: true }
+}
+
+// Função para contar cards errados por tópico
+export async function getWrongCardsCount(userUuid: string, topicId: string) {
+  const supabase = await getSupabase()
+  console.log(`🔢 [Server Action] Contando cards errados do tópico: ${topicId} para usuário: ${userUuid}`)
+
+  const { count, error } = await supabase
+    .from("wrong_cards")
+    .select("*", { count: "exact", head: true })
+    .eq("user_uuid", userUuid)
+    .eq("topic_id", topicId)
+    .eq("reviewed", false)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao contar cards errados:", error)
+    return 0
+  }
+
+  console.log(`✅ [Server Action] Total de cards errados: ${count}`)
+  return count || 0
+}
+
 // Função para verificar se o usuário é professor ou admin
 export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boolean> {
   const supabase = await getSupabase()
