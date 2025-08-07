@@ -525,7 +525,7 @@ export async function getRedacoesUsuario() {
         *,
         temas_redacao(titulo)
       `)
-      .eq('user_uuid', user.email)
+      .eq('user_uuid', user.email || user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -648,7 +648,7 @@ export async function createRedacao(data: {
 
     // Criar registro da redação
     const redacaoData = {
-      user_uuid: user.email,
+      user_uuid: user.email || user.id,
       titulo: data.titulo,
       tema: tema?.titulo || "Tema não encontrado",
       tema_id: data.tema_id,
@@ -785,7 +785,7 @@ export async function createRedacao(data: {
       if (result.levelUp) {
         // Criar achievement de level up
         const { createAchievement } = await import('@/lib/rpg-system')
-        await createAchievement(user.email, 'level_up', {
+        await createAchievement(user.email || user.id, 'level_up', {
           activity: 'redacao',
           newLevel: result.newLevel,
           newRank: result.newRank
@@ -793,7 +793,7 @@ export async function createRedacao(data: {
       }
 
       // Atualizar streak de estudo
-      await updateStudyStreak(user.email)
+      await updateStudyStreak(user.email || user.id)
 
       console.log(`🎮 [RPG] XP adicionado por enviar redação: ${baseXP} pontos`)
     } catch (rpgError) {
@@ -1189,7 +1189,7 @@ export async function getUserRole() {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
-    .eq("user_uuid", user.email)
+          .eq("user_uuid", user.email || user.id)
     .single()
 
   return data?.role || "student"
