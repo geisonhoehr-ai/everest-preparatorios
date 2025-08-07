@@ -291,7 +291,7 @@ export default function RedacaoPage() {
       
       if (!redacoesBucket) {
         console.error("❌ [Client] Bucket 'redacoes' não encontrado")
-        console.error("❌ [Client] Buckets disponíveis:", buckets?.map(b => b.name))
+        console.error("❌ [Client] Buckets disponíveis:", buckets?.map((b: any) => b.name))
         setUploadStatus("Erro: Bucket não configurado")
         setUploadProgress(0)
         toast.error("Erro no sistema de storage. Contate o administrador.")
