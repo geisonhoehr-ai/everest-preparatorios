@@ -983,7 +983,8 @@ export default function FlashcardsPage() {
       const result = await getAllFlashcardsByTopic(user.id, topicId, page, 10)
       if (result.success && result.data) {
         setAdminFlashcards(result.data.flashcards)
-        setAdminTotal(result.data.total)
+        // Como não temos total, vamos usar o comprimento dos flashcards
+        setAdminTotal(result.data.flashcards.length)
         setAdminPage(page)
       }
     } catch (error) {
