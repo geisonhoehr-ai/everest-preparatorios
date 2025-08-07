@@ -743,7 +743,7 @@ export default function FlashcardsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
-        await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect", user.id)
+        await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect")
         
         // Salvar card errado no banco de dados
         if (!isCorrect && !isStudyingWrongCards) {
