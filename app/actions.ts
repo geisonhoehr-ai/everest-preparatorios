@@ -1396,14 +1396,19 @@ export async function vincularAlunoTurma(data: {
       return { success: false, error: "Turma não encontrada ou sem permissão" }
     }
 
-    // Verificar se aluno já existe
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(data.email)
+    // Verificar se aluno já existe na tabela de perfis
+    const { data: existingProfile } = await supabase
+      .from('student_profiles')
+      .select('user_uuid')
+      .eq('nome_completo', data.nomeCompleto)
+      .eq('email', data.email)
+      .single()
     
     let alunoId: string
     
-    if (existingUser.user) {
+    if (existingProfile) {
       // Usuário já existe
-      alunoId = existingUser.user.id
+      alunoId = existingProfile.user_uuid
     } else {
       // Criar novo usuário
       const senhaTemporaria = `everest${Math.random().toString(36).substring(2, 8)}`
@@ -1432,6 +1437,7 @@ export async function vincularAlunoTurma(data: {
       await supabase.from('student_profiles').insert({
         user_uuid: alunoId,
         nome_completo: data.nomeCompleto,
+        email: data.email,
         escola: 'A definir',
         ano_escolar: '3ano' // padrão
       })
