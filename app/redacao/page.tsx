@@ -285,7 +285,7 @@ export default function RedacaoPage() {
       setCurrentStep("verificando_bucket")
       
       const { data: buckets } = await supabase.storage.listBuckets()
-      console.log("🔍 [Client] Buckets encontrados:", buckets?.map(b => b.name))
+      console.log("🔍 [Client] Buckets encontrados:", buckets?.map((b: any) => b.name))
       
       const redacoesBucket = buckets?.find(bucket => bucket.name === 'redacoes')
       
