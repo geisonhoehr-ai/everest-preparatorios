@@ -258,3 +258,18 @@ export async function toggleLike(postId: string) {
     return { success: true, message: "Post curtido!" }
   }
 }
+
+// Função para obter todas as categorias da comunidade
+export async function getCommunityCategories(): Promise<CommunityCategory[]> {
+  const { data, error } = await supabase
+    .from("community_categories")
+    .select("*")
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("Erro ao buscar categorias da comunidade:", error)
+    return []
+  }
+
+  return data || []
+}
