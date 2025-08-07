@@ -1037,7 +1037,7 @@ export async function salvarCorrecaoRedacao(data: {
 
     // Verificar se é professor
     const userRole = await getUserRoleFromSupabase(user.id)
-    if (userRole !== 'teacher' && userRole !== 'admin') {
+    if (userRole !== 'teacher') {
       return { success: false, error: "Acesso negado" }
     }
 
@@ -1079,9 +1079,10 @@ export async function salvarCorrecaoRedacao(data: {
           // Criar achievement de level up
           const { createAchievement } = await import('@/lib/rpg-system')
           await createAchievement(redacao.user_uuid, 'level_up', {
-            activity: 'redacao',
-            newLevel: result.newLevel,
-            newRank: result.newRank
+            title: `Nível ${result.newLevel} - Redação`,
+            description: `Você alcançou o nível ${result.newLevel} em redação!`,
+            icon: '📝',
+            xp_reward: 50
           })
         }
 
@@ -1089,8 +1090,10 @@ export async function salvarCorrecaoRedacao(data: {
         if (data.notaFinal >= 800) {
           const { createAchievement } = await import('@/lib/rpg-system')
           await createAchievement(redacao.user_uuid, 'high_score', {
-            activity: 'redacao',
-            score: data.notaFinal
+            title: 'Nota Excelente',
+            description: `Você obteve uma nota excelente de ${data.notaFinal} pontos!`,
+            icon: '🏆',
+            xp_reward: 100
           })
         }
 
@@ -1976,9 +1979,10 @@ export async function finalizarTentativa(tentativaId: string) {
         // Criar achievement de level up
         const { createAchievement } = await import('@/lib/rpg-system')
         await createAchievement(user.id, 'level_up', {
-          activity: 'prova',
-          newLevel: result.newLevel,
-          newRank: result.newRank
+          title: `Nível ${result.newLevel} - Prova`,
+          description: `Você alcançou o nível ${result.newLevel} em provas!`,
+          icon: '📊',
+          xp_reward: 75
         })
       }
 
@@ -1986,8 +1990,10 @@ export async function finalizarTentativa(tentativaId: string) {
       if (notaPercentual >= 8.0) {
         const { createAchievement } = await import('@/lib/rpg-system')
         await createAchievement(user.id, 'high_score', {
-          activity: 'prova',
-          score: notaPercentual
+          title: 'Nota Alta',
+          description: `Você obteve uma nota alta de ${notaPercentual.toFixed(1)}!`,
+          icon: '🥇',
+          xp_reward: 150
         })
       }
 
@@ -1995,8 +2001,10 @@ export async function finalizarTentativa(tentativaId: string) {
       if (notaPercentual >= 9.5) {
         const { createAchievement } = await import('@/lib/rpg-system')
         await createAchievement(user.id, 'perfect_score', {
-          activity: 'prova',
-          score: notaPercentual
+          title: 'Nota Perfeita',
+          description: `Você obteve uma nota perfeita de ${notaPercentual.toFixed(1)}!`,
+          icon: '👑',
+          xp_reward: 300
         })
       }
 
