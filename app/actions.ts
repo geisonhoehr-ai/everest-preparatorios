@@ -205,7 +205,7 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 
   console.log(`✅ [Server Action] Flashcards encontrados: ${data?.length}`)
@@ -240,7 +240,7 @@ export async function getFlashcardById(userUuid: string, flashcardId: number) {
 
   if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcard:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 
   console.log(`✅ [Server Action] Flashcard encontrado: ${data?.id}`)
@@ -275,7 +275,7 @@ export async function createFlashcard(userUuid: string, data: {
 
   if (error) {
     console.error("❌ [Server Action] Erro ao criar flashcard:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 
   console.log(`✅ [Server Action] Flashcard criado: ${newFlashcard.id}`)
@@ -1639,7 +1639,7 @@ export async function getProvasProfessor() {
     console.error('💥 Erro em getProvasProfessor:', error);
     
     // Se for erro de autenticação, redirecionar
-    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
+    if (error instanceof Error && (error.message.includes('não autenticado') || error.message.includes('Auth'))) {
       redirect('/login')
     }
     
