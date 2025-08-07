@@ -79,7 +79,7 @@ export function useAuth() {
         error: error
       })
       // Retornar usuário com role padrão em caso de erro
-      const fallbackUser = {
+      const fallbackUser: AuthUser = {
         id: sessionUser.id,
         email: sessionUser.email || '',
         role: 'student'
