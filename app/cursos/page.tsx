@@ -540,10 +540,6 @@ export default function CursosPage() {
             videoId={currentLesson.pandavideoId || "sample-video-id"}
             title={currentLesson.title}
             onClose={() => setSelectedCourse(null)}
-            onComplete={() => {
-              console.log('Aula concluída!')
-              // Aqui você pode implementar a lógica para marcar como concluída
-            }}
           />
         )}
       </div>
