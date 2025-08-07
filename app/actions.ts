@@ -1443,18 +1443,29 @@ export async function vincularAlunoTurma(data: {
       })
     }
 
-    // Vincular aluno à turma
-    const { error: vinculoError } = await supabase
+    // Verificar se aluno já está vinculado à turma
+    const { data: existingVinculo } = await supabase
       .from('alunos_turmas')
-      .insert({
-        user_uuid: alunoId,
-        turma_id: data.turmaId
-      })
-      .on('conflict', { do: 'nothing' }) // Ignora se já existe
+      .select('user_uuid')
+      .eq('user_uuid', alunoId)
+      .eq('turma_id', data.turmaId)
+      .single()
 
-    if (vinculoError) {
-      console.error("❌ Erro ao vincular aluno:", vinculoError)
-      return { success: false, error: "Erro ao vincular aluno à turma" }
+    if (!existingVinculo) {
+      // Vincular aluno à turma
+      const { error: vinculoError } = await supabase
+        .from('alunos_turmas')
+        .insert({
+          user_uuid: alunoId,
+          turma_id: data.turmaId
+        })
+
+      if (vinculoError) {
+        console.error("❌ Erro ao vincular aluno:", vinculoError)
+        return { success: false, error: "Erro ao vincular aluno à turma" }
+      }
+    } else {
+      console.log("ℹ️ Aluno já está vinculado à turma")
     }
 
     // Integração Google Drive removida - usando apenas Supabase Storage
