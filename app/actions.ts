@@ -786,9 +786,10 @@ export async function createRedacao(data: {
         // Criar achievement de level up
         const { createAchievement } = await import('@/lib/rpg-system')
         await createAchievement(user.email || user.id, 'level_up', {
-          activity: 'redacao',
-          newLevel: result.newLevel,
-          newRank: result.newRank
+          title: `Nível ${result.newLevel} - Redação`,
+          description: `Você alcançou o nível ${result.newLevel} em redação!`,
+          icon: '📝',
+          xp_reward: 50
         })
       }
 
