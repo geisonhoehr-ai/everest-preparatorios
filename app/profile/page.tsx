@@ -32,7 +32,7 @@ export default function ProfilePage() {
         return
       }
 
-      setUserEmail(user.email)
+      setUserEmail(user.email || null)
 
       // Obter perfil do usuário (usando email para compatibilidade)
       const { data: profile, error: profileError } = await supabase
