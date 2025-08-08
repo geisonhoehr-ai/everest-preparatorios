@@ -22,6 +22,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
+  const [categoryId, setCategoryId] = useState("")
   const [tags, setTags] = useState("") // Estado para tags
   const { toast } = useToast()
   const router = useRouter()
@@ -32,6 +33,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
       const formData = new FormData()
       formData.append("title", title)
       formData.append("content", content)
+      formData.append("categoryId", categoryId)
       formData.append("tags", tags) // Adiciona tags ao FormData
 
       const result = await createCommunityPost(formData)
@@ -82,6 +84,22 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
           Dica: Use o seletor de emojis do seu sistema operacional (Windows: `Win + .` ou `Win + ;` | macOS: `Cmd + Ctrl
           + Space`) para adicionar emojis.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Categoria</Label>
+        <Select value={categoryId} onValueChange={setCategoryId} disabled={isPending}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione uma categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

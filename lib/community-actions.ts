@@ -16,6 +16,7 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
     .select(`
       id,
       user_id,
+      category_id,
       title,
       content,
       tags,
@@ -38,8 +39,8 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
     const has_liked = currentUserId ? likes?.some((like) => like.user_id === currentUserId) : false
 
     // Tenta pegar nome e avatar do perfil, senão usa email
-    const author_name = post.profiles?.full_name || post.auth_users?.email || "Usuário"
-    const author_avatar = post.profiles?.avatar_url || null
+    const author_name = post.profiles?.[0]?.full_name || post.auth_users?.[0]?.email || "Usuário"
+    const author_avatar = post.profiles?.[0]?.avatar_url || null
 
     return {
       ...post,
@@ -63,6 +64,7 @@ export async function getCommunityPostById(postId: string): Promise<CommunityPos
     .select(`
       id,
       user_id,
+      category_id,
       title,
       content,
       tags,
@@ -88,8 +90,8 @@ export async function getCommunityPostById(postId: string): Promise<CommunityPos
   const likes_count = likes ? likes.length : 0
   const has_liked = currentUserId ? likes?.some((like) => like.user_id === currentUserId) : false
 
-  const author_name = postData.profiles?.full_name || postData.auth_users?.email || "Usuário"
-  const author_avatar = postData.profiles?.avatar_url || null
+  const author_name = postData.profiles?.[0]?.full_name || postData.auth_users?.[0]?.email || "Usuário"
+  const author_avatar = postData.profiles?.[0]?.avatar_url || null
 
   const post: CommunityPost = {
     ...postData,
@@ -136,6 +138,7 @@ export async function getCommunityCommentsByPostId(postId: string): Promise<Comm
 export async function createCommunityPost(formData: FormData) {
   const title = formData.get("title") as string
   const content = formData.get("content") as string
+  const categoryId = formData.get("categoryId") as string
   const tagsString = formData.get("tags") as string // Nova entrada para tags
 
   if (!title || !content) {
@@ -161,6 +164,7 @@ export async function createCommunityPost(formData: FormData) {
 
   const { error } = await supabase.from("community_posts").insert({
     user_id: user.id,
+    category_id: categoryId || null,
     title,
     content,
     tags, // Incluir tags

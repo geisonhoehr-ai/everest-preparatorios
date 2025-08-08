@@ -23,6 +23,7 @@ export interface CommunityPost {
   created_at: string
   updated_at: string
   author_name?: string
+  author_avatar?: string | null
   category_name?: string
   likes_count?: number // Adicionado para contagem de curtidas
   has_liked?: boolean // Adicionado para indicar se o usuário atual curtiu

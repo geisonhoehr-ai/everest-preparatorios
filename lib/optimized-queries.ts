@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase-server'
+import { createClientSync } from '@/lib/supabase-server'
 
-const supabase = createClient()
+const supabase = createClientSync()
 
 // Cache para evitar queries repetidas
 const queryCache = new Map<string, { data: any; timestamp: number }>()
