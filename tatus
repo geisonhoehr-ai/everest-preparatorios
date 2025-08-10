@@ -1,0 +1,5 @@
+[33m2290dd2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Atualizações na comunidade e sistema de tipos
+[33m8b218b8[m fix: adicionar tipagem explícita AuthUser para fallbackUser
+[33m0a0895c[m fix: adicionar tipagem explicita para parametros event e session no AuthGuard
+[33mf9011ff[m fix: remover ultimo diretorio de backup
+[33mc4bf13b[m fix: remover segundo diretório de backup interferindo no build
