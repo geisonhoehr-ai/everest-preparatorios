@@ -31,37 +31,37 @@ export function useAuth() {
   const roleFetchInProgress = useRef<Map<string, Promise<string>>>(new Map())
 
   // Função para obter role do usuário com cache e debounce
-  const getUserRole = useCallback(async (userEmail: string): Promise<string> => {
+  const getUserRole = useCallback(async (userUuid: string): Promise<string> => {
     try {
-      // Verificar se já existe uma busca em andamento para este email
-      if (roleFetchInProgress.current.has(userEmail)) {
-        console.log('⏳ [AUTH] Busca de role já em andamento para:', userEmail)
-        return await roleFetchInProgress.current.get(userEmail)!
+      // Verificar se já existe uma busca em andamento para este UUID
+      if (roleFetchInProgress.current.has(userUuid)) {
+        console.log('⏳ [AUTH] Busca de role já em andamento para UUID:', userUuid)
+        return await roleFetchInProgress.current.get(userUuid)!
       }
 
       // Verificar cache primeiro
-      const cachedUser = userCache.current.get(userEmail)
+      const cachedUser = userCache.current.get(userUuid)
       if (cachedUser) {
-        console.log('✅ [AUTH] Usando cache para usuário:', userEmail)
+        console.log('✅ [AUTH] Usando cache para usuário UUID:', userUuid)
         return cachedUser.role
       }
 
-      console.log('🔍 [AUTH] Buscando role para usuário:', userEmail)
+      console.log('🔍 [AUTH] Buscando role para usuário UUID:', userUuid)
       
       // Criar uma nova busca e armazenar a promise
-      const rolePromise = getUserRoleClient(userEmail)
-      roleFetchInProgress.current.set(userEmail, rolePromise)
+      const rolePromise = getUserRoleClient(userUuid)
+      roleFetchInProgress.current.set(userUuid, rolePromise)
       
       const userRole = await rolePromise
       
       // Remover da lista de buscas em andamento
-      roleFetchInProgress.current.delete(userEmail)
+      roleFetchInProgress.current.delete(userUuid)
       
       console.log('✅ [AUTH] Role encontrada:', userRole)
       return userRole
     } catch (error) {
       // Remover da lista de buscas em andamento em caso de erro
-      roleFetchInProgress.current.delete(userEmail)
+      roleFetchInProgress.current.delete(userUuid)
       
       console.error('❌ [AUTH] Erro ao obter role:', {
         message: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -76,26 +76,27 @@ export function useAuth() {
   const createUserObject = useCallback(async (sessionUser: any): Promise<AuthUser> => {
     try {
       const userEmail = sessionUser.email || ''
+      const userId = sessionUser.id
       
-      // Verificar cache primeiro
-      const cachedUser = userCache.current.get(userEmail)
+      // Verificar cache primeiro (usando UUID como chave)
+      const cachedUser = userCache.current.get(userId)
       if (cachedUser) {
-        console.log('✅ [AUTH] Usando cache para usuário:', userEmail)
+        console.log('✅ [AUTH] Usando cache para usuário UUID:', userId)
         return cachedUser
       }
       
-      console.log('🔍 [AUTH] Buscando role para usuário:', userEmail)
-      const userRole = await getUserRole(userEmail)
+      console.log('🔍 [AUTH] Buscando role para usuário UUID:', userId)
+      const userRole = await getUserRole(userId)
       
       const userObject = {
-        id: sessionUser.id,
+        id: userId,
         email: userEmail,
         role: userRole as 'student' | 'teacher' | 'admin'
       }
       
-      // Salvar no cache
-      userCache.current.set(userEmail, userObject)
-      console.log('💾 [AUTH] Usuário salvo no cache:', userEmail)
+      // Salvar no cache (usando UUID como chave)
+      userCache.current.set(userId, userObject)
+      console.log('💾 [AUTH] Usuário salvo no cache com UUID:', userId)
       
       return userObject
     } catch (error) {
@@ -111,8 +112,8 @@ export function useAuth() {
         role: 'student'
       }
       
-      // Salvar fallback no cache
-      userCache.current.set(sessionUser.email || '', fallbackUser)
+      // Salvar fallback no cache (usando UUID como chave)
+      userCache.current.set(sessionUser.id, fallbackUser)
       
       return fallbackUser
     }
