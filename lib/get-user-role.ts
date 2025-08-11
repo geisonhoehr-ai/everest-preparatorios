@@ -67,13 +67,13 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
         console.log('ℹ️ [ROLE] Usuário não encontrado na tabela user_roles, retornando student')
         
         // Salvar no cache temporariamente
-        userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
+        userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
         return 'student'
       }
       
       // Para qualquer outro erro, retorna 'student' como padrão
       console.log('ℹ️ [ROLE] Erro desconhecido, retornando student como padrão')
-      userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
+      userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
       return 'student'
     }
 
@@ -81,12 +81,12 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
     console.log('✅ [ROLE] Role encontrada:', role)
     
     // Salvar no cache
-    userRoleCache.set(userEmail, { role, timestamp: Date.now() })
+    userRoleCache.set(userUuid, { role, timestamp: Date.now() })
     
     return role
   } catch (error) {
     // Remover marcação de busca em andamento em caso de erro
-    userRoleCache.delete(`fetching_${userEmail}`)
+    userRoleCache.delete(`fetching_${userUuid}`)
     
     console.error('❌ [ROLE] Erro inesperado em getUserRoleClient:', {
       message: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -95,7 +95,7 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
     })
     
     // Em caso de erro inesperado, retorna 'student' como padrão
-    userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
+    userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
     return 'student'
   }
 }
