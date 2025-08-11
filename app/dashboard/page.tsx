@@ -394,13 +394,21 @@ export default function DashboardPage() {
       return;
     }
     
+    // Evitar recarregar se já temos dados e o usuário não mudou
+    if (userStats.totalFlashcards > 0 && !loading) {
+      console.log('✅ [DASHBOARD] Dados já carregados, pulando...')
+      return;
+    }
+    
     console.log('🚀 [DASHBOARD] Iniciando carregamento de dados...')
+    
+    // Usar um debounce para evitar múltiplas execuções
     const timer = setTimeout(() => {
       loadUserData();
-    }, 100); // Pequeno delay para evitar bloqueio da UI
+    }, 200); // Aumentado para 200ms
     
     return () => clearTimeout(timer);
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]); // Mudança: usar user?.id em vez de user completo
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {

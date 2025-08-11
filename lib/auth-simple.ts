@@ -28,15 +28,41 @@ export function useAuth() {
   const supabase = createClient()
   const isInitialized = useRef(false)
   const userCache = useRef<Map<string, AuthUser>>(new Map())
+  const roleFetchInProgress = useRef<Map<string, Promise<string>>>(new Map())
 
-  // Função para obter role do usuário
+  // Função para obter role do usuário com cache e debounce
   const getUserRole = useCallback(async (userEmail: string): Promise<string> => {
     try {
-      console.log('🔍 [AUTH] Buscando role para:', userEmail)
-      const role = await getUserRoleClient(userEmail)
-      console.log('✅ [AUTH] Role encontrada:', role)
-      return role
+      // Verificar se já existe uma busca em andamento para este email
+      if (roleFetchInProgress.current.has(userEmail)) {
+        console.log('⏳ [AUTH] Busca de role já em andamento para:', userEmail)
+        return await roleFetchInProgress.current.get(userEmail)!
+      }
+
+      // Verificar cache primeiro
+      const cachedUser = userCache.current.get(userEmail)
+      if (cachedUser) {
+        console.log('✅ [AUTH] Usando cache para usuário:', userEmail)
+        return cachedUser.role
+      }
+
+      console.log('🔍 [AUTH] Buscando role para usuário:', userEmail)
+      
+      // Criar uma nova busca e armazenar a promise
+      const rolePromise = getUserRoleClient(userEmail)
+      roleFetchInProgress.current.set(userEmail, rolePromise)
+      
+      const userRole = await rolePromise
+      
+      // Remover da lista de buscas em andamento
+      roleFetchInProgress.current.delete(userEmail)
+      
+      console.log('✅ [AUTH] Role encontrada:', userRole)
+      return userRole
     } catch (error) {
+      // Remover da lista de buscas em andamento em caso de erro
+      roleFetchInProgress.current.delete(userEmail)
+      
       console.error('❌ [AUTH] Erro ao obter role:', {
         message: error instanceof Error ? error.message : 'Erro desconhecido',
         type: typeof error,
@@ -99,7 +125,9 @@ export function useAuth() {
 
     console.log('🔧 [AUTH] Iniciando verificação de sessão...')
     
-    // Verificar sessão uma única vez
+    // Usar debounce para evitar múltiplas execuções
+    let debounceTimer: NodeJS.Timeout | undefined
+    
     const checkSession = async () => {
       try {
         // Primeiro, tentar obter a sessão atual
@@ -164,43 +192,52 @@ export function useAuth() {
       }
     }
 
-    checkSession()
+    // Debounce para evitar múltiplas execuções
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      checkSession()
+    }, 100)
 
-    // Escutar mudanças
+    // Escutar mudanças com debounce
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
         console.log('🔄 [AUTH] Evento:', event, session?.user?.email)
         
-        if (event === 'SIGNED_IN' && session?.user) {
-          const user = await createUserObject(session.user)
-          setAuthState({
-            user,
-            isLoading: false,
-            isAuthenticated: true
-          })
-        } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          // Limpar cache ao fazer logout
-          userCache.current.clear()
-          console.log('🧹 [AUTH] Cache limpo após logout')
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false
-          })
-        } else if (event === 'USER_UPDATED' && session?.user) {
-          const user = await createUserObject(session.user)
-          setAuthState({
-            user,
-            isLoading: false,
-            isAuthenticated: true
-          })
-        }
+        // Debounce para eventos de mudança de estado
+        if (debounceTimer) clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(async () => {
+          if (event === 'SIGNED_IN' && session?.user) {
+            const user = await createUserObject(session.user)
+            setAuthState({
+              user,
+              isLoading: false,
+              isAuthenticated: true
+            })
+          } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+            // Limpar cache ao fazer logout
+            userCache.current.clear()
+            roleFetchInProgress.current.clear()
+            console.log('🧹 [AUTH] Cache limpo após logout')
+            setAuthState({
+              user: null,
+              isLoading: false,
+              isAuthenticated: false
+            })
+          } else if (event === 'USER_UPDATED' && session?.user) {
+            const user = await createUserObject(session.user)
+            setAuthState({
+              user,
+              isLoading: false,
+              isAuthenticated: true
+            })
+          }
+        }, 150) // Debounce de 150ms para eventos de mudança
       }
     )
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
       subscription.unsubscribe()
-      isInitialized.current = false
     }
   }, [createUserObject])
 

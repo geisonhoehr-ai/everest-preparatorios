@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/client'
 
 // Cache para evitar múltiplas requisições
 const userRoleCache = new Map<string, { role: string; timestamp: number }>()
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutos (aumentado)
+const CACHE_DURATION = 30 * 60 * 1000 // 30 minutos (aumentado significativamente)
 
 // A função DEVE receber o email do usuário, não o ID
 export async function getUserRoleClient(userEmail: string): Promise<string> {
@@ -14,15 +14,31 @@ export async function getUserRoleClient(userEmail: string): Promise<string> {
       return 'student'
     }
 
-    const supabase = createClient()
-    
-    // Verificar cache primeiro
+    // Verificar cache primeiro (antes de criar cliente Supabase)
     const cached = userRoleCache.get(userEmail)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       console.log('✅ [ROLE] Usando cache:', cached.role)
       return cached.role
     }
 
+    // Verificar se já existe uma busca em andamento para este email
+    const cacheKey = `fetching_${userEmail}`
+    if (userRoleCache.has(cacheKey)) {
+      console.log('⏳ [ROLE] Busca já em andamento para:', userEmail)
+      // Aguardar um pouco e verificar novamente
+      await new Promise(resolve => setTimeout(resolve, 100))
+      const retryCached = userRoleCache.get(userEmail)
+      if (retryCached && Date.now() - retryCached.timestamp < CACHE_DURATION) {
+        console.log('✅ [ROLE] Role encontrada no retry:', retryCached.role)
+        return retryCached.role
+      }
+    }
+
+    // Marcar que está buscando
+    userRoleCache.set(cacheKey, { role: 'fetching', timestamp: Date.now() })
+
+    const supabase = createClient()
+    
     console.log('🔍 [ROLE] Buscando role no banco de dados...')
 
     // Buscar role usando email (correção: user_uuid armazena email)
@@ -33,6 +49,9 @@ export async function getUserRoleClient(userEmail: string): Promise<string> {
       .single()
 
     console.log('🔍 [ROLE] Resultado da busca:', { data, error })
+
+    // Remover marcação de busca em andamento
+    userRoleCache.delete(cacheKey)
 
     if (error) {
       console.error('❌ [ROLE] Erro ao buscar role:', {
@@ -66,6 +85,9 @@ export async function getUserRoleClient(userEmail: string): Promise<string> {
     
     return role
   } catch (error) {
+    // Remover marcação de busca em andamento em caso de erro
+    userRoleCache.delete(`fetching_${userEmail}`)
+    
     console.error('❌ [ROLE] Erro inesperado em getUserRoleClient:', {
       message: error instanceof Error ? error.message : 'Erro desconhecido',
       type: typeof error,
