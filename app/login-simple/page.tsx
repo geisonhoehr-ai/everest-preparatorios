@@ -32,17 +32,19 @@ export default function LoginSimplePage() {
       if (error) {
         setError(error.message)
       } else {
+        // Buscar role usando UUID (correto)
         try {
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_uuid', data.user.email)
+            .eq('user_uuid', data.user.id) // ✅ Usar ID em vez de email
             .single()
 
           if (roleError) {
             console.warn('⚠️ [LOGIN] Erro ao buscar role, redirecionando para dashboard')
             router.push('/dashboard')
           } else {
+            console.log('✅ [LOGIN] Role encontrado:', roleData.role)
             if (roleData.role === 'admin') {
               router.push('/admin')
             } else {

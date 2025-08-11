@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LevelUpModal } from "@/components/level-up-modal";
-import { useAuth } from "@/lib/auth-simple";
 import { 
   getUserRPGProgress, 
   getGeneralRanking, 
@@ -152,15 +152,12 @@ const getDifficultyColor = (level: number) => {
 };
 
 export default function DashboardPage() {
-  const { user, isLoading: authLoading } = useAuth()
-  const isTeacher = user?.role === 'teacher' || user?.role === 'admin'
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isTeacher, setIsTeacher] = useState(false)
   
-  console.log('🏠 [DASHBOARD] Renderizando dashboard:', {
-    user: user?.email,
-    role: user?.role,
-    isTeacher,
-    authLoading
-  })
+  console.log('🏠 [DASHBOARD] Renderizando dashboard')
   
   const [userStats, setUserStats] = useState<UserStats>({
     totalFlashcards: 0,
@@ -379,11 +376,49 @@ export default function DashboardPage() {
     }
   };
 
+  // Obter usuário logado
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+        if (error || !currentUser) {
+          console.log('❌ [DASHBOARD] Usuário não autenticado')
+          router.push('/login-simple')
+          return
+        }
+
+        // Buscar role do usuário
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_uuid', currentUser.id)
+          .single()
+
+        if (roleError) {
+          console.warn('⚠️ [DASHBOARD] Erro ao buscar role, usando student como padrão')
+          setUser({ ...currentUser, role: 'student' })
+          setIsTeacher(false)
+        } else {
+          console.log('✅ [DASHBOARD] Role encontrado:', roleData.role)
+          setUser({ ...currentUser, role: roleData.role })
+          setIsTeacher(roleData.role === 'teacher' || roleData.role === 'admin')
+        }
+        
+        setIsLoading(false)
+      } catch (error) {
+        console.error('❌ [DASHBOARD] Erro ao obter usuário:', error)
+        router.push('/login-simple')
+      }
+    }
+
+    getUser()
+  }, [])
+
   // Carregar dados quando o componente montar (OTIMIZADO)
   useEffect(() => {
-    // Não carregar dados se ainda estiver carregando a autenticação
-    if (authLoading) {
-      console.log('⏳ [DASHBOARD] Aguardando autenticação...')
+    // Não carregar dados se ainda estiver carregando
+    if (isLoading) {
+      console.log('⏳ [DASHBOARD] Aguardando carregamento...')
       return;
     }
     
@@ -408,7 +443,7 @@ export default function DashboardPage() {
     }, 200); // Aumentado para 200ms
     
     return () => clearTimeout(timer);
-  }, [user?.id, authLoading]); // Mudança: usar user?.id em vez de user completo
+  }, [user?.id, isLoading]); // Mudança: usar user?.id em vez de user completo
 
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
