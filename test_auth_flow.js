@@ -87,7 +87,7 @@ async function testAuthFlow() {
     
     let redirectUrl = '/dashboard';
     if (role === 'teacher') {
-      redirectUrl = '/teacher';
+      redirectUrl = '/dashboard';
     } else if (role === 'admin') {
       redirectUrl = '/admin';
     }

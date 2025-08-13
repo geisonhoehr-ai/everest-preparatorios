@@ -154,7 +154,7 @@ class AuthManager {
         switch (event) {
           case 'SIGNED_IN':
             if (session?.user) {
-              clearUserRoleCache(session.user.id)
+              clearUserRoleCache(session.user.email)
               await this.updateAuthState(session.user)
               this.handlePostLogin()
             }
@@ -308,7 +308,7 @@ class AuthManager {
 
   async refresh() {
     if (this.currentAuthState.user) {
-      clearUserRoleCache(this.currentAuthState.user.id)
+      clearUserRoleCache(this.currentAuthState.user.email)
       await this.updateAuthState(this.currentAuthState.user)
     }
   }

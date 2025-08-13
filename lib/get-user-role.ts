@@ -1,79 +1,80 @@
 import { createClient } from '@/lib/supabase/client'
 
-// Cache para evitar múltiplas requisições
+// Cache otimizado com TTL mais longo
 const userRoleCache = new Map<string, { role: string; timestamp: number }>()
-const CACHE_DURATION = 30 * 60 * 1000 // 30 minutos (aumentado significativamente)
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hora (aumentado significativamente)
 
-// A função DEVE receber o UUID do usuário, não o email
-export async function getUserRoleClient(userUuid: string): Promise<string> {
+// Cache para evitar múltiplas requisições simultâneas
+const pendingRequests = new Map<string, Promise<string>>()
+
+// Função otimizada para obter role do usuário
+export async function getUserRoleClient(userEmail: string): Promise<string> {
   try {
-    console.log('🔍 [ROLE] Iniciando busca para UUID:', userUuid)
+    console.log('🔍 [ROLE] Iniciando busca para email:', userEmail)
     
-    if (!userUuid || userUuid.trim() === '') {
-      console.warn('⚠️ [ROLE] Nenhum UUID de usuário fornecido')
+    if (!userEmail || userEmail.trim() === '') {
+      console.warn('⚠️ [ROLE] Nenhum email de usuário fornecido')
       return 'student'
     }
 
-    // Verificar cache primeiro (antes de criar cliente Supabase)
-    const cached = userRoleCache.get(userUuid)
+    // Verificar cache primeiro
+    const cached = userRoleCache.get(userEmail)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       console.log('✅ [ROLE] Usando cache:', cached.role)
       return cached.role
     }
 
-    // Verificar se já existe uma busca em andamento para este UUID
-    const cacheKey = `fetching_${userUuid}`
-    if (userRoleCache.has(cacheKey)) {
-      console.log('⏳ [ROLE] Busca já em andamento para UUID:', userUuid)
-      // Aguardar um pouco e verificar novamente
-      await new Promise(resolve => setTimeout(resolve, 100))
-      const retryCached = userRoleCache.get(userUuid)
-      if (retryCached && Date.now() - retryCached.timestamp < CACHE_DURATION) {
-        console.log('✅ [ROLE] Role encontrada no retry:', retryCached.role)
-        return retryCached.role
-      }
+    // Verificar se já existe uma requisição em andamento
+    if (pendingRequests.has(userEmail)) {
+      console.log('⏳ [ROLE] Aguardando requisição em andamento para email:', userEmail)
+      return await pendingRequests.get(userEmail)!
     }
 
-    // Marcar que está buscando
-    userRoleCache.set(cacheKey, { role: 'fetching', timestamp: Date.now() })
+    // Criar nova requisição
+    const rolePromise = fetchUserRoleFromDB(userEmail)
+    pendingRequests.set(userEmail, rolePromise)
+    
+    try {
+      const role = await rolePromise
+      return role
+    } finally {
+      pendingRequests.delete(userEmail)
+    }
 
+  } catch (error) {
+    console.error('❌ [ROLE] Erro inesperado em getUserRoleClient:', error)
+    return 'student'
+  }
+}
+
+// Função separada para buscar role no banco
+async function fetchUserRoleFromDB(userEmail: string): Promise<string> {
+  try {
     const supabase = createClient()
     
     console.log('🔍 [ROLE] Buscando role no banco de dados...')
 
-    // Buscar role usando UUID (correção: user_uuid armazena UUID)
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', userUuid) // <-- CORREÇÃO: Usar 'userUuid' aqui
+      .eq('user_uuid', userEmail)
       .single()
 
-    console.log('🔍 [ROLE] Resultado da busca:', { data, error })
-
-    // Remover marcação de busca em andamento
-    userRoleCache.delete(cacheKey)
-
     if (error) {
-      console.error('❌ [ROLE] Erro ao buscar role:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        error: error
-      })
+      console.error('❌ [ROLE] Erro ao buscar role:', error.message || error)
       
       // Se não encontrar o usuário, retorna 'student' como padrão
       if (error.code === 'PGRST116') {
         console.log('ℹ️ [ROLE] Usuário não encontrado na tabela user_roles, retornando student')
         
         // Salvar no cache temporariamente
-        userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
+        userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
         return 'student'
       }
       
       // Para qualquer outro erro, retorna 'student' como padrão
       console.log('ℹ️ [ROLE] Erro desconhecido, retornando student como padrão')
-      userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
+      userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
       return 'student'
     }
 
@@ -81,21 +82,11 @@ export async function getUserRoleClient(userUuid: string): Promise<string> {
     console.log('✅ [ROLE] Role encontrada:', role)
     
     // Salvar no cache
-    userRoleCache.set(userUuid, { role, timestamp: Date.now() })
+    userRoleCache.set(userEmail, { role, timestamp: Date.now() })
     
     return role
   } catch (error) {
-    // Remover marcação de busca em andamento em caso de erro
-    userRoleCache.delete(`fetching_${userUuid}`)
-    
-    console.error('❌ [ROLE] Erro inesperado em getUserRoleClient:', {
-      message: error instanceof Error ? error.message : 'Erro desconhecido',
-      type: typeof error,
-      error: error
-    })
-    
-    // Em caso de erro inesperado, retorna 'student' como padrão
-    userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
+    console.error('❌ [ROLE] Erro ao buscar role no banco:', error)
     return 'student'
   }
 }
@@ -120,40 +111,38 @@ export async function getAuthAndRole(): Promise<{ user: any; role: string; isAut
     }
 
     console.log('✅ [AUTH] Sessão encontrada:', session.user.id)
-    console.log('✅ [AUTH] Email do usuário:', session.user.email)
     
-    // Verificar cache primeiro usando UUID
-    const cached = userRoleCache.get(session.user.id)
+    // Verificar cache primeiro usando email
+    const cached = userRoleCache.get(session.user.email)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       console.log('✅ [AUTH] Usando cache para role:', cached.role)
       return { user: session.user, role: cached.role, isAuthenticated: true }
     }
     
-    // Buscar role usando UUID (correção: user_uuid armazena UUID)
+    // Buscar role usando email
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', session.user.id)
+      .eq('user_uuid', session.user.email)
       .single()
 
     if (error) {
       console.log('ℹ️ [AUTH] Role não encontrada na tabela user_roles')
-      console.log('ℹ️ [AUTH] Erro:', error.message)
       
       // Se o usuário não tem role definido, retornar padrão
       if (error.code === 'PGRST116') {
         console.log('ℹ️ [AUTH] Usuário sem role definido, usando padrão: student')
         
         const role = 'student'
-        // Salvar no cache usando UUID
-        userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
+        // Salvar no cache usando email
+        userRoleCache.set(session.user.email, { role, timestamp: Date.now() })
         
         return { user: session.user, role, isAuthenticated: true }
       }
       
       const role = 'student'
-      // Salvar no cache usando UUID
-      userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
+      // Salvar no cache usando email
+      userRoleCache.set(session.user.email, { role, timestamp: Date.now() })
       
       // Retornar student como padrão
       return { user: session.user, role, isAuthenticated: true }
@@ -162,23 +151,21 @@ export async function getAuthAndRole(): Promise<{ user: any; role: string; isAut
     const role = data?.role || 'student'
     console.log('✅ [AUTH] Role encontrada:', role)
     
-    // Salvar no cache usando UUID
-    userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
+    // Salvar no cache usando email
+    userRoleCache.set(session.user.email, { role, timestamp: Date.now() })
     
     return { user: session.user, role, isAuthenticated: true }
   } catch (error) {
     console.error('❌ [AUTH] Erro na verificação rápida:', error)
-    console.error('❌ [AUTH] Tipo do erro:', typeof error)
-    console.error('❌ [AUTH] Mensagem do erro:', error instanceof Error ? error.message : 'Erro desconhecido')
     return { user: null, role: 'student', isAuthenticated: false }
   }
 }
 
 // Função para limpar cache
-export function clearUserRoleCache(userUuid?: string) {
-  if (userUuid) {
-    userRoleCache.delete(userUuid)
-    console.log('🧹 [CACHE] Cache limpo para usuário UUID:', userUuid)
+export function clearUserRoleCache(userEmail?: string) {
+  if (userEmail) {
+    userRoleCache.delete(userEmail)
+    console.log('🧹 [CACHE] Cache limpo para usuário email:', userEmail)
   } else {
     userRoleCache.clear()
     console.log('🧹 [CACHE] Cache limpo completamente')
@@ -186,28 +173,28 @@ export function clearUserRoleCache(userUuid?: string) {
 }
 
 // Função para forçar atualização do role
-export async function refreshUserRole(userUuid: string): Promise<string> {
-  clearUserRoleCache(userUuid)
-  return await getUserRoleClient(userUuid)
+export async function refreshUserRole(userEmail: string): Promise<string> {
+  clearUserRoleCache(userEmail)
+  return await getUserRoleClient(userEmail)
 }
 
 // Função simplificada para garantir que o usuário tem um role
-export async function ensureUserRole(userUuid: string): Promise<string> {
+export async function ensureUserRole(userEmail: string): Promise<string> {
   try {
     const supabase = createClient()
     
-    if (!userUuid) {
-      console.warn('Nenhum UUID de usuário fornecido')
+    if (!userEmail) {
+      console.warn('Nenhum email de usuário fornecido')
       return 'student'
     }
 
-    console.log('Garantindo role para usuário UUID:', userUuid)
+    console.log('Garantindo role para usuário email:', userEmail)
 
-    // Verificar se o role já existe usando UUID
+    // Verificar se o role já existe usando email
     const { data: existingRole, error: fetchError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_uuid', userUuid)
+      .eq('user_uuid', userEmail)
       .single()
 
     if (fetchError) {
@@ -220,7 +207,7 @@ export async function ensureUserRole(userUuid: string): Promise<string> {
         const { error: insertError } = await supabase
           .from('user_roles')
           .insert({
-            user_uuid: userUuid,
+            user_uuid: userEmail,
             role: 'student'
           })
 
@@ -232,7 +219,7 @@ export async function ensureUserRole(userUuid: string): Promise<string> {
         console.log('Novo registro de role criado com sucesso')
         
         // Salvar no cache
-        userRoleCache.set(userUuid, { role: 'student', timestamp: Date.now() })
+        userRoleCache.set(userEmail, { role: 'student', timestamp: Date.now() })
         
         return 'student'
       }
@@ -246,7 +233,7 @@ export async function ensureUserRole(userUuid: string): Promise<string> {
     console.log('Role existente encontrado:', role)
     
     // Salvar no cache
-    userRoleCache.set(userUuid, { role, timestamp: Date.now() })
+    userRoleCache.set(userEmail, { role, timestamp: Date.now() })
     
     return role
   } catch (error) {

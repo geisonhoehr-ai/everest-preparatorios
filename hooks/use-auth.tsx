@@ -1,64 +1,176 @@
-"use client"
+"use client";
 
-import { useAuthManager } from '@/lib/auth-manager'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { getAuthAndRole, clearUserRoleCache } from '@/lib/get-user-role';
+import { useRouter } from 'next/navigation';
+
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
+
+interface AuthState {
+  user: User | null;
+  role: string;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
 
 export function useAuth() {
-  const [isClient, setIsClient] = useState(false)
-  const authState = useAuthManager()
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    role: 'student',
+    isAuthenticated: false,
+    isLoading: true,
+    error: null
+  });
 
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
+  const router = useRouter();
+  const supabase = createClient();
+  const isInitialized = useRef(false);
+  const authCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Se ainda não estamos no cliente, retornar estado padrão
-  if (!isClient) {
-    return {
-      user: null,
-      role: null,
-      isAuthenticated: false,
-      isLoading: true,
-      isInitialized: false,
-      error: null,
-      signOut: () => {},
-      refresh: () => {},
-      isAdmin: false,
-      isTeacher: false,
-      isStudent: false,
-      hasRole: () => false,
-      hasAnyRole: () => false,
-      canAccess: () => false
+  // Função otimizada para verificar autenticação
+  const checkAuth = useCallback(async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const { user, role, isAuthenticated } = await getAuthAndRole();
+
+      if (isAuthenticated && user) {
+        setAuthState({
+          user: {
+            id: user.id,
+            email: user.email || '',
+            role: role
+          },
+          role,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        });
+      } else {
+        setAuthState({
+          user: null,
+          role: 'student',
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        });
+      }
+    } catch (error) {
+      console.error('❌ [AUTH] Erro ao verificar autenticação:', error);
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: 'Erro ao verificar autenticação'
+      }));
     }
-  }
+  }, []);
+
+  // Função para fazer logout
+  const signOut = useCallback(async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+
+      // Limpar cache e estado
+      clearUserRoleCache();
+      setAuthState({
+        user: null,
+        role: 'student',
+        isAuthenticated: false,
+        isLoading: false,
+        error: null
+      });
+
+      // Redirecionar para login
+      router.push('/login');
+    } catch (error) {
+      console.error('❌ [AUTH] Erro ao fazer logout:', error);
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: 'Erro ao fazer logout'
+      }));
+    }
+  }, [supabase.auth, router]);
+
+  // Função para forçar atualização da autenticação
+  const refreshAuth = useCallback(async () => {
+    await checkAuth();
+  }, [checkAuth]);
+
+  // Verificar autenticação inicial e configurar listener
+  useEffect(() => {
+    if (isInitialized.current) return;
+    
+    isInitialized.current = true;
+
+    // Verificação inicial
+    checkAuth();
+
+    // Configurar listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: string, session: any) => {
+        console.log('🔄 [AUTH] Mudança de estado:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Usuário fez login
+          await checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+          // Usuário fez logout
+          clearUserRoleCache();
+          setAuthState({
+            user: null,
+            role: 'student',
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Token foi renovado
+          await checkAuth();
+        }
+      }
+    );
+
+    // Cleanup
+    return () => {
+      subscription.unsubscribe();
+      if (authCheckTimeout.current) {
+        clearTimeout(authCheckTimeout.current);
+      }
+    };
+  }, [supabase.auth, checkAuth]);
+
+  // Verificar autenticação periodicamente (a cada 5 minutos)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (authState.isAuthenticated) {
+        checkAuth();
+      }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    return () => clearInterval(interval);
+  }, [authState.isAuthenticated, checkAuth]);
 
   return {
-    // Estado básico
-    user: authState.user,
-    role: authState.role,
-    isAuthenticated: authState.isAuthenticated,
-    isLoading: authState.isLoading,
-    isInitialized: authState.isInitialized,
-    error: authState.error,
-
-    // Ações
-    signOut: authState.signOut,
-    refresh: authState.refresh,
-
-    // Utilitários
-    isAdmin: authState.role === 'admin',
-    isTeacher: authState.role === 'teacher' || authState.role === 'admin',
-    isStudent: authState.role === 'student',
-
-    // Verificações de permissão
-    hasRole: (role: string) => authState.role === role,
-    hasAnyRole: (roles: string[]) => roles.includes(authState.role || ''),
-    canAccess: (requiredRole: string) => {
-      const roleHierarchy = { admin: 3, teacher: 2, student: 1 }
-      const userLevel = roleHierarchy[authState.role as keyof typeof roleHierarchy] || 0
-      const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
-      return userLevel >= requiredLevel
-    }
-  }
+    ...authState,
+    isInitialized: isInitialized.current,
+    canAccess: (requiredRole: string) => authState.role === requiredRole || authState.role === 'admin',
+    signOut,
+    refreshAuth,
+    checkAuth
+  };
 }
 
 // Hook para proteção de componentes

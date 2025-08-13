@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { DashboardShell } from "@/components/dashboard-shell"
+import { TeacherOrAdmin } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -101,6 +102,14 @@ interface FilterState {
 }
 
 export default function MembrosPage() {
+  return (
+    <TeacherOrAdmin>
+      <MembrosPageContent />
+    </TeacherOrAdmin>
+  );
+}
+
+function MembrosPageContent() {
   const [members, setMembers] = useState<Member[]>([])
   const [userRoles, setUserRoles] = useState<UserRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -178,11 +187,43 @@ export default function MembrosPage() {
         return
       }
 
+      // 1. Criar usuário no sistema de autenticação do Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newMember.email,
+        password: '123456', // Senha padrão que o usuário pode alterar
+        email_confirm: true, // Confirmar email automaticamente
+        user_metadata: {
+          full_name: newMember.full_name,
+          phone: newMember.phone || null
+        }
+      })
+
+      if (authError) {
+        console.error('❌ [MEMBROS] Erro ao criar usuário:', authError)
+        toast({
+          title: "Erro",
+          description: authError.message || "Erro ao criar usuário no sistema",
+          variant: "destructive"
+        })
+        return
+      }
+
+      if (!authData.user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não foi criado",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // 2. Adicionar na tabela de membros
       const memberDataToInsert = {
         full_name: newMember.full_name,
         email: newMember.email,
         phone: newMember.phone || null,
-        status: 'active' as const
+        status: 'active' as const,
+        user_uuid: authData.user.id // Vincular com o UUID do usuário criado
       }
 
       const { data: memberData, error: insertError } = await supabase
@@ -192,6 +233,8 @@ export default function MembrosPage() {
         .single()
 
       if (insertError) {
+        // Se falhar ao inserir na tabela members, deletar o usuário criado
+        await supabase.auth.admin.deleteUser(authData.user.id)
         toast({
           title: "Erro",
           description: insertError.message || "Erro ao adicionar membro",
@@ -200,22 +243,48 @@ export default function MembrosPage() {
         return
       }
 
+      // 3. Definir role do usuário
       try {
-        await supabase
+        const { error: roleError } = await supabase
           .from('user_roles')
           .upsert({
-            user_uuid: newMember.email,
+            user_uuid: authData.user.id, // Usar UUID real, não email
             role: newMember.role
           }, {
             onConflict: 'user_uuid'
           })
+
+        if (roleError) {
+          console.error('❌ [MEMBROS] Erro ao definir role:', roleError)
+          toast({
+            title: "Aviso",
+            description: "Usuário criado, mas houve erro ao definir permissões",
+            variant: "destructive"
+          })
+        }
       } catch (roleError) {
         console.error('❌ [MEMBROS] Erro ao definir role:', roleError)
       }
 
+      // 4. Criar perfil do estudante se for student
+      if (newMember.role === 'student') {
+        try {
+          await supabase
+            .from('student_profiles')
+            .insert({
+              user_uuid: authData.user.id,
+              full_name: newMember.full_name,
+              email: newMember.email,
+              status: 'active'
+            })
+        } catch (profileError) {
+          console.error('❌ [MEMBROS] Erro ao criar perfil:', profileError)
+        }
+      }
+
       toast({
         title: "Sucesso",
-        description: "Membro adicionado com sucesso!",
+        description: `Usuário ${newMember.full_name} criado com sucesso! Senha: 123456`,
       })
 
       setIsAddDialogOpen(false)
@@ -227,6 +296,7 @@ export default function MembrosPage() {
       })
       loadMembers()
     } catch (error) {
+      console.error('❌ [MEMBROS] Erro interno:', error)
       toast({
         title: "Erro",
         description: "Erro interno ao adicionar membro",
@@ -355,15 +425,46 @@ export default function MembrosPage() {
 
   const handleResendPassword = async (member: Member) => {
     try {
-      // Simular reenvio de senha
+      // Buscar UUID do usuário
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('user_uuid')
+        .eq('user_uuid', member.email)
+        .single()
+
+      if (roleError || !roleData) {
+        toast({
+          title: "Erro",
+          description: "Usuário não encontrado no sistema",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Redefinir senha para 123456
+      const { error: resetError } = await supabase.auth.admin.updateUserById(
+        roleData.user_uuid,
+        { password: '123456' }
+      )
+
+      if (resetError) {
+        toast({
+          title: "Erro",
+          description: resetError.message || "Erro ao redefinir senha",
+          variant: "destructive"
+        })
+        return
+      }
+
       toast({
         title: "Sucesso",
-        description: `Email de redefinição enviado para ${member.email}`,
+        description: `Senha redefinida para ${member.full_name}. Nova senha: 123456`,
       })
     } catch (error) {
+      console.error('❌ [MEMBROS] Erro ao redefinir senha:', error)
       toast({
         title: "Erro",
-        description: "Erro ao reenviar senha",
+        description: "Erro interno ao redefinir senha",
         variant: "destructive"
       })
     }
@@ -620,24 +721,25 @@ export default function MembrosPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Adicionar Novo Membro</DialogTitle>
+                  <DialogTitle>Adicionar Novo Usuário</DialogTitle>
                   <DialogDescription>
-                    Preencha os dados do novo membro
+                    Crie uma nova conta de usuário no sistema. O usuário receberá uma senha padrão que poderá alterar posteriormente.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="full_name">Nome Completo</Label>
+                    <Label htmlFor="full_name">Nome Completo *</Label>
                     <Input
                       id="full_name"
                       name="full_name"
                       value={newMember.full_name}
                       onChange={(e) => setNewMember({...newMember, full_name: e.target.value})}
                       placeholder="Nome completo"
+                      required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       name="email"
@@ -645,7 +747,11 @@ export default function MembrosPage() {
                       value={newMember.email}
                       onChange={(e) => setNewMember({...newMember, email: e.target.value})}
                       placeholder="email@exemplo.com"
+                      required
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Este email será usado para fazer login no sistema
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="phone">Telefone (opcional)</Label>
@@ -658,7 +764,7 @@ export default function MembrosPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="role">Tipo de Usuário</Label>
+                    <Label htmlFor="role">Tipo de Usuário *</Label>
                     <Select
                       value={newMember.role}
                       onValueChange={(value: 'student' | 'teacher' | 'admin') => 
@@ -669,19 +775,33 @@ export default function MembrosPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="student">Aluno</SelectItem>
-                        <SelectItem value="teacher">Professor</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="student">🎓 Aluno - Acesso completo à plataforma</SelectItem>
+                        <SelectItem value="teacher">👨‍🏫 Professor - Acesso administrativo limitado</SelectItem>
+                        <SelectItem value="admin">👑 Administrador - Acesso total ao sistema</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  {/* Informações sobre senha padrão */}
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Key className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-800 dark:text-blue-200">Senha Padrão</p>
+                        <p className="text-blue-700 dark:text-blue-300">
+                          O usuário receberá a senha <strong>123456</strong> e poderá alterá-la após o primeiro login.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddMember}>
-                    Adicionar Membro
+                  <Button onClick={handleAddMember} disabled={!newMember.full_name || !newMember.email}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Criar Usuário
                   </Button>
                 </DialogFooter>
               </DialogContent>

@@ -13,7 +13,8 @@ import {
   Crown,
   Sparkles,
   Trophy,
-  Zap
+  Zap,
+  Loader2
 } from "lucide-react"
 import { generateShareText } from "@/lib/rpg-system"
 
@@ -101,157 +102,123 @@ export function LevelUpModal({
   }
 
   return (
-    <>
-      {/* Modal Principal de Parabéns */}
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md bg-gradient-to-br from-purple-600 to-blue-600 text-white border-0">
-          <div className="text-center space-y-6 p-6">
-            {/* Animação de confete */}
-            <div className="confetti-animation text-2xl">
-              🎉🎊🎉🎊🎉
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md mx-auto text-center p-8">
+        {/* Conteúdo do modal */}
+        <div className="space-y-6">
+          {/* Ícone de evolução */}
+          <div className="mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-2xl">
+            <Crown className="w-12 h-12 text-white" />
+          </div>
+
+          {/* Título */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              🎉 PARABÉNS!
+            </h2>
+            <p className="text-lg text-gray-600">
+              Você evoluiu para <span className="font-semibold text-orange-600">{newTitle}</span>!
+            </p>
+          </div>
+
+          {/* Insígnia */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-lg border border-amber-200">
+            <p className="text-sm text-amber-800 font-medium">
+              🏅 Nova Insígnia: <span className="font-bold">{insignia}</span>
+            </p>
+          </div>
+
+          {/* Bênção */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              ✨ <span className="font-medium">{blessing}</span>
+            </p>
+          </div>
+
+          {/* Atividade (se especificada) */}
+          {activity && (
+            <div className={`bg-gradient-to-br ${getActivityColor()} p-4 rounded-lg text-white`}>
+              <p className="text-sm font-medium">
+                {getActivityIcon()} Atividade: {activity.charAt(0).toUpperCase() + activity.slice(1)}
+              </p>
             </div>
+          )}
+
+          {/* Botões de ação */}
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleShare}
+              disabled={sharing}
+              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+            >
+              {sharing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Compartilhando...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Compartilhar
+                </>
+              )}
+            </Button>
             
-            {/* Insígnia animada */}
-            <div className="text-8xl animate-bounce">
-              {insignia}
-            </div>
-            
-            {/* Título épico */}
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-300 to-yellow-100 bg-clip-text text-transparent">
-                PARABÉNS, GUERREIRO!
-              </h2>
-              
-              <h3 className="text-xl font-semibold">
-                Você evoluiu para:
-              </h3>
-              
-              <div className="bg-white/10 rounded-lg p-4 border border-white/20">
-                <h4 className="text-2xl font-bold text-yellow-300">
-                  {newTitle}
-                </h4>
-                
-                {activity && (
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <span className="text-lg">{getActivityIcon()}</span>
-                    <Badge variant="secondary" className="bg-white/20 text-white">
-                      Nível {newLevel}
-                    </Badge>
-                  </div>
-                )}
+            <Button 
+              onClick={() => onOpenChange(false)}
+              variant="outline"
+              className="flex-1"
+            >
+              Continuar
+            </Button>
+          </div>
+        </div>
+
+        {/* Modal de opções de compartilhamento */}
+        {showSocialOptions && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-semibold mb-4">Compartilhar em:</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => shareToSocial('whatsapp')}
+                  className="bg-green-500 hover:bg-green-600"
+                >
+                  WhatsApp
+                </Button>
+                <Button
+                  onClick={() => shareToSocial('facebook')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Facebook
+                </Button>
+                <Button
+                  onClick={() => shareToSocial('twitter')}
+                  className="bg-blue-400 hover:bg-blue-500"
+                >
+                  Twitter
+                </Button>
+                <Button
+                  onClick={() => shareToSocial('linkedin')}
+                  className="bg-blue-700 hover:bg-blue-800"
+                >
+                  LinkedIn
+                </Button>
               </div>
-            </div>
-            
-            {/* Bênção */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <p className="text-sm italic text-white/90">
-                "{blessing}"
-              </p>
-            </div>
-            
-            {/* Botões de ação */}
-            <div className="flex flex-col gap-3 pt-4">
-              <Button 
-                onClick={handleShare}
-                disabled={sharing}
-                className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold"
-              >
-                {sharing ? (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                    Compartilhando...
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Compartilhar Conquista
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                onClick={() => onOpenChange(false)}
+              <Button
+                onClick={() => setShowSocialOptions(false)}
                 variant="outline"
-                className="border-white/30 text-white hover:bg-white/10"
+                className="w-full mt-4"
               >
-                Continuar Jornada
+                Cancelar
               </Button>
-            </div>
-            
-            {/* Dica motivacional */}
-            <div className="text-xs text-white/70 bg-white/5 rounded p-2">
-              💡 Compartilhar suas conquistas motiva outros estudantes!
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Opções de Redes Sociais */}
-      <Dialog open={showSocialOptions} onOpenChange={setShowSocialOptions}>
-        <DialogContent className="max-w-sm">
-          <div className="text-center space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Compartilhar Conquista</h3>
-              <p className="text-sm text-muted-foreground">
-                Escolha onde compartilhar sua evolução para {newTitle}:
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                onClick={() => shareToSocial('whatsapp')}
-                className="bg-green-500 hover:bg-green-600 text-white"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                WhatsApp
-              </Button>
-              
-              <Button 
-                onClick={() => shareToSocial('facebook')}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Facebook className="h-4 w-4 mr-2" />
-                Facebook
-              </Button>
-              
-              <Button 
-                onClick={() => shareToSocial('twitter')}
-                className="bg-blue-400 hover:bg-blue-500 text-white"
-              >
-                <Twitter className="h-4 w-4 mr-2" />
-                Twitter
-              </Button>
-              
-              <Button 
-                onClick={() => shareToSocial('linkedin')}
-                className="bg-blue-700 hover:bg-blue-800 text-white"
-              >
-                <Linkedin className="h-4 w-4 mr-2" />
-                LinkedIn
-              </Button>
-            </div>
-            
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600">
-                🎉 Dica: Compartilhar suas conquistas motiva outros estudantes!
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <style jsx>{`
-        @keyframes confetti {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-10px) rotate(90deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-          75% { transform: translateY(-10px) rotate(270deg); }
-        }
-        
-        .confetti-animation {
-          animation: confetti 2s ease-in-out infinite;
-        }
-      `}</style>
-    </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
-} 
+}
+
+// Adicionar export default para compatibilidade com lazy loading
+export default LevelUpModal; 

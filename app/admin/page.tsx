@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { AdminOnly } from "@/components/auth/route-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ interface AdminStats {
   newUsersThisWeek: number;
 }
 
-export default function AdminPage() {
+function AdminPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [adminStats, setAdminStats] = useState<AdminStats>({
@@ -59,17 +60,11 @@ export default function AdminPage() {
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_uuid', user.email)
+            .eq('user_uuid', user.id) // Usar ID em vez de email
             .single();
 
           if (!roleError && roleData) {
             setUserRole(roleData.role);
-            
-            // Se não for admin, redirecionar
-            if (roleData.role !== 'admin') {
-              window.location.href = '/access-denied';
-              return;
-            }
           }
         }
 
@@ -226,26 +221,6 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Relatórios
-              </CardTitle>
-              <CardDescription>
-                Estatísticas e análises
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/dashboard">
-                  Ver Relatórios
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
                 Configurações
               </CardTitle>
@@ -262,48 +237,16 @@ export default function AdminPage() {
               </Button>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Gerenciar Turmas
-              </CardTitle>
-              <CardDescription>
-                Organize alunos em turmas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/turmas">
-                  Gerenciar Turmas
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Suporte
-              </CardTitle>
-              <CardDescription>
-                Central de suporte e tickets
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/suporte">
-                  Ver Suporte
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </DashboardShell>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <AdminOnly>
+      <AdminPageContent />
+    </AdminOnly>
   );
 } 

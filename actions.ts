@@ -797,7 +797,7 @@ export async function corrigirRedacaoIA(redacaoId: number) {
   // Em produção, aqui você salvaria no banco
   console.log("Correção IA simulada para redação", redacaoId, correcaoSimulada)
 
-  revalidatePath("/teacher")
+  revalidatePath("/dashboard")
   return { success: true, correcao: correcaoSimulada }
 }
 
