@@ -27,8 +27,14 @@ import {
   Timer,
   Calendar,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  Sword,
+  Shield,
+  Scroll,
+  Gem,
+  Crown as CrownIcon
 } from "lucide-react";
+import { getRank, getNextRankInfo, getRankProgress, getAllLeagues } from "@/lib/ranking";
 
 interface UserStats {
   totalFlashcards: number;
@@ -42,6 +48,7 @@ interface UserStats {
   level: number;
   xp: number;
   nextLevelXp: number;
+  totalScore: number; // Novo campo para o sistema RPG
 }
 
 interface Achievement {
@@ -53,6 +60,7 @@ interface Achievement {
   progress: number;
   maxProgress: number;
   category: string;
+  unlockedAt?: string;
 }
 
 // Color palettes based on categories
@@ -67,7 +75,7 @@ const getColorPalette = (category: string, index: number = 0) => {
     ranking: {
       card: "bg-gradient-to-br from-amber-500/10 to-amber-600/20 dark:from-amber-900/20 dark:to-amber-600/30",
       border: "border-amber-500/20",
-      text: "text-amber-600 dark:text-amber-400",
+      text: "text-amber-600 dark:text-emerald-400",
       badge: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
     },
     progress: {
@@ -92,36 +100,49 @@ const getColorPalette = (category: string, index: number = 0) => {
       card: "bg-gradient-to-br from-green-500/10 to-green-600/20 dark:from-green-900/20 dark:to-green-600/30",
       border: "border-green-500/20",
       text: "text-green-600 dark:text-green-400",
-      button: "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
-    },
-    quiz: {
-      card: "bg-gradient-to-br from-orange-500/10 to-orange-600/20 dark:from-orange-900/20 dark:to-orange-600/30",
-      border: "border-orange-500/20",
-      text: "text-orange-600 dark:text-orange-400",
-      button: "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-    },
-    redacao: {
-      card: "bg-gradient-to-br from-indigo-500/10 to-indigo-600/20 dark:from-indigo-900/20 dark:to-indigo-600/30",
-      border: "border-indigo-500/20",
-      text: "text-indigo-600 dark:text-indigo-400",
-      button: "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white"
-    },
-    community: {
-      card: "bg-gradient-to-br from-pink-500/10 to-pink-600/20 dark:from-pink-900/20 dark:to-pink-600/30",
-      border: "border-pink-500/20",
-      text: "text-pink-600 dark:text-pink-400",
-      button: "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
+      badge: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30"
     }
   };
 
-  return palettes[category] || palettes.progress;
+  return palettes[category] || palettes.achievement;
 };
 
-// Difficulty colors for stats
-const getDifficultyColor = (level: number) => {
-  if (level <= 3) return 'from-green-500 to-green-600'; // Easy
-  if (level <= 6) return 'from-orange-500 to-orange-600'; // Medium  
-  return 'from-red-500 to-red-600'; // Hard
+// Função para obter cor da liga
+const getLeagueColor = (leagueName: string) => {
+  const leagueColors: Record<string, any> = {
+    "Aprendizes": {
+      card: "bg-gradient-to-br from-blue-500/10 to-blue-600/20 dark:from-blue-900/20 dark:to-blue-600/30",
+      border: "border-blue-500/20",
+      text: "text-blue-600 dark:text-blue-400",
+      badge: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30"
+    },
+    "Aventureiros": {
+      card: "bg-gradient-to-br from-green-500/10 to-green-600/20 dark:from-green-900/20 dark:to-green-600/30",
+      border: "border-green-500/20",
+      text: "text-green-600 dark:text-green-400",
+      badge: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30"
+    },
+    "Heróis": {
+      card: "bg-gradient-to-br from-purple-500/10 to-purple-600/20 dark:from-purple-900/20 dark:to-purple-600/30",
+      border: "border-purple-500/20",
+      text: "text-purple-600 dark:text-purple-400",
+      badge: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30"
+    },
+    "Mestres": {
+      card: "bg-gradient-to-br from-orange-500/10 to-orange-600/20 dark:from-orange-900/20 dark:to-orange-600/30",
+      border: "border-orange-500/20",
+      text: "text-orange-600 dark:text-orange-400",
+      badge: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30"
+    },
+    "Lendas": {
+      card: "bg-gradient-to-br from-red-500/10 to-red-600/20 dark:from-red-900/20 dark:to-red-600/30",
+      border: "border-red-500/20",
+      text: "text-red-600 dark:text-red-400",
+      badge: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30"
+    }
+  };
+
+  return leagueColors[leagueName] || leagueColors["Aprendizes"];
 };
 
 export default function DashboardPage() {
@@ -136,27 +157,29 @@ export default function DashboardPage() {
     totalUsers: 156,
     level: 7,
     xp: 3420,
-    nextLevelXp: 4000
+    nextLevelXp: 4000,
+    totalScore: 1500 // Score inicial para demonstração
   });
 
+  // Conquistas zeradas para novos usuários
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: "1",
       title: "Primeira Vitória",
       description: "Complete seu primeiro quiz",
       icon: <Trophy className="h-8 w-8" />,
-      unlocked: true,
-      progress: 1,
+      unlocked: false, // Começa bloqueada
+      progress: 0, // Progresso zerado
       maxProgress: 1,
-      category: "unlocked"
+      category: "achievement"
     },
     {
       id: "2",
       title: "Maratonista",
       description: "Estude por 7 dias seguidos",
       icon: <Flame className="h-8 w-8" />,
-      unlocked: false,
-      progress: 5,
+      unlocked: false, // Começa bloqueada
+      progress: 0, // Progresso zerado
       maxProgress: 7,
       category: "achievement"
     },
@@ -165,8 +188,8 @@ export default function DashboardPage() {
       title: "Mestre dos Cards",
       description: "Complete 100 flashcards",
       icon: <Brain className="h-8 w-8" />,
-      unlocked: false,
-      progress: 87,
+      unlocked: false, // Começa bloqueada
+      progress: 0, // Progresso zerado
       maxProgress: 100,
       category: "achievement"
     },
@@ -175,12 +198,27 @@ export default function DashboardPage() {
       title: "Escritor Nato",
       description: "Envie 10 redações",
       icon: <PenTool className="h-8 w-8" />,
-      unlocked: false,
-      progress: 6,
+      unlocked: false, // Começa bloqueada
+      progress: 0, // Progresso zerado
       maxProgress: 10,
+      category: "achievement"
+    },
+    {
+      id: "5",
+      title: "Primeira Liga",
+      description: "Complete a Liga dos Aprendizes",
+      icon: <CrownIcon className="h-8 w-8" />,
+      unlocked: false, // Começa bloqueada
+      progress: 0, // Progresso zerado
+      maxProgress: 5,
       category: "achievement"
     }
   ]);
+
+  // Obter informações do ranking RPG
+  const currentRank = getRank(userStats.totalScore);
+  const rankProgress = getRankProgress(userStats.totalScore);
+  const allLeagues = getAllLeagues();
 
   const progressPercentage = (userStats.completedFlashcards / userStats.totalFlashcards) * 100;
   const xpProgress = ((userStats.xp % 1000) / 1000) * 100;
@@ -231,6 +269,7 @@ export default function DashboardPage() {
   const levelPalette = getColorPalette('level');
   const rankingPalette = getColorPalette('ranking');
   const progressPalette = getColorPalette('progress');
+  const leaguePalette = getLeagueColor(currentRank.league);
 
   return (
     <DashboardShell>
@@ -242,7 +281,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
-              Continue sua jornada rumo à aprovação no CIAAR
+              Continue sua jornada épica rumo à aprovação no CIAAR
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -256,6 +295,49 @@ export default function DashboardPage() {
             </Badge>
           </div>
         </div>
+
+        {/* Card Principal do Ranking RPG */}
+        <Card className={`${leaguePalette.card} ${leaguePalette.border} hover-lift transition-all duration-300`}>
+          <CardHeader className="text-center pb-4">
+            <div className="flex items-center justify-center mb-4">
+              <div className="text-6xl mr-4">{currentRank.insignia.split(' ')[0]}</div>
+              <div>
+                <CardTitle className="text-2xl mb-2">{currentRank.name}</CardTitle>
+                <Badge className={`${leaguePalette.badge} text-lg px-4 py-2`}>
+                  {currentRank.league} • Nível {currentRank.level}
+                </Badge>
+              </div>
+            </div>
+            <p className="text-lg italic text-gray-300">"{currentRank.blessing}"</p>
+          </CardHeader>
+          <CardContent>
+            {!rankProgress.isMaxRank ? (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-400 mb-2">Progresso para o próximo rank</p>
+                  <div className="flex items-center justify-center gap-4 mb-3">
+                    <span className="text-sm text-gray-400">{rankProgress.currentRank.name}</span>
+                    <ArrowRight className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-semibold">{rankProgress.nextRank.name}</span>
+                  </div>
+                  <Progress value={rankProgress.progress} className="h-3 mb-2" />
+                  <p className="text-sm text-gray-400">
+                    Faltam {rankProgress.scoreNeeded} pontos para {rankProgress.nextRank.name}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 text-lg">
+                  🏆 Rank Máximo Alcançado!
+                </Badge>
+                <p className="text-sm text-gray-400 mt-2">
+                  Você é uma {currentRank.name} - Parabéns!
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Cards de Status Principal */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -331,14 +413,17 @@ export default function DashboardPage() {
 
         {/* Tabs com Conquistas e Estatísticas */}
         <Tabs defaultValue="achievements" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+          <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
             <TabsTrigger value="achievements" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white">
               Conquistas
             </TabsTrigger>
-            <TabsTrigger value="stats" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+            <TabsTrigger value="leagues" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+              Ligas RPG
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white">
               Estatísticas
             </TabsTrigger>
-            <TabsTrigger value="activities" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white">
+            <TabsTrigger value="activities" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
               Atividades
             </TabsTrigger>
           </TabsList>
@@ -383,10 +468,69 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        {achievement.unlocked && (
+                        {achievement.unlocked ? (
                           <Badge className={`${palette.badge} pulse-soft`}>
                             Desbloqueado!
                           </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            Bloqueado
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          {/* Tab de Ligas RPG */}
+          <TabsContent value="leagues" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {allLeagues.map((league) => {
+                const leaguePalette = getLeagueColor(league.name);
+                const isCurrentLeague = league.name === currentRank.league;
+                const isCompleted = userStats.totalScore >= league.maxScore;
+                
+                return (
+                  <Card 
+                    key={league.name}
+                    className={`transition-all duration-300 hover-lift ${
+                      isCurrentLeague 
+                        ? `${leaguePalette.card} ${leaguePalette.border} ring-2 ring-offset-2 ring-offset-background ring-blue-500` 
+                        : isCompleted 
+                          ? 'bg-gradient-to-br from-green-500/10 to-green-600/20 border-green-500/20' 
+                          : 'bg-card/50 opacity-75 border-muted'
+                    }`}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{league.name}</CardTitle>
+                        {isCurrentLeague && <Badge className={`${leaguePalette.badge} pulse-soft`}>Atual</Badge>}
+                        {isCompleted && <Badge className="bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30">Completa</Badge>}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold mb-1">{league.totalRanks}</p>
+                          <p className="text-sm text-muted-foreground">Ranks</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Pontuação</span>
+                            <span>{league.minScore} - {league.maxScore}</span>
+                          </div>
+                          <Progress 
+                            value={isCompleted ? 100 : Math.min(100, ((userStats.totalScore - league.minScore) / (league.maxScore - league.minScore)) * 100)} 
+                            className="h-2"
+                          />
+                        </div>
+                        {isCurrentLeague && (
+                          <p className="text-xs text-center text-blue-400">
+                            Você está nesta liga!
+                          </p>
                         )}
                       </div>
                     </CardContent>
@@ -398,173 +542,103 @@ export default function DashboardPage() {
 
           {/* Tab de Estatísticas */}
           <TabsContent value="stats" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className={`${getColorPalette('redacao').card} ${getColorPalette('redacao').border} hover-lift transition-all duration-300`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Timer className={`h-5 w-5 ${getColorPalette('redacao').text}`} />
-                    <span className={`text-2xl font-bold ${getColorPalette('redacao').text}`}>{Math.round(userStats.totalStudyTime / 60)}h</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 border-blue-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-500" />
+                    Flashcards
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-500 mb-2">
+                    {userStats.completedFlashcards}/{userStats.totalFlashcards}
                   </div>
-                  <p className="text-sm text-muted-foreground">Tempo de estudo</p>
+                  <Progress value={progressPercentage} className="h-2 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {Math.round(progressPercentage)}% concluído
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card className={`${getColorPalette('flashcards').card} ${getColorPalette('flashcards').border} hover-lift transition-all duration-300`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Brain className={`h-5 w-5 ${getColorPalette('flashcards').text}`} />
-                    <span className={`text-2xl font-bold ${getColorPalette('flashcards').text}`}>{userStats.completedFlashcards}</span>
+              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-purple-500" />
+                    Quizzes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-500 mb-2">
+                    {userStats.totalQuizzes}
                   </div>
-                  <p className="text-sm text-muted-foreground">Cards estudados</p>
+                  <p className="text-sm text-muted-foreground">
+                    Média: {userStats.averageScore}%
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card className={`${getColorPalette('quiz').card} ${getColorPalette('quiz').border} hover-lift transition-all duration-300`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Target className={`h-5 w-5 ${getColorPalette('quiz').text}`} />
-                    <span className={`text-2xl font-bold ${getColorPalette('quiz').text}`}>{userStats.averageScore}%</span>
+              <Card className="bg-gradient-to-br from-green-500/10 to-green-600/20 border-green-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Timer className="h-5 w-5 text-green-500" />
+                    Tempo de Estudo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-500 mb-2">
+                    {Math.round(userStats.totalStudyTime / 60)}h
                   </div>
-                  <p className="text-sm text-muted-foreground">Média nos quizzes</p>
-                </CardContent>
-              </Card>
-
-              <Card className={`${getColorPalette('community').card} ${getColorPalette('community').border} hover-lift transition-all duration-300`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Calendar className={`h-5 w-5 ${getColorPalette('community').text}`} />
-                    <span className={`text-2xl font-bold ${getColorPalette('community').text}`}>{userStats.currentStreak}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Dias de sequência</p>
+                  <p className="text-sm text-muted-foreground">
+                    {userStats.totalStudyTime} minutos total
+                  </p>
                 </CardContent>
               </Card>
             </div>
-
-            {/* Gráfico de Progresso Semanal */}
-            <Card className={`${progressPalette.card} ${progressPalette.border} hover-lift transition-all duration-300`}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className={`h-5 w-5 ${progressPalette.text}`} />
-                  Atividade Semanal
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 flex items-end justify-between gap-2">
-                  {[65, 80, 45, 90, 75, 100, 85].map((height, index) => {
-                    const difficultyGradient = getDifficultyColor(Math.floor(height / 20) + 1);
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                        <div 
-                          className={`w-full bg-gradient-to-t ${difficultyGradient} rounded-t hover-lift transition-all duration-300`}
-                          style={{ height: `${height}%` }}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][index]}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Tab de Atividades */}
           <TabsContent value="activities" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className={`group hover:shadow-lg transition-all hover:scale-[1.02] ${getColorPalette('flashcards').card} ${getColorPalette('flashcards').border}`}>
+            <div className="space-y-4">
+              <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/20 border-orange-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BookOpen className={`h-5 w-5 ${getColorPalette('flashcards').text}`} />
-                    Continuar Flashcards
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    Streak Atual
                   </CardTitle>
-                  <CardDescription>
-                    Você tem 63 cards para revisar hoje
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="relative mb-4">
-                    <Progress value={30} className="h-3" />
-                    <div className="absolute inset-0 shimmer rounded-full"></div>
+                  <div className="text-3xl font-bold text-orange-500 mb-2">
+                    {userStats.currentStreak} dias
                   </div>
-                  <Link href="/flashcards">
-                    <Button className={`w-full ${getColorPalette('flashcards').button} shadow-lg`}>
-                      Estudar Agora
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <p className="text-sm text-muted-foreground">
+                    Continue estudando para manter seu streak!
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card className={`group hover:shadow-lg transition-all hover:scale-[1.02] ${getColorPalette('redacao').card} ${getColorPalette('redacao').border}`}>
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/20 border-yellow-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <PenTool className={`h-5 w-5 ${getColorPalette('redacao').text}`} />
-                    Nova Redação
+                    <TrendingUp className="h-5 w-5 text-yellow-500" />
+                    Progresso Semanal
                   </CardTitle>
-                  <CardDescription>
-                    Pratique com o tema da semana
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-muted">
-                    <p className="text-sm font-medium">Tema: "Desafios da mobilidade urbana"</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Flashcards</span>
+                      <span className="text-green-500">+12 esta semana</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Quizzes</span>
+                      <span className="text-blue-500">+3 esta semana</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>XP Ganho</span>
+                      <span className="text-purple-500">+450 esta semana</span>
+                    </div>
                   </div>
-                  <Link href="/redacao">
-                    <Button className={`w-full ${getColorPalette('redacao').button} shadow-lg`}>
-                      Começar Redação
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className={`group hover:shadow-lg transition-all hover:scale-[1.02] ${getColorPalette('quiz').card} ${getColorPalette('quiz').border}`}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className={`h-5 w-5 ${getColorPalette('quiz').text}`} />
-                    Quiz Rápido
-                  </CardTitle>
-                  <CardDescription>
-                    Teste seus conhecimentos em 10 minutos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4 flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">Português</Badge>
-                    <Badge variant="secondary" className="bg-slate-500/20 text-slate-700 dark:text-slate-300">10 questões</Badge>
-                  </div>
-                  <Link href="/quiz">
-                    <Button className={`w-full ${getColorPalette('quiz').button} shadow-lg`}>
-                      Iniciar Quiz
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className={`group hover:shadow-lg transition-all hover:scale-[1.02] ${getColorPalette('community').card} ${getColorPalette('community').border}`}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className={`h-5 w-5 ${getColorPalette('community').text}`} />
-                    Comunidade
-                  </CardTitle>
-                  <CardDescription>
-                    Participe das discussões e tire dúvidas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-muted">
-                    <p className="text-sm">
-                      <span className="font-medium">5 novas</span> respostas no seu tópico
-                    </p>
-                  </div>
-                  <Link href="/community">
-                    <Button className={`w-full ${getColorPalette('community').button} shadow-lg`}>
-                      Ver Comunidade
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
                 </CardContent>
               </Card>
             </div>
