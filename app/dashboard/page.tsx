@@ -1,650 +1,524 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { DashboardShell } from "@/components/dashboard-shell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 import { 
   Trophy, 
-  Medal, 
   Target, 
-  Flame, 
-  Star, 
+  TrendingUp, 
   BookOpen, 
   Brain, 
-  PenTool, 
-  Users, 
-  TrendingUp,
-  Award,
   Zap,
-  Crown,
-  Sparkles,
-  Timer,
-  Calendar,
-  BarChart3,
-  ArrowRight,
   Sword,
   Shield,
   Scroll,
   Gem,
-  Crown as CrownIcon
-} from "lucide-react";
-import { getRank, getNextRankInfo, getRankProgress, getAllLeagues } from "@/lib/ranking";
+  CrownIcon,
+  Flame,
+  Star,
+  Award,
+  Clock,
+  Calendar,
+  BarChart3,
+  Users,
+  Medal,
+  Trophy as TrophyIcon
+} from 'lucide-react'
+import { 
+  getRank, 
+  getNextRankInfo, 
+  getRankProgress, 
+  getAllLeagues 
+} from '@/lib/ranking'
+import { 
+  getUserGamificationStats, 
+  getAvailableAchievements, 
+  getUserAchievementProgress,
+  checkAndUnlockAchievements,
+  syncExistingData,
+  updateUserStreak
+} from '@/lib/gamification-actions'
+import { useAuth } from '@/hooks/use-auth'
 
 interface UserStats {
-  totalFlashcards: number;
-  completedFlashcards: number;
-  totalQuizzes: number;
-  averageScore: number;
-  currentStreak: number;
-  totalStudyTime: number;
-  rank: number;
-  totalUsers: number;
-  level: number;
-  xp: number;
-  nextLevelXp: number;
-  totalScore: number; // Novo campo para o sistema RPG
+  totalScore: number
+  currentLevel: number
+  currentRank: string
+  currentLeague: string
+  totalXP: number
+  flashcardsCompleted: number
+  quizzesCompleted: number
+  lessonsCompleted: number
+  currentStreak: number
+  longestStreak: number
+  achievementsUnlocked: number
+  totalStudyTime: number
 }
 
 interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  unlocked: boolean;
-  progress: number;
-  maxProgress: number;
-  category: string;
-  unlockedAt?: string;
+  id: number
+  achievement_key: string
+  title: string
+  description: string
+  icon: string
+  category: string
+  xp_reward: number
+  score_reward: number
+  requirements: any
+  is_active: boolean
 }
 
-// Color palettes based on categories
-const getColorPalette = (category: string, index: number = 0) => {
-  const palettes: Record<string, any> = {
-    level: {
-      card: "bg-gradient-to-br from-emerald-500/10 to-emerald-600/20 dark:from-emerald-900/20 dark:to-emerald-600/30",
-      border: "border-emerald-500/20",
-      text: "text-emerald-600 dark:text-emerald-400",
-      badge: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-    },
-    ranking: {
-      card: "bg-gradient-to-br from-amber-500/10 to-amber-600/20 dark:from-amber-900/20 dark:to-amber-600/30",
-      border: "border-amber-500/20",
-      text: "text-amber-600 dark:text-emerald-400",
-      badge: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
-    },
-    progress: {
-      card: "bg-gradient-to-br from-blue-500/10 to-blue-600/20 dark:from-blue-900/20 dark:to-blue-600/30",
-      border: "border-blue-500/20",
-      text: "text-blue-600 dark:text-blue-400",
-      badge: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30"
-    },
-    achievement: {
-      card: "bg-gradient-to-br from-purple-500/10 to-purple-600/20 dark:from-purple-900/20 dark:to-purple-600/30",
-      border: "border-purple-500/20",
-      text: "text-purple-600 dark:text-purple-400",
-      badge: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30"
-    },
-    unlocked: {
-      card: "bg-gradient-to-br from-yellow-500/10 to-yellow-600/20 dark:from-yellow-900/20 dark:to-yellow-600/30",
-      border: "border-yellow-500/20",
-      text: "text-yellow-600 dark:text-yellow-400",
-      badge: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30"
-    },
-    flashcards: {
-      card: "bg-gradient-to-br from-green-500/10 to-green-600/20 dark:from-green-900/20 dark:to-green-600/30",
-      border: "border-green-500/20",
-      text: "text-green-600 dark:text-green-400",
-      badge: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30"
-    }
-  };
-
-  return palettes[category] || palettes.achievement;
-};
-
-// Função para obter cor da liga
-const getLeagueColor = (leagueName: string) => {
-  const leagueColors: Record<string, any> = {
-    "Aprendizes": {
-      card: "bg-gradient-to-br from-blue-500/10 to-blue-600/20 dark:from-blue-900/20 dark:to-blue-600/30",
-      border: "border-blue-500/20",
-      text: "text-blue-600 dark:text-blue-400",
-      badge: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30"
-    },
-    "Aventureiros": {
-      card: "bg-gradient-to-br from-green-500/10 to-green-600/20 dark:from-green-900/20 dark:to-green-600/30",
-      border: "border-green-500/20",
-      text: "text-green-600 dark:text-green-400",
-      badge: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30"
-    },
-    "Heróis": {
-      card: "bg-gradient-to-br from-purple-500/10 to-purple-600/20 dark:from-purple-900/20 dark:to-purple-600/30",
-      border: "border-purple-500/20",
-      text: "text-purple-600 dark:text-purple-400",
-      badge: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30"
-    },
-    "Mestres": {
-      card: "bg-gradient-to-br from-orange-500/10 to-orange-600/20 dark:from-orange-900/20 dark:to-orange-600/30",
-      border: "border-orange-500/20",
-      text: "text-orange-600 dark:text-orange-400",
-      badge: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30"
-    },
-    "Lendas": {
-      card: "bg-gradient-to-br from-red-500/10 to-red-600/20 dark:from-red-900/20 dark:to-red-600/30",
-      border: "border-red-500/20",
-      text: "text-red-600 dark:text-red-400",
-      badge: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30"
-    }
-  };
-
-  return leagueColors[leagueName] || leagueColors["Aprendizes"];
-};
+interface UserAchievementProgress {
+  id: number
+  user_uuid: string
+  achievement_key: string
+  current_progress: number
+  required_progress: number
+  is_unlocked: boolean
+  unlocked_at: string | null
+}
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const [userStats, setUserStats] = useState<UserStats>({
-    totalFlashcards: 150,
-    completedFlashcards: 87,
-    totalQuizzes: 12,
-    averageScore: 78,
-    currentStreak: 5,
-    totalStudyTime: 1250,
-    rank: 23,
-    totalUsers: 156,
-    level: 7,
-    xp: 3420,
-    nextLevelXp: 4000,
-    totalScore: 1500 // Score inicial para demonstração
-  });
+    totalScore: 0,
+    currentLevel: 1,
+    currentRank: 'Novato da Guilda',
+    currentLeague: 'Aprendizes',
+    totalXP: 0,
+    flashcardsCompleted: 0,
+    quizzesCompleted: 0,
+    lessonsCompleted: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    achievementsUnlocked: 0,
+    totalStudyTime: 0
+  })
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [userAchievements, setUserAchievements] = useState<UserAchievementProgress[]>([])
+  const [loading, setLoading] = useState(true)
+  const [recentUnlocked, setRecentUnlocked] = useState<string[]>([])
 
-  // Conquistas zeradas para novos usuários
-  const [achievements, setAchievements] = useState<Achievement[]>([
-    {
-      id: "1",
-      title: "Primeira Vitória",
-      description: "Complete seu primeiro quiz",
-      icon: <Trophy className="h-8 w-8" />,
-      unlocked: false, // Começa bloqueada
-      progress: 0, // Progresso zerado
-      maxProgress: 1,
-      category: "achievement"
-    },
-    {
-      id: "2",
-      title: "Maratonista",
-      description: "Estude por 7 dias seguidos",
-      icon: <Flame className="h-8 w-8" />,
-      unlocked: false, // Começa bloqueada
-      progress: 0, // Progresso zerado
-      maxProgress: 7,
-      category: "achievement"
-    },
-    {
-      id: "3",
-      title: "Mestre dos Cards",
-      description: "Complete 100 flashcards",
-      icon: <Brain className="h-8 w-8" />,
-      unlocked: false, // Começa bloqueada
-      progress: 0, // Progresso zerado
-      maxProgress: 100,
-      category: "achievement"
-    },
-    {
-      id: "4",
-      title: "Escritor Nato",
-      description: "Envie 10 redações",
-      icon: <PenTool className="h-8 w-8" />,
-      unlocked: false, // Começa bloqueada
-      progress: 0, // Progresso zerado
-      maxProgress: 10,
-      category: "achievement"
-    },
-    {
-      id: "5",
-      title: "Primeira Liga",
-      description: "Complete a Liga dos Aprendizes",
-      icon: <CrownIcon className="h-8 w-8" />,
-      unlocked: false, // Começa bloqueada
-      progress: 0, // Progresso zerado
-      maxProgress: 5,
-      category: "achievement"
-    }
-  ]);
-
-  // Obter informações do ranking RPG
-  const currentRank = getRank(userStats.totalScore);
-  const rankProgress = getRankProgress(userStats.totalScore);
-  const allLeagues = getAllLeagues();
-
-  const progressPercentage = (userStats.completedFlashcards / userStats.totalFlashcards) * 100;
-  const xpProgress = ((userStats.xp % 1000) / 1000) * 100;
-
-  // Add CSS animations
   useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-      }
-      @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-      }
-      @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-        50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
-      }
-      @keyframes pulse-soft {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      .float-animation { animation: float 3s ease-in-out infinite; }
-      .shimmer { 
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        background-size: 200% 100%;
-        animation: shimmer 2s infinite;
-      }
-      .glow { animation: glow 2s ease-in-out infinite alternate; }
-      .pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
-      .hover-lift:hover { transform: translateY(-8px); transition: all 0.3s ease; }
-      .card-gradient {
-        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1);
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
-    };
-  }, []);
+    if (user?.id) {
+      loadDashboardData()
+    }
+  }, [user])
 
-  const levelPalette = getColorPalette('level');
-  const rankingPalette = getColorPalette('ranking');
-  const progressPalette = getColorPalette('progress');
-  const leaguePalette = getLeagueColor(currentRank.league);
+  const loadDashboardData = async () => {
+    if (!user?.id) return
+    
+    try {
+      setLoading(true)
+      
+      // Carrega dados de gamificação
+      const [stats, allAchievements, userProgress] = await Promise.all([
+        getUserGamificationStats(user.id),
+        getAvailableAchievements(),
+        getUserAchievementProgress(user.id)
+      ])
+
+      if (stats) {
+        setUserStats({
+          totalScore: stats.total_score,
+          currentLevel: stats.current_level,
+          currentRank: stats.current_rank,
+          currentLeague: stats.current_league,
+          totalXP: stats.total_xp,
+          flashcardsCompleted: stats.flashcards_completed,
+          quizzesCompleted: stats.quizzes_completed,
+          lessonsCompleted: stats.lessons_completed,
+          currentStreak: stats.current_streak,
+          longestStreak: stats.longest_streak,
+          achievementsUnlocked: stats.achievements_unlocked,
+          totalStudyTime: stats.total_study_time
+        })
+      }
+
+      setAchievements(allAchievements)
+      setUserAchievements(userProgress)
+
+      // Sincroniza dados existentes na primeira vez
+      if (stats && stats.total_score === 0) {
+        await syncExistingData(user.id)
+        // Recarrega os dados
+        const updatedStats = await getUserGamificationStats(user.id)
+        if (updatedStats) {
+          setUserStats({
+            totalScore: updatedStats.total_score,
+            currentLevel: updatedStats.current_level,
+            currentRank: updatedStats.current_rank,
+            currentLeague: updatedStats.current_league,
+            totalXP: updatedStats.total_xp,
+            flashcardsCompleted: updatedStats.flashcards_completed,
+            quizzesCompleted: updatedStats.quizzes_completed,
+            lessonsCompleted: updatedStats.lessons_completed,
+            currentStreak: updatedStats.current_streak,
+            longestStreak: updatedStats.longest_streak,
+            achievementsUnlocked: updatedStats.achievements_unlocked,
+            totalStudyTime: updatedStats.total_study_time
+          })
+        }
+      }
+
+      // Atualiza streak
+      await updateUserStreak(user.id)
+
+      // Verifica conquistas
+      const unlocked = await checkAndUnlockAchievements(user.id)
+      if (unlocked.length > 0) {
+        setRecentUnlocked(unlocked)
+        // Recarrega dados após desbloquear conquistas
+        setTimeout(() => {
+          loadDashboardData()
+        }, 2000)
+      }
+
+    } catch (error) {
+      console.error('Erro ao carregar dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getLeagueColor = (league: string) => {
+    switch (league) {
+      case 'Aprendizes': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'Aventureiros': return 'bg-green-100 text-green-800 border-green-200'
+      case 'Heróis': return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'Mestres': return 'bg-orange-100 text-orange-800 border-orange-200'
+      case 'Lendas': return 'bg-red-100 text-red-800 border-red-200'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getRankProgressValue = () => {
+    const progress = getRankProgress(userStats.totalScore)
+    return progress.progress
+  }
+
+  const getAchievementProgress = (achievementKey: string) => {
+    const userAchievement = userAchievements.find(ua => ua.achievement_key === achievementKey)
+    if (!userAchievement) return 0
+    
+    return Math.min(100, (userAchievement.current_progress / userAchievement.required_progress) * 100)
+  }
+
+  const isAchievementUnlocked = (achievementKey: string) => {
+    return userAchievements.some(ua => ua.achievement_key === achievementKey && ua.is_unlocked)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg">Carregando seu reino de conhecimento...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <DashboardShell>
-      <div className="space-y-8 p-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Continue sua jornada épica rumo à aprovação no CIAAR
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={`flex items-center gap-1 ${getColorPalette('achievement').badge}`}>
-              <Flame className="h-3 w-3" />
-              {userStats.currentStreak} dias consecutivos
-            </Badge>
-            <Badge className={`${levelPalette.badge} flex items-center gap-1 pulse-soft`}>
-              <Crown className="h-3 w-3" />
-              Nível {userStats.level}
-            </Badge>
-          </div>
-        </div>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Header do Dashboard */}
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          🏰 Seu Reino de Conhecimento
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          Bem-vindo, {user?.user_metadata?.full_name || 'Guerreiro'}! Continue sua jornada épica.
+        </p>
+      </div>
 
-        {/* Card Principal do Ranking RPG */}
-        <Card className={`${leaguePalette.card} ${leaguePalette.border} hover-lift transition-all duration-300`}>
-          <CardHeader className="text-center pb-4">
-            <div className="flex items-center justify-center mb-4">
-              <div className="text-6xl mr-4">{currentRank.insignia.split(' ')[0]}</div>
-              <div>
-                <CardTitle className="text-2xl mb-2">{currentRank.name}</CardTitle>
-                <Badge className={`${leaguePalette.badge} text-lg px-4 py-2`}>
-                  {currentRank.league} • Nível {currentRank.level}
-                </Badge>
-              </div>
-            </div>
-            <p className="text-lg italic text-gray-300">"{currentRank.blessing}"</p>
+      {/* Conquistas Recentes */}
+      {recentUnlocked.length > 0 && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <Trophy className="h-5 w-5" />
+              🎉 Conquista Desbloqueada!
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {!rankProgress.isMaxRank ? (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Progresso para o próximo rank</p>
-                  <div className="flex items-center justify-center gap-4 mb-3">
-                    <span className="text-sm text-gray-400">{rankProgress.currentRank.name}</span>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-semibold">{rankProgress.nextRank.name}</span>
-                  </div>
-                  <Progress value={rankProgress.progress} className="h-3 mb-2" />
-                  <p className="text-sm text-gray-400">
-                    Faltam {rankProgress.scoreNeeded} pontos para {rankProgress.nextRank.name}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center">
-                <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 text-lg">
-                  🏆 Rank Máximo Alcançado!
-                </Badge>
-                <p className="text-sm text-gray-400 mt-2">
-                  Você é uma {currentRank.name} - Parabéns!
-                </p>
-              </div>
-            )}
+            <p className="text-green-700">
+              Parabéns! Você desbloqueou: <strong>{recentUnlocked.join(', ')}</strong>
+            </p>
           </CardContent>
         </Card>
+      )}
 
-        {/* Cards de Status Principal */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card de Nível e XP */}
-          <Card className={`${levelPalette.card} ${levelPalette.border} hover-lift transition-all duration-300`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Nível Atual</CardTitle>
-                <Crown className={`h-5 w-5 ${levelPalette.text} float-animation`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold ${levelPalette.text}`}>{userStats.level}</span>
-                <span className="text-muted-foreground mb-1">Aspirante</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">XP</span>
-                  <span className={levelPalette.text}>{userStats.xp} / {userStats.nextLevelXp}</span>
+      {/* Card Principal RPG */}
+      <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl flex items-center justify-center gap-2">
+            <CrownIcon className="h-8 w-8 text-yellow-600" />
+            {userStats.currentRank}
+          </CardTitle>
+          <CardDescription className="text-lg">
+            {getRank(userStats.totalScore).insignia} {getRank(userStats.totalScore).blessing}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-purple-600">{userStats.currentLevel}</div>
+              <div className="text-sm text-muted-foreground">Nível</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{userStats.totalXP}</div>
+              <div className="text-sm text-muted-foreground">XP Total</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">{userStats.currentStreak}</div>
+              <div className="text-sm text-muted-foreground">Dias Seguidos</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-orange-600">{userStats.achievementsUnlocked}</div>
+              <div className="text-sm text-muted-foreground">Conquistas</div>
+            </div>
+          </div>
+          
+                     <div className="space-y-2">
+             <div className="flex justify-between text-sm">
+               <span>Progresso para próximo rank</span>
+               <span>{getRankProgressValue()}%</span>
+             </div>
+             <Progress value={getRankProgressValue()} className="h-2" />
+             <p className="text-xs text-center text-muted-foreground">
+               Próximo: {getNextRankInfo(userStats.totalScore)?.rank?.name || 'Rank Máximo'}
+             </p>
+           </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs de Conteúdo */}
+      <Tabs defaultValue="stats" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="stats">📊 Estatísticas</TabsTrigger>
+          <TabsTrigger value="achievements">🏆 Conquistas</TabsTrigger>
+          <TabsTrigger value="activities">⚡ Atividades</TabsTrigger>
+          <TabsTrigger value="leagues">🗡️ Ligas RPG</TabsTrigger>
+        </TabsList>
+
+        {/* Estatísticas */}
+        <TabsContent value="stats" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pontuação Total</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{userStats.totalScore.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{userStats.totalScore > 0 ? Math.floor(userStats.totalScore / 100) : 0} XP
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Flashcards</CardTitle>
+                <Brain className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{userStats.flashcardsCompleted}</div>
+                <p className="text-xs text-muted-foreground">
+                  Completados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Quizzes</CardTitle>
+                <Zap className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{userStats.quizzesCompleted}</div>
+                <p className="text-xs text-muted-foreground">
+                  Finalizados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Lições</CardTitle>
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{userStats.lessonsCompleted}</div>
+                <p className="text-xs text-muted-foreground">
+                  Assistidas
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Streak e Tempo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  Sequência de Estudo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-600">{userStats.currentStreak}</div>
+                  <div className="text-sm text-muted-foreground">Dias seguidos</div>
                 </div>
-                <div className="relative">
-                  <Progress value={xpProgress} className="h-3" />
-                  <div className="absolute inset-0 shimmer rounded-full"></div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-muted-foreground">{userStats.longestStreak}</div>
+                  <div className="text-xs text-muted-foreground">Recorde pessoal</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  Tempo de Estudo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{Math.floor(userStats.totalStudyTime / 60)}</div>
+                  <div className="text-sm text-muted-foreground">Horas totais</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-muted-foreground">{userStats.totalStudyTime % 60}</div>
+                  <div className="text-xs text-muted-foreground">Minutos</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Conquistas */}
+        <TabsContent value="achievements" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {achievements.map((achievement) => {
+              const isUnlocked = isAchievementUnlocked(achievement.achievement_key)
+              const progress = getAchievementProgress(achievement.achievement_key)
+              
+              return (
+                <Card key={achievement.id} className={isUnlocked ? 'border-green-200 bg-green-50' : ''}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <span className="text-2xl">{achievement.icon}</span>
+                      {achievement.title}
+                    </CardTitle>
+                    <CardDescription>{achievement.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>Progresso</span>
+                      <span>{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                    
+                    <div className="flex justify-between items-center">
+                      <Badge variant={isUnlocked ? 'default' : 'secondary'}>
+                        {isUnlocked ? 'Desbloqueado' : achievement.category}
+                      </Badge>
+                      <div className="text-right text-sm">
+                        <div className="font-semibold">+{achievement.xp_reward} XP</div>
+                        <div className="text-muted-foreground">+{achievement.score_reward} pts</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </TabsContent>
+
+        {/* Atividades */}
+        <TabsContent value="activities" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Resumo de Atividades
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{userStats.flashcardsCompleted}</div>
+                  <div className="text-sm text-muted-foreground">Flashcards Estudados</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{userStats.quizzesCompleted}</div>
+                  <div className="text-sm text-muted-foreground">Quizzes Completados</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">{userStats.lessonsCompleted}</div>
+                  <div className="text-sm text-muted-foreground">Lições Assistidas</div>
                 </div>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Card de Ranking */}
-          <Card className={`${rankingPalette.card} ${rankingPalette.border} hover-lift transition-all duration-300`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Ranking Geral</CardTitle>
-                <Trophy className={`h-5 w-5 ${rankingPalette.text} float-animation`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold ${rankingPalette.text}`}>#{userStats.rank}</span>
-                <span className="text-muted-foreground mb-1">de {userStats.totalUsers}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-green-500">Subiu 3 posições essa semana</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Card de Progresso Geral */}
-          <Card className={`${progressPalette.card} ${progressPalette.border} hover-lift transition-all duration-300`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Progresso Total</CardTitle>
-                <Target className={`h-5 w-5 ${progressPalette.text} float-animation`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold ${progressPalette.text}`}>{Math.round(progressPercentage)}%</span>
-                <span className="text-muted-foreground mb-1">concluído</span>
-              </div>
-              <div className="relative">
-                <Progress value={progressPercentage} className="h-3" />
-                <div className="absolute inset-0 shimmer rounded-full"></div>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {userStats.completedFlashcards} de {userStats.totalFlashcards} cards
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs com Conquistas e Estatísticas */}
-        <Tabs defaultValue="achievements" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
-            <TabsTrigger value="achievements" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white">
-              Conquistas
-            </TabsTrigger>
-            <TabsTrigger value="leagues" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
-              Ligas RPG
-            </TabsTrigger>
-            <TabsTrigger value="stats" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white">
-              Estatísticas
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
-              Atividades
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tab de Conquistas */}
-          <TabsContent value="achievements" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {achievements.map((achievement) => {
-                const palette = getColorPalette(achievement.category);
-                return (
-                  <Card 
-                    key={achievement.id} 
-                    className={`transition-all duration-300 hover-lift ${
-                      achievement.unlocked 
-                        ? `${palette.card} ${palette.border}` 
-                        : 'bg-card/50 opacity-75 border-muted'
-                    }`}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className={`p-3 rounded-lg transition-all duration-300 ${
-                          achievement.unlocked 
-                            ? `${palette.card} ${palette.text} pulse-soft` 
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {achievement.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">{achievement.title}</h3>
-                          <p className="text-sm text-muted-foreground mb-3">{achievement.description}</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span>Progresso</span>
-                              <span className={achievement.unlocked ? palette.text : ''}>{achievement.progress}/{achievement.maxProgress}</span>
-                            </div>
-                            <div className="relative">
-                              <Progress 
-                                value={(achievement.progress / achievement.maxProgress) * 100} 
-                                className="h-2"
-                              />
-                              {achievement.unlocked && <div className="absolute inset-0 shimmer rounded-full"></div>}
-                            </div>
-                          </div>
-                        </div>
-                        {achievement.unlocked ? (
-                          <Badge className={`${palette.badge} pulse-soft`}>
-                            Desbloqueado!
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            Bloqueado
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* Tab de Ligas RPG */}
-          <TabsContent value="leagues" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allLeagues.map((league) => {
-                const leaguePalette = getLeagueColor(league.name);
-                const isCurrentLeague = league.name === currentRank.league;
-                const isCompleted = userStats.totalScore >= league.maxScore;
-                
-                return (
-                  <Card 
-                    key={league.name}
-                    className={`transition-all duration-300 hover-lift ${
-                      isCurrentLeague 
-                        ? `${leaguePalette.card} ${leaguePalette.border} ring-2 ring-offset-2 ring-offset-background ring-blue-500` 
-                        : isCompleted 
-                          ? 'bg-gradient-to-br from-green-500/10 to-green-600/20 border-green-500/20' 
-                          : 'bg-card/50 opacity-75 border-muted'
-                    }`}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{league.name}</CardTitle>
-                        {isCurrentLeague && <Badge className={`${leaguePalette.badge} pulse-soft`}>Atual</Badge>}
-                        {isCompleted && <Badge className="bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30">Completa</Badge>}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold mb-1">{league.totalRanks}</p>
-                          <p className="text-sm text-muted-foreground">Ranks</p>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Pontuação</span>
-                            <span>{league.minScore} - {league.maxScore}</span>
-                          </div>
-                          <Progress 
-                            value={isCompleted ? 100 : Math.min(100, ((userStats.totalScore - league.minScore) / (league.maxScore - league.minScore)) * 100)} 
-                            className="h-2"
-                          />
-                        </div>
-                        {isCurrentLeague && (
-                          <p className="text-xs text-center text-blue-400">
-                            Você está nesta liga!
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* Tab de Estatísticas */}
-          <TabsContent value="stats" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 border-blue-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-blue-500" />
-                    Flashcards
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-500 mb-2">
-                    {userStats.completedFlashcards}/{userStats.totalFlashcards}
-                  </div>
-                  <Progress value={progressPercentage} className="h-2 mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {Math.round(progressPercentage)}% concluído
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-purple-500" />
-                    Quizzes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-500 mb-2">
-                    {userStats.totalQuizzes}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Média: {userStats.averageScore}%
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-500/10 to-green-600/20 border-green-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-green-500" />
-                    Tempo de Estudo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-500 mb-2">
-                    {Math.round(userStats.totalStudyTime / 60)}h
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {userStats.totalStudyTime} minutos total
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Tab de Atividades */}
-          <TabsContent value="activities" className="space-y-6">
-            <div className="space-y-4">
-              <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/20 border-orange-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-orange-500" />
-                    Streak Atual
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-orange-500 mb-2">
-                    {userStats.currentStreak} dias
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Continue estudando para manter seu streak!
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/20 border-yellow-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-yellow-500" />
-                    Progresso Semanal
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Flashcards</span>
-                      <span className="text-green-500">+12 esta semana</span>
+        {/* Ligas RPG */}
+        <TabsContent value="leagues" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getAllLeagues().map((league) => {
+              const isCurrentLeague = userStats.currentLeague === league.name
+              const hasCompleted = userStats.totalScore >= league.maxScore
+              
+              return (
+                                 <Card key={league.name} className={isCurrentLeague ? 'border-purple-200 bg-purple-50' : ''}>
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2">
+                       <span className="text-2xl">🗡️</span>
+                       {league.name}
+                     </CardTitle>
+                     <CardDescription>Liga com {league.totalRanks} ranks disponíveis</CardDescription>
+                   </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span>Pontuação necessária</span>
+                      <span>{league.maxScore.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Quizzes</span>
-                      <span className="text-blue-500">+3 esta semana</span>
+                    
+                    <div className="flex justify-between text-sm">
+                      <span>Seu progresso</span>
+                      <span>{userStats.totalScore.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>XP Ganho</span>
-                      <span className="text-purple-500">+450 esta semana</span>
+                    
+                    <Progress 
+                      value={Math.min(100, (userStats.totalScore / league.maxScore) * 100)} 
+                      className="h-2" 
+                    />
+                    
+                    <div className="flex justify-between items-center">
+                      <Badge variant={hasCompleted ? 'default' : 'secondary'}>
+                        {hasCompleted ? 'Completa' : 'Em Progresso'}
+                      </Badge>
+                      {isCurrentLeague && (
+                        <Badge variant="outline" className="border-purple-200 text-purple-700">
+                          Atual
+                        </Badge>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardShell>
-  );
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
 } 
