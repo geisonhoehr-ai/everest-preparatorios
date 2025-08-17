@@ -2,40 +2,60 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { getUserRoleClient } from '@/lib/get-user-role'
+import { useAuth } from '@/hooks/use-auth'
 
 interface AuthGuardProps {
   children: React.ReactNode
   requiredRole?: 'student' | 'teacher' | 'admin'
   allowedRoles?: ('student' | 'teacher' | 'admin')[]
+  fallback?: React.ReactNode
 }
 
 export default function AuthGuard({ 
   children, 
   requiredRole, 
-  allowedRoles 
+  allowedRoles,
+  fallback
 }: AuthGuardProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthorized, setIsAuthorized] = useState(false)
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const [isChecking, setIsChecking] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
+  
+  // Usar o novo hook useAuth otimizado
+  const { 
+    user, 
+    role, 
+    isAuthenticated, 
+    isLoading, 
+    isInitialized,
+    isAdmin,
+    isTeacher,
+    isStudent
+  } = useAuth()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthorization = async () => {
       try {
         console.log('🛡️ [AUTH_GUARD] Verificando autorização para:', pathname)
-        
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
+        console.log('👤 [AUTH_GUARD] Estado atual:', { 
+          isAuthenticated, 
+          role, 
+          isInitialized, 
+          isLoading 
+        })
 
-        // Se não há sessão e está tentando acessar rota protegida
-        if (!session?.user) {
-          console.log('❌ [AUTH_GUARD] Nenhuma sessão encontrada')
+        // Aguardar inicialização
+        if (!isInitialized || isLoading) {
+          console.log('⏳ [AUTH_GUARD] Aguardando inicialização...')
+          return
+        }
+
+        // Se não está autenticado e está tentando acessar rota protegida
+        if (!isAuthenticated) {
+          console.log('❌ [AUTH_GUARD] Usuário não autenticado')
           
           // Rotas públicas que não precisam de autenticação
-          const publicRoutes = ['/', '/login', '/login-simple', '/signup', '/signup-simple', '/forgot-password']
+          const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/access-denied']
           
           if (!publicRoutes.includes(pathname)) {
             console.log('🔄 [AUTH_GUARD] Redirecionando para login')
@@ -43,25 +63,25 @@ export default function AuthGuard({
             return
           }
           
-          setIsAuthorized(true)
-          setIsLoading(false)
+          setIsChecking(false)
           return
         }
 
-        console.log('✅ [AUTH_GUARD] Sessão encontrada:', session.user.email)
+        console.log('✅ [AUTH_GUARD] Usuário autenticado:', user?.email, 'Role:', role)
 
         // Se tem sessão, verificar role
-        const role = await getUserRoleClient(session.user.email)
-        setUserRole(role)
-        
-        console.log('🔍 [AUTH_GUARD] Role do usuário:', role)
+        if (!role) {
+          console.log('⚠️ [AUTH_GUARD] Usuário sem role definido, redirecionando para dashboard')
+          router.replace('/dashboard')
+          return
+        }
 
-        // Verificar se usuário logado está tentando acessar login/signup
-        if (pathname === '/login' || pathname === '/login-simple' || pathname === '/signup' || pathname === '/signup-simple') {
-          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login/signup')
+        // Se está logado e tenta acessar páginas de login, redirecionar para dashboard
+        if (pathname === '/login') {
+          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login')
           
-          // Se não tem role, redirecionar para dashboard padrão
-          const redirectTo = role === 'teacher' ? '/dashboard' : '/dashboard'
+          // Redirecionar para dashboard baseado no role
+          const redirectTo = getDefaultRedirectPath(role)
           router.replace(redirectTo)
           return
         }
@@ -71,42 +91,61 @@ export default function AuthGuard({
 
         if (requiredRole) {
           authorized = role === requiredRole
-          console.log('🔍 [AUTH_GUARD] Verificação role específico:', { requiredRole, userRole: role, authorized })
+          console.log('🔍 [AUTH_GUARD] Verificação role específico:', { 
+            requiredRole, 
+            userRole: role, 
+            authorized 
+          })
         }
 
         if (allowedRoles && allowedRoles.length > 0) {
           authorized = allowedRoles.includes(role as any)
-          console.log('🔍 [AUTH_GUARD] Verificação roles permitidos:', { allowedRoles, userRole: role, authorized })
+          console.log('🔍 [AUTH_GUARD] Verificação roles permitidos:', { 
+            allowedRoles, 
+            userRole: role, 
+            authorized 
+          })
         }
 
         if (!authorized) {
           console.log('❌ [AUTH_GUARD] Usuário não autorizado')
           
           // Redirecionar para página apropriada baseada no role
-          const redirectTo = role === 'teacher' ? '/teacher' : '/dashboard'
+          const redirectTo = getDefaultRedirectPath(role)
           router.replace(redirectTo)
           return
         }
 
         console.log('✅ [AUTH_GUARD] Usuário autorizado')
-        setIsAuthorized(true)
+        setIsChecking(false)
 
       } catch (error) {
         console.error('❌ [AUTH_GUARD] Erro na verificação:', error)
         
         // Em caso de erro, redirecionar para login
         router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
-      } finally {
-        setIsLoading(false)
       }
     }
 
-    checkAuth()
-  }, [pathname, requiredRole, allowedRoles, router])
+    checkAuthorization()
+  }, [pathname, requiredRole, allowedRoles, router, isAuthenticated, role, isInitialized, isLoading, user?.email])
+
+  // Função para determinar redirecionamento baseado no role
+  const getDefaultRedirectPath = (userRole: string): string => {
+    switch (userRole) {
+      case 'admin':
+        return '/admin'
+      case 'teacher':
+        return '/dashboard' // Professores vão para dashboard (não mais para /teacher)
+      case 'student':
+      default:
+        return '/dashboard'
+    }
+  }
 
   // Mostrar loading enquanto verifica
-  if (isLoading) {
-    return (
+  if (isLoading || isChecking || !isInitialized) {
+    return fallback || (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
@@ -116,71 +155,48 @@ export default function AuthGuard({
     )
   }
 
-  // Se não autorizado, não renderizar nada (já redirecionou)
-  if (!isAuthorized) {
-    return null
-  }
-
   // Renderizar conteúdo se tudo ok
   return <>{children}</>
 }
 
-// Hook para usar informações de autenticação
+// Hook para usar informações de autenticação (versão simplificada)
 export function useAuthGuard() {
-  const [authState, setAuthState] = useState({
-    isLoading: true,
-    isAuthenticated: false,
-    user: null as any,
-    role: null as string | null
-  })
+  const auth = useAuth()
+  
+  return {
+    isLoading: auth.isLoading,
+    isAuthenticated: auth.isAuthenticated,
+    user: auth.user,
+    role: auth.role,
+    isAdmin: auth.isAdmin,
+    isTeacher: auth.isTeacher,
+    isStudent: auth.isStudent
+  }
+}
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
+// Componente de proteção específica para admin
+export function AdminGuard({ children, fallback }: { children: React.ReactNode, fallback?: React.ReactNode }) {
+  return (
+    <AuthGuard requiredRole="admin" fallback={fallback}>
+      {children}
+    </AuthGuard>
+  )
+}
 
-        if (!session?.user) {
-          setAuthState({
-            isLoading: false,
-            isAuthenticated: false,
-            user: null,
-            role: null
-          })
-          return
-        }
+// Componente de proteção específica para professor
+export function TeacherGuard({ children, fallback }: { children: React.ReactNode, fallback?: React.ReactNode }) {
+  return (
+    <AuthGuard allowedRoles={['teacher', 'admin']} fallback={fallback}>
+      {children}
+    </AuthGuard>
+  )
+}
 
-        const role = await getUserRoleClient(session.user.email)
-
-        setAuthState({
-          isLoading: false,
-          isAuthenticated: true,
-          user: session.user,
-          role
-        })
-
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
-        setAuthState({
-          isLoading: false,
-          isAuthenticated: false,
-          user: null,
-          role: null
-        })
-      }
-    }
-
-    checkAuth()
-
-    // Listener para mudanças de autenticação
-    const supabase = createClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔄 [USE_AUTH_GUARD] Auth change:', event)
-      checkAuth()
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  return authState
+// Componente de proteção específica para aluno
+export function StudentGuard({ children, fallback }: { children: React.ReactNode, fallback?: React.ReactNode }) {
+  return (
+    <AuthGuard allowedRoles={['student', 'teacher', 'admin']} fallback={fallback}>
+      {children}
+    </AuthGuard>
+  )
 } 

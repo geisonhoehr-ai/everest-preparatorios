@@ -67,11 +67,6 @@ export function SidebarNav({ className, items, collapsed = false, ...props }: Si
           icon: LayoutDashboard,
         },
         {
-          href: "/cursos",
-          title: "Cursos",
-          icon: BookOpen,
-        },
-        {
           href: "https://alunos.everestpreparatorios.com.br",
           title: "Aulas",
           icon: PlayCircle,

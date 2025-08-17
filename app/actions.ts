@@ -994,26 +994,7 @@ export async function login(formData: FormData) {
   return redirect("/dashboard")
 }
 
-export async function signup(formData: FormData) {
-  const origin = (await headers()).get("origin")
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const supabase = await getSupabase()
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  })
-
-  if (error) {
-    return redirect("/signup?message=Could not authenticate user")
-  }
-
-  return redirect("/signup?message=Check email to continue sign in process")
-}
 
 export async function signOut() {
   const supabase = await getSupabase()

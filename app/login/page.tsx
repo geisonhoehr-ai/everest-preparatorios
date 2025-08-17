@@ -16,49 +16,235 @@ export default function LoginSimplePage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  // Removido: const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
+    
+    // Criar cliente Supabase dentro da função
+    const supabase = createClient()
+    console.log('🔍 [LOGIN] Cliente Supabase criado:', !!supabase)
+    
     try {
+      console.log('🔐 [LOGIN] Iniciando processo de login para:', email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       })
 
       if (error) {
+        console.error('❌ [LOGIN] Erro no login:', error)
         setError(error.message)
-      } else {
+        setIsLoading(false)
+        return
+      }
+
+      if (!data.user) {
+        console.error('❌ [LOGIN] Nenhum usuário retornado')
+        setError('Erro inesperado no login')
+        setIsLoading(false)
+        return
+      }
+
+      console.log('✅ [LOGIN] Login bem-sucedido para:', data.user.email)
+      console.log('🔍 [LOGIN] UUID do usuário:', data.user.id)
+
+      // REABILITANDO: Buscar role com logs detalhados
+      try {
+        console.log('🔍 [LOGIN] Iniciando busca do role...')
+        console.log('🔍 [LOGIN] Cliente Supabase:', !!supabase)
+        console.log('🔍 [LOGIN] UUID para busca:', data.user.id)
+        
+        // TEMPORARIAMENTE: Pular todas as queries problemáticas
+        console.log('⚠️ [LOGIN] TEMPORARIAMENTE: Pulando queries problemáticas...')
+        console.log('🔄 [LOGIN] Testando redirecionamento...')
+        
+        // DEBUG: Reabilitar apenas RPC para testar rede
+        console.log('🔍 [LOGIN] DEBUG: Testando RPC para debug de rede...')
         try {
-          const { data: roleData, error: roleError } = await supabase
+          const { data: rpcData, error: rpcError } = await supabase
+            .rpc('version')
+          
+          console.log('🔍 [LOGIN] DEBUG RPC version:', { rpcData, rpcError })
+        } catch (rpcError) {
+          console.log('🔍 [LOGIN] DEBUG RPC falhou:', rpcError)
+        }
+        
+        // DEBUG: Testar redirecionamento para página mais simples
+        console.log('🔄 [LOGIN] DEBUG: Testando redirecionamento para página raiz...')
+        
+        try {
+          // Teste 1: Redirecionar para página raiz
+          console.log('🔄 [LOGIN] Executando router.push("/")...')
+          await router.push('/')
+          console.log('✅ [LOGIN] router.push("/") executado com sucesso')
+        } catch (redirectError) {
+          console.error('❌ [LOGIN] Erro no redirecionamento:', redirectError)
+          
+          // Teste 2: Tentar dashboard se raiz falhar
+          console.log('🔄 [LOGIN] Tentando dashboard como fallback...')
+          try {
+            await router.push('/dashboard')
+            console.log('✅ [LOGIN] router.push("/dashboard") executado com sucesso')
+          } catch (dashboardError) {
+            console.error('❌ [LOGIN] Erro no dashboard também:', dashboardError)
+            // Último recurso: window.location
+            console.log('🔄 [LOGIN] Usando window.location como último recurso...')
+            window.location.href = '/dashboard'
+          }
+        }
+        
+        return
+        
+        // CÓDIGO ORIGINAL COMENTADO - REABILITAR DEPOIS QUE SUPABASE ESTIVER ESTÁVEL
+        /*
+        // TESTE: Query mais simples para identificar o problema
+        console.log('🔍 [LOGIN] Testando query simples primeiro...')
+        
+        try {
+          // PULANDO TESTE DE CONEXÃO - Vamos direto para query...
+          console.log('🔍 [LOGIN] PULANDO teste de conexão - indo direto para query...')
+          
+          // Teste -1: Query que não envolve tabelas
+          console.log('🔍 [LOGIN] Teste -1: Query sem tabela (rpc)...')
+          try {
+            const { data: rpcData, error: rpcError } = await supabase
+              .rpc('version')
+            
+            console.log('🔍 [LOGIN] Teste RPC version:', { rpcData, rpcError })
+          } catch (rpcError) {
+            console.log('🔍 [LOGIN] Teste RPC falhou:', rpcError)
+          }
+          
+          // Teste 0: Query em tabela diferente (auth.users)
+          console.log('🔍 [LOGIN] Teste 0: Query em tabela auth.users...')
+          try {
+            const { data: authTestData, error: authTestError } = await supabase
+              .from('auth.users')
+              .select('*')
+              .limit(1)
+            
+            console.log('🔍 [LOGIN] Teste auth.users:', { authTestData, authTestError })
+          } catch (authTestError) {
+            console.log('🔍 [LOGIN] Teste auth.users falhou (esperado):', authTestError)
+          }
+          
+          // Teste 1: Query simples sem WHERE
+          console.log('🔍 [LOGIN] Teste 1: Query simples sem WHERE...')
+          const { data: testData, error: testError } = await supabase
+            .from('user_roles')
+            .select('*')
+            .limit(1)
+          
+          console.log('🔍 [LOGIN] Teste query simples:', { testData, testError })
+          
+          if (testError) {
+            console.error('❌ [LOGIN] Erro na query simples:', testError)
+            throw new Error('Query simples falhou: ' + testError.message)
+          }
+          
+          // Teste 2: Query com WHERE simples
+          console.log('🔍 [LOGIN] Teste 2: Query com WHERE simples...')
+          const { data: testWhereData, error: testWhereError } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_uuid', data.user.email)
+            .limit(1)
+          
+          console.log('🔍 [LOGIN] Teste query com WHERE:', { testWhereData, testWhereError })
+          
+          if (testWhereError) {
+            console.error('❌ [LOGIN] Erro na query com WHERE:', testWhereError)
+            throw new Error('Query com WHERE falhou: ' + testWhereError.message)
+          }
+          
+        } catch (testError) {
+          console.error('❌ [LOGIN] Erro nos testes:', testError)
+          // Se os testes falharem, redirecionar para dashboard
+          console.log('🔄 [LOGIN] Redirecionando para dashboard (testes falharam)')
+          router.push('/dashboard')
+          return
+        }
+        
+        // Se os testes passarem, tentar a query real
+        console.log('🔍 [LOGIN] Testes passaram, executando query real...')
+        
+        // Adicionar timeout para evitar travamento
+        const queryPromise = supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_uuid', data.user.id)
+          .single()
+
+        // Timeout de 10 segundos
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout na query SQL')), 10000)
+        })
+
+        let { data: roleData, error: roleError } = await Promise.race([queryPromise, timeoutPromise]) as any
+
+        console.log('🔍 [LOGIN] Resultado da busca por UUID:', { roleData, roleError })
+
+        if (roleError) {
+          console.log('🔄 [LOGIN] Erro na busca por UUID, tentando por email...')
+          
+          // Adicionar timeout para query por email também
+          const queryEmailPromise = supabase
+            .from('user_roles')
+            .select('role')
+            .eq('email', data.user.email)
             .single()
 
-          if (roleError) {
-            console.warn('⚠️ [LOGIN] Erro ao buscar role, redirecionando para dashboard')
+          const timeoutEmailPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout na query SQL por email')), 10000)
+          })
+
+          const { data: roleDataByEmail, error: roleErrorByEmail } = await Promise.race([queryEmailPromise, timeoutEmailPromise]) as any
+
+          console.log('🔍 [LOGIN] Resultado da busca por email:', { roleDataByEmail, roleErrorByEmail })
+
+          if (roleErrorByEmail) {
+            console.warn('⚠️ [LOGIN] Erro ao buscar role por email também:', roleErrorByEmail)
+            console.log('🔄 [LOGIN] Redirecionando para dashboard (role não encontrado)')
             router.push('/dashboard')
-          } else {
-            if (roleData.role === 'teacher') {
-              router.push('/dashboard')
-            } else if (roleData.role === 'admin') {
-              router.push('/admin')
-            } else {
-              router.push('/dashboard')
-            }
+            return
           }
-        } catch (roleError) {
-          console.warn('⚠️ [LOGIN] Erro inesperado ao buscar role, redirecionando para dashboard')
-          router.push('/dashboard')
+
+          roleData = roleDataByEmail
+          roleError = null
         }
+
+        const userRole = roleData?.role || 'student'
+        console.log('✅ [LOGIN] Role encontrado:', userRole)
+
+        // Redirecionar baseado no role
+        let redirectPath = '/dashboard'
+        
+        if (userRole === 'admin') {
+          redirectPath = '/admin'
+        } else if (userRole === 'teacher') {
+          redirectPath = '/dashboard'
+        } else {
+          redirectPath = '/dashboard'
+        }
+
+        console.log('🔄 [LOGIN] Redirecionando para:', redirectPath)
+        router.push(redirectPath)
+        */
+
+      } catch (roleError) {
+        console.error('❌ [LOGIN] Erro inesperado ao buscar role:', roleError)
+        console.log('🔄 [LOGIN] Redirecionando para dashboard (erro no role)')
+        router.push('/dashboard')
       }
+
     } catch (error) {
+      console.error('❌ [LOGIN] Erro geral no login:', error)
       setError('Erro inesperado. Tente novamente.')
     } finally {
+      console.log('🏁 [LOGIN] Finalizando processo de login')
       setIsLoading(false)
     }
   }

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  // DESABILITADO TEMPORARIAMENTE PARA PERMITIR LOGIN
+  // DESABILITADO TEMPORARIAMENTE PARA TESTAR LOGIN
   console.log('⚠️ [MIDDLEWARE] Desabilitado temporariamente - permitindo acesso livre')
   return NextResponse.next()
 
@@ -21,14 +21,13 @@ export async function middleware(req: NextRequest) {
     }
 
     const { pathname } = req.nextUrl
+    console.log('🔍 [MIDDLEWARE] Verificando rota:', pathname, 'Usuário logado:', !!session)
 
     // Rotas públicas que não precisam de autenticação
     const publicRoutes = [
+      '/',
       '/login',
-      '/login-simple',
-      '/signup',
-      '/signup-simple',
-      '/test-login',
+      '/forgot-password',
       '/access-denied'
     ]
 
@@ -48,30 +47,71 @@ export async function middleware(req: NextRequest) {
       '/calendario',
       '/suporte',
       '/settings',
-      '/profile'
+      '/profile',
+      '/ranking'
     ]
 
     // Se está em uma rota pública, permitir acesso
     if (publicRoutes.some(route => pathname.startsWith(route))) {
+      console.log('✅ [MIDDLEWARE] Rota pública, permitindo acesso')
       return res
     }
 
     // Se não está logado e tenta acessar rota protegida, redirecionar para login
     if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
       console.log('🔒 [MIDDLEWARE] Usuário não autenticado, redirecionando para login')
-      return NextResponse.redirect(new URL('/login-simple', req.url))
+      return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    // Se está logado e tenta acessar páginas de login/signup, redirecionar para dashboard
-    if (session && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-      console.log('✅ [MIDDLEWARE] Usuário já logado, redirecionando para dashboard')
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
+    // Se está logado, verificar role e aplicar redirecionamentos específicos
+    if (session) {
+      try {
+        // Buscar role do usuário na tabela user_roles
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_uuid', session.user.id)
+          .single()
 
-    // Redirecionar professores de /teacher para /dashboard
-    if (session && pathname.startsWith('/teacher')) {
-      console.log('👨‍🏫 [MIDDLEWARE] Professor acessando /teacher, redirecionando para /dashboard')
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+        let userRole: string = 'student' // Declarar fora do bloco if/else
+        
+        if (roleError) {
+          console.warn('⚠️ [MIDDLEWARE] Erro ao buscar role:', roleError)
+          // Se não conseguir buscar role, assume student
+          userRole = 'student'
+        } else {
+          userRole = roleData?.role || 'student'
+        }
+
+        console.log('👤 [MIDDLEWARE] Role detectado:', userRole, 'para usuário:', session.user.email)
+
+        // Se está logado e tenta acessar páginas de login, redirecionar para dashboard
+        if (pathname.startsWith('/login')) {
+          console.log('✅ [MIDDLEWARE] Usuário já logado, redirecionando para dashboard')
+          return NextResponse.redirect(new URL('/dashboard', req.url))
+        }
+
+        // Redirecionar professores de /teacher para /dashboard (se ainda existir)
+        if (pathname.startsWith('/teacher')) {
+          console.log('👨‍🏫 [MIDDLEWARE] Professor acessando /teacher, redirecionando para /dashboard')
+          return NextResponse.redirect(new URL('/dashboard', req.url))
+        }
+
+        // Verificar acesso a rotas específicas baseado no role
+        if (pathname.startsWith('/admin') && userRole !== 'admin') {
+          console.log('🚫 [MIDDLEWARE] Acesso negado ao admin para role:', userRole)
+          return NextResponse.redirect(new URL('/access-denied', req.url))
+        }
+
+        // Permitir acesso para todas as outras rotas protegidas
+        console.log('✅ [MIDDLEWARE] Acesso permitido para role:', userRole)
+        return res
+
+      } catch (roleError) {
+        console.error('❌ [MIDDLEWARE] Erro ao verificar role:', roleError)
+        // Em caso de erro, permitir acesso para não bloquear o usuário
+        return res
+      }
     }
 
     // Para todas as outras rotas, permitir acesso
