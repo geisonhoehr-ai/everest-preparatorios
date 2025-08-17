@@ -22,14 +22,14 @@ export default function LandingPage() {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
+              <a href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="bg-white text-black hover:bg-gray-100 font-semibold">
                   Área do Aluno
                 </Button>
-              </Link>
-              <Link href="/dashboard">
+              </a>
+              <Link href="/login">
                 <Button variant="ghost" className="text-orange-400 hover:text-orange-300">
-                  Dashboard
+                  Área VIP
                 </Button>
               </Link>
             </div>

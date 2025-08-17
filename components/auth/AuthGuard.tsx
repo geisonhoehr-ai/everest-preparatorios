@@ -60,7 +60,8 @@ export default function AuthGuard({
         if (pathname === '/login' || pathname === '/login-simple' || pathname === '/signup' || pathname === '/signup-simple') {
           console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login/signup')
           
-          const redirectTo = role === 'teacher' ? '/teacher' : '/dashboard'
+          // Se não tem role, redirecionar para dashboard padrão
+          const redirectTo = role === 'teacher' ? '/dashboard' : '/dashboard'
           router.replace(redirectTo)
           return
         }

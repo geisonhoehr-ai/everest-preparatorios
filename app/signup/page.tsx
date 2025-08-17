@@ -102,12 +102,8 @@ export default function SignupPage() {
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
         // Redirecionar baseado no tipo de usuário
-        console.log("🔄 Redirecionando para:", userType === "teacher" ? "/teacher" : "/")
-        if (userType === "teacher") {
-          router.push("/teacher")
-        } else {
-          router.push("/")
-        }
+        console.log("🔄 Redirecionando para:", userType === "teacher" ? "/dashboard" : "/")
+        router.push("/dashboard")
       }
     } catch (err) {
       console.error("❌ Erro geral no cadastro:", err)

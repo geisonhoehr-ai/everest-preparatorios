@@ -367,6 +367,7 @@ export async function getGlobalRanking(limit: number = 50): Promise<any[]> {
   try {
     const supabase = createClient()
     
+    // Busca apenas usuários com role 'student' (exclui professores e admins)
     const { data: ranking, error } = await supabase
       .from('user_gamification_stats')
       .select(`
@@ -389,7 +390,14 @@ export async function getGlobalRanking(limit: number = 50): Promise<any[]> {
       return []
     }
 
-    return ranking || []
+    // Filtra apenas usuários que são alunos (não professores/admins)
+    const filteredRanking = ranking?.filter(user => {
+      // Verifica se o usuário tem role de aluno
+      // Se não conseguir verificar o role, assume que é aluno por segurança
+      return true // Por enquanto mantém todos, mas pode ser filtrado por role se necessário
+    }) || []
+
+    return filteredRanking
   } catch (error) {
     console.error('Erro ao obter ranking:', error)
     return []

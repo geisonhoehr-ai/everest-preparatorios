@@ -35,7 +35,6 @@ export async function middleware(req: NextRequest) {
     // Rotas que precisam de autenticação
     const protectedRoutes = [
       '/dashboard',
-      '/teacher',
       '/admin',
       '/flashcards',
       '/my-flashcards',
@@ -66,6 +65,12 @@ export async function middleware(req: NextRequest) {
     // Se está logado e tenta acessar páginas de login/signup, redirecionar para dashboard
     if (session && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
       console.log('✅ [MIDDLEWARE] Usuário já logado, redirecionando para dashboard')
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
+    // Redirecionar professores de /teacher para /dashboard
+    if (session && pathname.startsWith('/teacher')) {
+      console.log('👨‍🏫 [MIDDLEWARE] Professor acessando /teacher, redirecionando para /dashboard')
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
