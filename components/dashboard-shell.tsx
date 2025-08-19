@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+import { cn, getUrlForRoute } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -36,11 +36,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
     console.log("🔄 [DASHBOARD_SHELL] Iniciando logout...")
     try {
       await signOut()
-      router.push("/login-simple")
+      // Redirecionar para a página inicial com URL completa baseada no ambiente
+      window.location.href = getUrlForRoute("/")
     } catch (error) {
       console.error("❌ [DASHBOARD_SHELL] Erro no logout:", error)
     }
-  }, [signOut, router])
+  }, [signOut])
 
   // Função para traduzir o role
   const getRoleDisplay = useCallback((role: string | null) => {

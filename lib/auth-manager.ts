@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserRoleClient, clearUserRoleCache } from '@/lib/get-user-role'
+import { getUrlForRoute } from '@/lib/utils'
 
 interface AuthState {
   user: any | null
@@ -263,7 +264,7 @@ class AuthManager {
     if (typeof window !== 'undefined') {
       const publicPages = ['/', '/login', '/login-simple', '/signup', '/signup-simple', '/forgot-password']
       if (!publicPages.includes(window.location.pathname)) {
-        window.location.replace('/login')
+        window.location.replace(getUrlForRoute('/'))
       }
     }
   }

@@ -305,6 +305,36 @@ body {
     }
   }
 
+  /* Animação LED colorido girando no sentido horário */
+  @keyframes led-spin-clockwise {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 400% 50%;
+    }
+  }
+
+  /* Animação LED colorido girando no sentido anti-horário */
+  @keyframes led-spin-counter-clockwise {
+    0% {
+      background-position: 400% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Animação de rotação simples para o efeito LED */
+  @keyframes led-rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
   .animate-spin-slow {
     animation: spin-slow 8s linear infinite;
   }
@@ -324,6 +354,35 @@ body {
 
   .animate-neon-clockwise {
     animation: neon-border-clockwise 3s linear infinite;
+  }
+
+  /* Novas classes para o efeito LED girando */
+  .animate-led-clockwise {
+    animation: led-spin-clockwise 4s linear infinite;
+  }
+
+  .animate-led-counter-clockwise {
+    animation: led-spin-counter-clockwise 3s linear infinite;
+  }
+
+  .animate-led-rotate {
+    animation: led-rotate 6s linear infinite;
+  }
+
+  /* Animação de pulsação para os LEDs */
+  @keyframes led-pulse {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  }
+
+  .animate-led-pulse {
+    animation: led-pulse 2s ease-in-out infinite;
   }
 }
 

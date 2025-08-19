@@ -16,208 +16,64 @@ export default function LoginSimplePage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
-  // Removido: const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
     
-    // Criar cliente Supabase dentro da função
     const supabase = createClient()
-    console.log('🔍 [LOGIN] Cliente Supabase criado:', !!supabase)
     
     try {
-      console.log('🔐 [LOGIN] Iniciando processo de login para:', email)
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
 
       if (error) {
-        console.error('❌ [LOGIN] Erro no login:', error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
       if (!data.user) {
-        console.error('❌ [LOGIN] Nenhum usuário retornado')
         setError('Erro inesperado no login')
         setIsLoading(false)
         return
       }
 
-      console.log('✅ [LOGIN] Login bem-sucedido para:', data.user.email)
-      console.log('🔍 [LOGIN] UUID do usuário:', data.user.id)
-
-      // REABILITANDO: Buscar role com logs detalhados
+      // Buscar role do usuário
       try {
-        console.log('🔍 [LOGIN] Iniciando busca do role...')
-        console.log('🔍 [LOGIN] Cliente Supabase:', !!supabase)
-        console.log('🔍 [LOGIN] UUID para busca:', data.user.id)
-        
-        // TEMPORARIAMENTE: Pular todas as queries problemáticas
-        console.log('⚠️ [LOGIN] TEMPORARIAMENTE: Pulando queries problemáticas...')
-        console.log('🔄 [LOGIN] Testando redirecionamento...')
-        
-        // DEBUG: Reabilitar apenas RPC para testar rede
-        console.log('🔍 [LOGIN] DEBUG: Testando RPC para debug de rede...')
-        try {
-          const { data: rpcData, error: rpcError } = await supabase
-            .rpc('version')
-          
-          console.log('🔍 [LOGIN] DEBUG RPC version:', { rpcData, rpcError })
-        } catch (rpcError) {
-          console.log('🔍 [LOGIN] DEBUG RPC falhou:', rpcError)
-        }
-        
-        // DEBUG: Testar redirecionamento para página mais simples
-        console.log('🔄 [LOGIN] DEBUG: Testando redirecionamento para página raiz...')
-        
-        try {
-          // Teste 1: Redirecionar para página raiz
-          console.log('🔄 [LOGIN] Executando router.push("/")...')
-          await router.push('/')
-          console.log('✅ [LOGIN] router.push("/") executado com sucesso')
-        } catch (redirectError) {
-          console.error('❌ [LOGIN] Erro no redirecionamento:', redirectError)
-          
-          // Teste 2: Tentar dashboard se raiz falhar
-          console.log('🔄 [LOGIN] Tentando dashboard como fallback...')
-          try {
-            await router.push('/dashboard')
-            console.log('✅ [LOGIN] router.push("/dashboard") executado com sucesso')
-          } catch (dashboardError) {
-            console.error('❌ [LOGIN] Erro no dashboard também:', dashboardError)
-            // Último recurso: window.location
-            console.log('🔄 [LOGIN] Usando window.location como último recurso...')
-            window.location.href = '/dashboard'
-          }
-        }
-        
-        return
-        
-        // CÓDIGO ORIGINAL COMENTADO - REABILITAR DEPOIS QUE SUPABASE ESTIVER ESTÁVEL
-        /*
-        // TESTE: Query mais simples para identificar o problema
-        console.log('🔍 [LOGIN] Testando query simples primeiro...')
-        
-        try {
-          // PULANDO TESTE DE CONEXÃO - Vamos direto para query...
-          console.log('🔍 [LOGIN] PULANDO teste de conexão - indo direto para query...')
-          
-          // Teste -1: Query que não envolve tabelas
-          console.log('🔍 [LOGIN] Teste -1: Query sem tabela (rpc)...')
-          try {
-            const { data: rpcData, error: rpcError } = await supabase
-              .rpc('version')
-            
-            console.log('🔍 [LOGIN] Teste RPC version:', { rpcData, rpcError })
-          } catch (rpcError) {
-            console.log('🔍 [LOGIN] Teste RPC falhou:', rpcError)
-          }
-          
-          // Teste 0: Query em tabela diferente (auth.users)
-          console.log('🔍 [LOGIN] Teste 0: Query em tabela auth.users...')
-          try {
-            const { data: authTestData, error: authTestError } = await supabase
-              .from('auth.users')
-              .select('*')
-              .limit(1)
-            
-            console.log('🔍 [LOGIN] Teste auth.users:', { authTestData, authTestError })
-          } catch (authTestError) {
-            console.log('🔍 [LOGIN] Teste auth.users falhou (esperado):', authTestError)
-          }
-          
-          // Teste 1: Query simples sem WHERE
-          console.log('🔍 [LOGIN] Teste 1: Query simples sem WHERE...')
-          const { data: testData, error: testError } = await supabase
-            .from('user_roles')
-            .select('*')
-            .limit(1)
-          
-          console.log('🔍 [LOGIN] Teste query simples:', { testData, testError })
-          
-          if (testError) {
-            console.error('❌ [LOGIN] Erro na query simples:', testError)
-            throw new Error('Query simples falhou: ' + testError.message)
-          }
-          
-          // Teste 2: Query com WHERE simples
-          console.log('🔍 [LOGIN] Teste 2: Query com WHERE simples...')
-          const { data: testWhereData, error: testWhereError } = await supabase
+        // 1) Tenta via RPC segura (requer execução do script scripts/100_create_get_user_role_rpc.sql)
+        const { data: roleFromRpc, error: rpcError } = await supabase.rpc('get_role_for_current_user')
+
+        let userRole = (roleFromRpc as string) || 'student'
+
+        // 2) Fallback: SELECT direto caso RPC não exista/retorne erro
+        if (rpcError || !roleFromRpc) {
+          let { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
-            .limit(1)
-          
-          console.log('🔍 [LOGIN] Teste query com WHERE:', { testWhereData, testWhereError })
-          
-          if (testWhereError) {
-            console.error('❌ [LOGIN] Erro na query com WHERE:', testWhereError)
-            throw new Error('Query com WHERE falhou: ' + testWhereError.message)
-          }
-          
-        } catch (testError) {
-          console.error('❌ [LOGIN] Erro nos testes:', testError)
-          // Se os testes falharem, redirecionar para dashboard
-          console.log('🔄 [LOGIN] Redirecionando para dashboard (testes falharam)')
-          router.push('/dashboard')
-          return
-        }
-        
-        // Se os testes passarem, tentar a query real
-        console.log('🔍 [LOGIN] Testes passaram, executando query real...')
-        
-        // Adicionar timeout para evitar travamento
-        const queryPromise = supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_uuid', data.user.id)
-          .single()
-
-        // Timeout de 10 segundos
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout na query SQL')), 10000)
-        })
-
-        let { data: roleData, error: roleError } = await Promise.race([queryPromise, timeoutPromise]) as any
-
-        console.log('🔍 [LOGIN] Resultado da busca por UUID:', { roleData, roleError })
-
-        if (roleError) {
-          console.log('🔄 [LOGIN] Erro na busca por UUID, tentando por email...')
-          
-          // Adicionar timeout para query por email também
-          const queryEmailPromise = supabase
-            .from('user_roles')
-            .select('role')
-            .eq('email', data.user.email)
+            .eq('user_uuid', data.user.id)
             .single()
 
-          const timeoutEmailPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout na query SQL por email')), 10000)
-          })
+          if (roleError) {
+            const { data: roleDataByEmail, error: roleErrorByEmail } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('email', data.user.email)
+              .single()
 
-          const { data: roleDataByEmail, error: roleErrorByEmail } = await Promise.race([queryEmailPromise, timeoutEmailPromise]) as any
+            if (roleErrorByEmail) {
+              router.push('/dashboard')
+              return
+            }
 
-          console.log('🔍 [LOGIN] Resultado da busca por email:', { roleDataByEmail, roleErrorByEmail })
-
-          if (roleErrorByEmail) {
-            console.warn('⚠️ [LOGIN] Erro ao buscar role por email também:', roleErrorByEmail)
-            console.log('🔄 [LOGIN] Redirecionando para dashboard (role não encontrado)')
-            router.push('/dashboard')
-            return
+            roleData = roleDataByEmail
           }
 
-          roleData = roleDataByEmail
-          roleError = null
+          userRole = roleData?.role || 'student'
         }
-
-        const userRole = roleData?.role || 'student'
-        console.log('✅ [LOGIN] Role encontrado:', userRole)
 
         // Redirecionar baseado no role
         let redirectPath = '/dashboard'
@@ -230,21 +86,16 @@ export default function LoginSimplePage() {
           redirectPath = '/dashboard'
         }
 
-        console.log('🔄 [LOGIN] Redirecionando para:', redirectPath)
         router.push(redirectPath)
-        */
 
       } catch (roleError) {
-        console.error('❌ [LOGIN] Erro inesperado ao buscar role:', roleError)
-        console.log('🔄 [LOGIN] Redirecionando para dashboard (erro no role)')
+        // Se houver erro ao buscar role, redirecionar para dashboard
         router.push('/dashboard')
       }
 
     } catch (error) {
-      console.error('❌ [LOGIN] Erro geral no login:', error)
       setError('Erro inesperado. Tente novamente.')
     } finally {
-      console.log('🏁 [LOGIN] Finalizando processo de login')
       setIsLoading(false)
     }
   }
@@ -264,57 +115,23 @@ export default function LoginSimplePage() {
       
       {/* Conteúdo do login */}
       <div className="relative z-10 w-full max-w-sm sm:max-w-md mx-auto">
-        {/* Efeito LED neon ao redor do card */}
+        {/* Efeito LED colorido girando na borda */}
         <div className="relative">
-          {/* LED neon animado */}
-          <div className="absolute -inset-1 rounded-2xl blur-sm opacity-75 animate-neon-clockwise"></div>
-          <div className="absolute -inset-1 rounded-2xl blur-sm opacity-75 animate-neon-clockwise" style={{animationDelay: '1.5s'}}></div>
+          {/* LED colorido girando no sentido horário */}
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-green-500 via-purple-500 via-pink-500 to-blue-500 animate-led-rotate opacity-75 blur-sm"></div>
           
-          <Card className="relative bg-black/80 backdrop-blur-xl border border-gray-800 shadow-2xl rounded-2xl">
+          <Card className="relative bg-black border border-gray-800 shadow-2xl rounded-2xl">
             <CardHeader className="text-center pb-6 sm:pb-8">
-              {/* Logo do Everest */}
+              {/* Título Everest Preparatórios */}
               <div className="flex flex-col items-center">
-                <div className="relative mb-4 sm:mb-6">
-                  {/* Círculo de fundo */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-lg opacity-30 animate-pulse"></div>
-                  
-                  {/* Logo container */}
-                  <div className="relative bg-black rounded-full p-3 sm:p-4 shadow-xl w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center border-2 border-blue-500 animate-border-color">
-                    <div className="text-center">
-                      {/* Montanha estilizada */}
-                      <div className="relative mb-1">
-                        <svg width="32" height="16" viewBox="0 0 32 16" className="mx-auto sm:w-10 sm:h-5">
-                          <defs>
-                            <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" style={{stopColor: '#3b82f6', stopOpacity: 1}} />
-                              <stop offset="100%" style={{stopColor: '#8b5cf6', stopOpacity: 1}} />
-                            </linearGradient>
-                          </defs>
-                          <path 
-                            d="M2 12 L8 5 L11 8 L16 3 L21 8 L24 5 L30 12 Z" 
-                            fill="none" 
-                            stroke="url(#mountainGradient)" 
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                          />
-                          <path 
-                            d="M11 8 L16 3 L21 8 L16 12 Z" 
-                            fill="url(#mountainGradient)"
-                          />
-                        </svg>
-                      </div>
-                      {/* Texto */}
-                      <div className="text-blue-400 font-bold text-[10px] sm:text-xs tracking-wide">everest</div>
-                      <div className="text-purple-400 text-[8px] sm:text-[10px] tracking-wide leading-tight">cursos preparatórios</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 via-green-400 to-purple-400 bg-clip-text text-transparent mb-2 animate-gradient-shift">
-                    Bem-vindo de volta
+                <div className="text-center mb-6">
+                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 via-green-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                    Everest Preparatórios
                   </h1>
-                  <p className="text-gray-300 text-xs sm:text-sm">
+                  <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 via-green-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                    Bem-vindo de volta
+                  </h2>
+                  <p className="text-gray-300 text-sm">
                     Faça login para acessar sua conta
                   </p>
                 </div>

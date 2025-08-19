@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, User, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { getUrlForRoute } from '@/lib/utils'
 
 export function UserInfo() {
   const { user, signOut, isLoading } = useAuth()
@@ -23,7 +24,7 @@ export function UserInfo() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => router.push('/login-simple')}>
+        <Button variant="outline" size="sm" onClick={() => router.push('/login')}>
           Entrar
         </Button>
       </div>
@@ -33,7 +34,8 @@ export function UserInfo() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      router.push('/login-simple')
+      // Redirecionar para a página inicial com URL completa baseada no ambiente
+      window.location.href = getUrlForRoute('/')
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
     }

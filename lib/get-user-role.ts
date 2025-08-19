@@ -23,8 +23,18 @@ export async function getUserRoleClient(userId: string): Promise<string> {
       return cached.role
     }
 
-    console.log('🔍 [ROLE] Buscando role no banco de dados...')
+    console.log('🔍 [ROLE] Tentando via RPC segura...')
+    // Primeiro tenta via RPC para evitar problemas de RLS
+    const { data: rpcRole, error: rpcError } = await supabase.rpc('get_role_for_current_user')
 
+    if (!rpcError && rpcRole) {
+      const roleFromRpc = (rpcRole as string) || 'student'
+      userRoleCache.set(userId, { role: roleFromRpc, timestamp: Date.now() })
+      console.log('✅ [ROLE] Role via RPC:', roleFromRpc)
+      return roleFromRpc
+    }
+
+    console.log('ℹ️ [ROLE] RPC falhou, caindo para SELECT direto...')
     // Buscar role usando UUID (campo user_uuid agora armazena UUID real)
     const { data, error } = await supabase
       .from('user_roles')
@@ -107,7 +117,17 @@ export async function getAuthAndRole(): Promise<{ user: any; role: string; isAut
       return { user: session.user, role: cached.role, isAuthenticated: true }
     }
     
-    // Buscar role usando UUID (campo user_uuid agora armazena UUID real)
+    // Primeiro tentar via RPC segura
+    const { data: rpcRole2, error: rpcError2 } = await supabase.rpc('get_role_for_current_user')
+
+    if (!rpcError2 && rpcRole2) {
+      const role = (rpcRole2 as string) || 'student'
+      console.log('✅ [AUTH] Role via RPC:', role)
+      userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
+      return { user: session.user, role, isAuthenticated: true }
+    }
+
+    // Fallback: SELECT direto
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')

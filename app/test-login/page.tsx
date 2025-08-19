@@ -84,7 +84,7 @@ export default function TestLoginPage() {
 
           <div className="flex gap-2">
             <a 
-              href="/login-simple" 
+                              href="/login" 
               className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 text-center"
             >
               Ir para Login
