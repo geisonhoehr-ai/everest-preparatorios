@@ -644,7 +644,7 @@ export default function SuportePage() {
                         open={expandedFaqs.has(faq.id)}
                         onOpenChange={() => toggleFAQ(faq.id)}
                       >
-                        <CollapsibleTrigger>
+                        <CollapsibleTrigger asChild>
                           <div className="w-full justify-between p-4 h-auto hover:bg-orange-50 dark:hover:bg-orange-950 flex items-center cursor-pointer">
                             <div className="text-left flex-1">
                               <div className="font-medium">{faq.question}</div>

@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getUserRoleClient } from './get-user-role'
+import { getUserRoleClient, getAuthAndRole } from './get-user-role'
 
 // Tipos simples
 export interface AuthUser {
@@ -17,128 +17,181 @@ export interface AuthState {
   isAuthenticated: boolean
 }
 
-// Hook MUITO SIMPLES
-export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isLoading: true,
-    isAuthenticated: false
-  })
+// Função para criar objeto de usuário a partir dos dados do Supabase
+const createUserObject = async (supabaseUser: any): Promise<AuthUser> => {
+  try {
+    // Buscar role do usuário
+    const userRole = await getUserRoleClient(supabaseUser.email)
+    
+    return {
+      id: supabaseUser.id || supabaseUser.user?.id || '',
+      email: supabaseUser.email || supabaseUser.user?.email || '',
+      role: userRole as 'student' | 'teacher' | 'admin'
+    }
+  } catch (error) {
+    console.error('❌ [AUTH] Erro ao criar objeto do usuário:', error)
+    // Retornar usuário com role padrão em caso de erro
+    return {
+      id: supabaseUser.id || supabaseUser.user?.id || '',
+      email: supabaseUser.email || supabaseUser.user?.email || '',
+      role: 'student'
+    }
+  }
+}
 
-  const supabase = createClient()
-  const isInitialized = useRef(false)
+// Cache para evitar múltiplas requisições de role
+const roleCache = new Map<string, { role: string; timestamp: number }>()
+const ROLE_CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
 
-  // Função para obter role do usuário
+  // Hook MUITO SIMPLES
+  export function useAuth() {
+    const [authState, setAuthState] = useState<AuthState>({
+      user: null,
+      isLoading: true,
+      isAuthenticated: false
+    })
+    
+    const [role, setRole] = useState<string>('student')
+    const [isInitialized, setIsInitialized] = useState(false)
+    
+    // Instância do Supabase
+    const supabase = createClient()
+  
+  // Cache de roles otimizado
+  const roleCache = new Map<string, { role: string; timestamp: number }>()
+  const ROLE_CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+  
+  // Controle de verificações duplicadas
+  const lastUpdateTime = useRef(0)
+  const updateThrottle = 200 // Aumentado para 200ms para reduzir verificações
+  const isCheckingSession = useRef(false)
+  const sessionCheckPromise = useRef<Promise<any> | null>(null)
+
   const getUserRole = useCallback(async (userEmail: string): Promise<string> => {
+    // Verificar cache primeiro
+    const cached = roleCache.get(userEmail)
+    if (cached && Date.now() - cached.timestamp < ROLE_CACHE_DURATION) {
+      console.log('✅ [AUTH] Usando cache para role:', cached.role)
+      return cached.role
+    }
+    
+    console.log('🔍 [AUTH] Buscando role para:', userEmail)
+    const role = await getUserRoleClient(userEmail)
+    roleCache.set(userEmail, { role, timestamp: Date.now() })
+    return role
+  }, [])
+
+  const clearRoleCache = useCallback(() => {
+    roleCache.clear()
+    console.log('🧹 [AUTH] Cache de roles limpo')
+  }, [])
+
+  // Verificação de sessão otimizada
+  const checkSession = useCallback(async () => {
+    if (isCheckingSession.current && sessionCheckPromise.current) {
+      console.log('⏭️ [AUTH] Verificação de sessão já em andamento, aguardando...')
+      return sessionCheckPromise.current
+    }
+
+    isCheckingSession.current = true
+    sessionCheckPromise.current = getAuthAndRole()
+    
     try {
-      console.log('🔍 [AUTH] Buscando role para:', userEmail)
-      const role = await getUserRoleClient(userEmail)
-      console.log('✅ [AUTH] Role encontrada:', role)
-      return role
-    } catch (error) {
-      console.error('❌ [AUTH] Erro ao obter role:', {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        type: typeof error,
-        error: error
-      })
-      return 'student' // fallback
+      const result = await sessionCheckPromise.current
+      return result
+    } finally {
+      isCheckingSession.current = false
+      sessionCheckPromise.current = null
     }
   }, [])
 
-  // Função para criar objeto de usuário
-  const createUserObject = useCallback(async (sessionUser: any): Promise<AuthUser> => {
-    try {
-      const userRole = await getUserRole(sessionUser.email || '')
-      return {
-        id: sessionUser.id,
-        email: sessionUser.email || '',
-        role: userRole as 'student' | 'teacher' | 'admin'
-      }
-    } catch (error) {
-      console.error('❌ [AUTH] Erro ao criar objeto de usuário:', {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        type: typeof error,
-        error: error
-      })
-      // Retornar usuário com role padrão em caso de erro
-      return {
-        id: sessionUser.id,
-        email: sessionUser.email || '',
-        role: 'student'
-      }
-    }
-  }, [getUserRole])
-
   useEffect(() => {
-    // Evitar múltiplas inicializações
-    if (isInitialized.current) return
-    isInitialized.current = true
-
-    console.log('🔧 [AUTH] Iniciando verificação de sessão...')
+    let mounted = true
     
-    // Verificar sessão uma única vez
-    const checkSession = async () => {
+    const initializeAuth = async () => {
+      if (!mounted) return
+      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('🔧 [AUTH] Iniciando verificação de sessão...')
+        const { user, role: userRole, isAuthenticated } = await checkSession()
         
-        if (error) {
-          console.error('❌ [AUTH] Erro:', error)
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false
-          })
-          return
-        }
+        if (!mounted) return
         
-        if (session?.user) {
-          console.log('✅ [AUTH] Sessão encontrada:', session.user.email)
-          
-          const user = await createUserObject(session.user)
-          console.log('👤 [AUTH] Usuário carregado:', user)
-          
+        if (isAuthenticated && user) {
+          setRole(userRole)
           setAuthState({
             user,
             isLoading: false,
             isAuthenticated: true
           })
         } else {
-          console.log('❌ [AUTH] Nenhuma sessão')
           setAuthState({
             user: null,
             isLoading: false,
             isAuthenticated: false
           })
         }
+        
+        setIsInitialized(true)
       } catch (error) {
-        console.error('❌ [AUTH] Erro:', error)
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false
-        })
+        console.error('❌ [AUTH] Erro na inicialização:', error)
+        if (mounted) {
+          setAuthState({
+            user: null,
+            isLoading: false,
+            isAuthenticated: false
+          })
+          setIsInitialized(true)
+        }
       }
     }
 
-    checkSession()
+    initializeAuth()
 
-    // Escutar mudanças
+    return () => {
+      mounted = false
+    }
+  }, [checkSession])
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
-        console.log('🔄 [AUTH] Evento:', event, session?.user?.email)
-        
+        // Throttling mais agressivo para evitar eventos duplicados
+        const now = Date.now()
+        if (now - lastUpdateTime.current < updateThrottle) {
+          console.log('⏭️ [AUTH] Evento ignorado (throttle):', event)
+          return
+        }
+        lastUpdateTime.current = now
+
+        console.log('🔄 [AUTH] Auth event:', event, session?.user?.email)
+
         if (event === 'SIGNED_IN' && session?.user) {
+          clearRoleCache() // Limpar cache ao fazer login
           const user = await createUserObject(session.user)
+          const userRole = await getUserRole(session.user.email)
+          
+          setRole(userRole)
           setAuthState({
             user,
             isLoading: false,
             isAuthenticated: true
           })
         } else if (event === 'SIGNED_OUT') {
+          clearRoleCache() // Limpar cache ao fazer logout
+          setRole('student')
           setAuthState({
             user: null,
             isLoading: false,
             isAuthenticated: false
+          })
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Atualizar usuário sem limpar cache
+          const user = await createUserObject(session.user)
+          setAuthState({
+            user,
+            isLoading: false,
+            isAuthenticated: true
           })
         }
       }
@@ -146,9 +199,8 @@ export function useAuth() {
 
     return () => {
       subscription.unsubscribe()
-      isInitialized.current = false
     }
-  }, [createUserObject])
+  }, [createUserObject, getUserRole, clearRoleCache])
 
   // Funções simples
   const signIn = async (email: string, password: string) => {
@@ -196,6 +248,7 @@ export function useAuth() {
   const signOut = async () => {
     try {
       console.log('🚪 [AUTH] Logout')
+      clearRoleCache() // Limpar cache ao fazer logout
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       return { success: true }
@@ -205,10 +258,35 @@ export function useAuth() {
     }
   }
 
+  const refresh = async () => {
+    try {
+      console.log('🔄 [AUTH] Refresh')
+      clearRoleCache() // Limpar cache ao fazer refresh
+      if (authState.user) {
+        const user = await createUserObject(authState.user)
+        setAuthState({
+          user,
+          isLoading: false,
+          isAuthenticated: true
+        })
+      }
+      return { success: true }
+    } catch (error: any) {
+      console.error('❌ [AUTH] Erro refresh:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
   return {
     ...authState,
+    role,
+    isInitialized,
+    isTeacher: role === 'teacher',
+    isAdmin: role === 'admin',
+    isStudent: role === 'student',
     signIn,
     signUp,
-    signOut
+    signOut,
+    refresh
   }
 } 

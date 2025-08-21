@@ -150,7 +150,7 @@ export default function TestSessionPage() {
         <CardContent className="space-y-2">
           <div className="text-sm space-y-1">
             <p><strong>1.</strong> Vá no painel do Supabase</p>
-            <p><strong>2.</strong> Authentication > Settings</p>
+            <p><strong>2.</strong> Authentication &gt; Settings</p>
             <p><strong>3.</strong> Procure por "JWT Settings" ou "Token Settings"</p>
             <p><strong>4.</strong> Configure "JWT Expiry" para 30 dias</p>
             <p><strong>5.</strong> Configure "Refresh Token Rotation" para 30 dias</p>

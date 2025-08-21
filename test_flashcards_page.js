@@ -1,5 +1,6 @@
 require('dotenv').config({ path: '.env.local' })
 const { createClient } = require('@supabase/supabase-js')
+const puppeteer = require('puppeteer');
 
 // Configuração do Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -74,28 +75,81 @@ async function loadSubjects() {
 }
 
 async function testFlashcardsPage() {
-  console.log("🔍 Testando simulação da página de flashcards...")
+  console.log('🧪 [TEST] Iniciando teste da página de flashcards...');
+  
+  const browser = await puppeteer.launch({ 
+    headless: false,
+    defaultViewport: { width: 1280, height: 720 }
+  });
   
   try {
-    const subjects = await loadSubjects()
+    const page = await browser.newPage();
     
-    console.log("📊 Resultado final:")
-    console.log("Subjects:", subjects)
-    console.log("Length:", subjects.length)
+    // Interceptar requisições para debug
+    page.on('request', request => {
+      console.log(`🌐 [TEST] Request: ${request.method()} ${request.url()}`);
+    });
     
-    if (subjects && subjects.length > 0) {
-      console.log("✅ Subjects carregados com sucesso!")
-      subjects.forEach(subject => {
-        console.log(`  - ID: ${subject.id}, Nome: ${subject.name}`)
-      })
+    page.on('response', response => {
+      console.log(`📡 [TEST] Response: ${response.status()} ${response.url()}`);
+    });
+    
+    // Interceptar console logs
+    page.on('console', msg => {
+      console.log(`📝 [TEST] Console: ${msg.type()} ${msg.text()}`);
+    });
+    
+    // Interceptar erros
+    page.on('pageerror', error => {
+      console.error(`❌ [TEST] Page Error: ${error.message}`);
+    });
+    
+    console.log('🧪 [TEST] Navegando para /flashcards...');
+    await page.goto('http://localhost:3000/flashcards', { 
+      waitUntil: 'networkidle2',
+      timeout: 30000 
+    });
+    
+    console.log('🧪 [TEST] Aguardando carregamento...');
+    await page.waitForTimeout(5000);
+    
+    // Verificar se há conteúdo visível
+    const hasContent = await page.evaluate(() => {
+      const body = document.body;
+      const hasText = body.textContent && body.textContent.trim().length > 0;
+      const hasElements = body.children.length > 0;
+      const hasFlashcardsText = body.textContent.includes('Flashcards');
+      
+      return {
+        hasText,
+        hasElements,
+        hasFlashcardsText,
+        bodyText: body.textContent.substring(0, 200),
+        childrenCount: body.children.length
+      };
+    });
+    
+    console.log('📊 [TEST] Resultado da verificação:', hasContent);
+    
+    // Tirar screenshot
+    await page.screenshot({ 
+      path: 'flashcards-page-test.png',
+      fullPage: true 
+    });
+    
+    console.log('📸 [TEST] Screenshot salvo como flashcards-page-test.png');
+    
+    if (hasContent.hasFlashcardsText) {
+      console.log('✅ [TEST] Página carregou corretamente!');
     } else {
-      console.log("⚠️ Nenhum subject foi carregado")
+      console.log('❌ [TEST] Página não carregou corretamente');
     }
     
   } catch (error) {
-    console.error("❌ Erro no teste:", error)
+    console.error('❌ [TEST] Erro durante o teste:', error);
+  } finally {
+    await browser.close();
   }
 }
 
-// Executar o teste
-testFlashcardsPage() 
+testFlashcardsPage(); 

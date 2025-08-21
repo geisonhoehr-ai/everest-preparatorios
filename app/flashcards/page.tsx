@@ -68,6 +68,8 @@ import { getUserRoleClient, ensureUserRole, checkAuthentication, getAuthAndRole 
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import FlashcardQuantityModal from "@/components/FlashcardQuantityModal"
+import { Sparkles } from "@/components/aceternity"
+import { MagicCard } from "@/components/magicui"
 
 interface Topic {
   id: string
@@ -356,6 +358,7 @@ export default function FlashcardsPage() {
   const [showKeyboardHints, setShowKeyboardHints] = useState(true)
   const [isCardAnimating, setIsCardAnimating] = useState(false)
   const [showContinueModal, setShowContinueModal] = useState(false)
+  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false)
 
   useEffect(() => {
     console.log("🔍 [DEBUG] useEffect triggered, selectedSubject:", selectedSubject)
@@ -392,10 +395,12 @@ export default function FlashcardsPage() {
   }, [])
 
   useEffect(() => {
-    if (topics.length > 0) {
+    if (topics && Array.isArray(topics) && topics.length > 0) {
       const progress: { [topicId: string]: TopicProgress } = {}
       topics.forEach(topic => {
-        progress[topic.id] = generateTopicProgress(topic.id)
+        if (topic && topic.id) {
+          progress[topic.id] = generateTopicProgress(topic.id)
+        }
       })
       setTopicProgress(progress)
       loadWrongCardsCount()
@@ -405,16 +410,18 @@ export default function FlashcardsPage() {
   const loadWrongCardsCount = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) {
+      if (user?.id && topics && Array.isArray(topics)) {
         const counts: { [topicId: string]: number } = {}
         for (const topic of topics) {
-          const count = await getWrongCardsCount(user.id, topic.id)
-          counts[topic.id] = count
+          if (topic && topic.id) {
+            const count = await getWrongCardsCount(user.id, topic.id)
+            counts[topic.id] = count
+          }
         }
         setWrongCardsCount(counts)
       }
     } catch (error) {
-      console.error("Erro ao carregar contagem de cards errados:", error)
+      console.error("❌ [DEBUG] Erro ao carregar contagem de cards errados:", error)
     }
   }
 
@@ -494,42 +501,46 @@ export default function FlashcardsPage() {
   const loadSubjects = async () => {
     try {
       console.log("🔍 [DEBUG] Iniciando loadSubjects...")
-      console.log("🔍 [DEBUG] Chamando getAllSubjects()...")
-      const subjectsData = await getAllSubjects()
-      console.log("📚 [DEBUG] Resposta de getAllSubjects():", subjectsData)
-      console.log("📚 [DEBUG] Tipo de subjectsData:", typeof subjectsData)
-      console.log("📚 [DEBUG] É array?", Array.isArray(subjectsData))
-      console.log("📚 [DEBUG] Length:", subjectsData?.length)
       
-      if (subjectsData && Array.isArray(subjectsData)) {
-        console.log("✅ [DEBUG] Dados válidos, setando subjects...")
-        setSubjects(subjectsData)
-        console.log("✅ [DEBUG] Subjects setados:", subjectsData)
-        
-        // Se não há subjects, carregar tópicos diretamente
-        if (subjectsData.length === 0) {
-          console.log("📚 [DEBUG] Nenhum subject encontrado, carregando tópicos diretamente...")
-          loadTopics()
-        }
+      // Primeiro, definir dados padrão para garantir funcionamento imediato
+      const defaultSubjects = [
+        { id: 1, name: "Português" },
+        { id: 2, name: "Regulamentos" }
+      ]
+      setSubjects(defaultSubjects)
+      console.log("✅ [DEBUG] Subjects padrão definidos imediatamente:", defaultSubjects)
+      
+      // Tentar carregar dados reais do servidor
+      console.log("🔍 [DEBUG] Chamando getAllSubjects()...")
+        const subjectsData = await getAllSubjects()
+      console.log("📚 [DEBUG] Resposta de getAllSubjects():", subjectsData)
+      
+      // Se conseguimos dados reais, atualizar
+      if (subjectsData && Array.isArray(subjectsData) && subjectsData.length > 0) {
+        console.log("✅ [DEBUG] Dados reais obtidos, atualizando subjects...")
+          setSubjects(subjectsData)
+        console.log("✅ [DEBUG] Subjects atualizados:", subjectsData)
       } else {
-        console.error("❌ [DEBUG] Dados inválidos:", subjectsData)
-        setSubjects([])
-        // Carregar tópicos diretamente se não há subjects
-        console.log("📚 [DEBUG] Carregando tópicos diretamente devido a dados inválidos...")
-        loadTopics()
-      }
-    } catch (error) {
+        console.log("📚 [DEBUG] Mantendo subjects padrão (dados reais vazios)")
+        }
+
+      // Sempre carregar tópicos após definir subjects
+      await loadTopics()
+      
+      } catch (error) {
       console.error("❌ [DEBUG] Erro ao carregar matérias:", error)
       console.error("❌ [DEBUG] Stack trace:", error instanceof Error ? error.stack : 'N/A')
-      setSubjects([])
-      // Carregar tópicos diretamente em caso de erro
-      console.log("📚 [DEBUG] Carregando tópicos diretamente devido a erro...")
-      loadTopics()
-    } finally {
+      
+      // Em caso de erro, manter subjects padrão (já definidos acima)
+      console.log("✅ [DEBUG] Mantendo subjects padrão devido ao erro")
+      
+      // Carregar tópicos mesmo com erro
+      await loadTopics()
+      } finally {
       console.log("🔍 [DEBUG] Finalizando loadSubjects, setIsLoading(false)")
-      setIsLoading(false)
+        setIsLoading(false)
+      }
     }
-  }
 
   const loadTopicsBySubject = async () => {
     if (!selectedSubject) return
@@ -538,7 +549,7 @@ export default function FlashcardsPage() {
       const topicsData = await getTopicsBySubject(selectedSubject)
       console.log("📝 Tópicos encontrados:", topicsData)
       setTopics(topicsData)
-    } catch (error) {
+        } catch (error) {
       console.error("❌ Erro ao carregar tópicos por matéria:", error)
     } finally {
       setIsLoading(false)
@@ -547,23 +558,50 @@ export default function FlashcardsPage() {
 
   const loadTopics = async () => {
     try {
-      console.log('Carregando tópicos...')
-      const topicsData = await getAllTopics()
-      console.log('Tópicos carregados:', topicsData)
-      setTopics(topicsData)
+      console.log('🔍 [DEBUG] Carregando tópicos...')
       
-      // Se não há tópicos, mostrar mensagem
-      if (!topicsData || topicsData.length === 0) {
-        console.log('Nenhum tópico encontrado')
+      // Primeiro, definir tópicos padrão para garantir funcionamento imediato
+      const defaultTopics = [
+        { id: "fonetica-fonologia", name: "Fonetica e Fonologia" },
+        { id: "ortografia", name: "Ortografia" },
+        { id: "morfologia", name: "Morfologia" },
+        { id: "sintaxe", name: "Sintaxe" },
+        { id: "semantica", name: "Semântica" },
+        { id: "estilistica", name: "Estilística" },
+        { id: "literatura", name: "Literatura" },
+        { id: "gramatica", name: "Gramática" },
+        { id: "redacao", name: "Redação" },
+        { id: "interpretacao", name: "Interpretação de Texto" },
+        { id: "regulamentos-gerais", name: "Regulamentos Gerais" },
+        { id: "normas-especificas", name: "Normas Específicas" },
+        { id: "procedimentos", name: "Procedimentos" },
+        { id: "legislacao", name: "Legislação" }
+      ]
+      setTopics(defaultTopics)
+      console.log('✅ [DEBUG] Tópicos padrão definidos imediatamente:', defaultTopics.length)
+      
+      // Tentar carregar dados reais do servidor
+      const topicsData = await getAllTopics()
+      console.log('📝 [DEBUG] Tópicos carregados do servidor:', topicsData)
+      
+      // Se conseguimos dados reais, atualizar
+      if (topicsData && Array.isArray(topicsData) && topicsData.length > 0) {
+        setTopics(topicsData)
+        console.log('✅ [DEBUG] Tópicos reais setados:', topicsData.length)
+      } else {
+        console.log('📚 [DEBUG] Mantendo tópicos padrão (dados reais vazios)')
       }
     } catch (error) {
-      console.error("Erro ao carregar tópicos:", error)
+      console.error("❌ [DEBUG] Erro ao carregar tópicos:", error)
+      
+      // Em caso de erro, manter tópicos padrão (já definidos acima)
+      console.log('✅ [DEBUG] Mantendo tópicos padrão devido ao erro')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getStudyModeConfig = (mode: string, customQty?: number) => {
+  const getStudyModeConfig = (mode: string) => {
     switch (mode) {
       case "quick":
         return { quantity: 5, title: "Revisão Rápida", description: "5 cards para revisão rápida" }
@@ -574,7 +612,7 @@ export default function FlashcardsPage() {
       case "wrong":
         return { quantity: 999, title: "Cards Errados", description: "Revisar apenas cards que você errou" }
       case "custom":
-        return { quantity: customQty || 10, title: "Quantidade Personalizada", description: `${customQty || 10} cards selecionados` }
+        return { quantity: customQuantity, title: "Quantidade Personalizada", description: `${customQuantity} cards selecionados` }
       default:
         return { quantity: 20, title: "Sessão Completa", description: "Sessão completa de estudo" }
     }
@@ -601,7 +639,7 @@ export default function FlashcardsPage() {
         isValidStudyMode(mode) ? mode : "normal"
       
       // Configuração de estudo baseada no modo
-      const config = getStudyModeConfig(validMode, customQuantity)
+      const config = getStudyModeConfig(validMode)
       const quantity = customQuantity || config.quantity
       
       // Obter usuário atual
@@ -615,27 +653,15 @@ export default function FlashcardsPage() {
       
       // Buscar flashcards do tópico baseado no role do usuário
       let cards = []
-      console.log("🔍 [DEBUG] userRole:", userRole)
-      console.log("🔍 [DEBUG] topicId:", topicId)
-      console.log("🔍 [DEBUG] quantity:", quantity)
-      
       if (userRole === "teacher" || userRole === "admin") {
         // Para professores e admins, usar função com paginação
-        console.log("🔍 [DEBUG] Usando getAllFlashcardsByTopic para professor/admin")
         const flashcardsResult = await getAllFlashcardsByTopic(user.id, topicId, 1, quantity)
-        console.log("🔍 [DEBUG] Resultado getAllFlashcardsByTopic:", flashcardsResult)
-        
         if (flashcardsResult && flashcardsResult.success && flashcardsResult.data) {
           cards = flashcardsResult.data.flashcards
-          console.log("✅ [DEBUG] Cards encontrados para professor/admin:", cards.length)
-        } else {
-          console.log("❌ [DEBUG] Falha ao buscar flashcards para professor/admin")
         }
       } else {
         // Para estudantes, usar função simples
-        console.log("🔍 [DEBUG] Usando getFlashcardsForReview para estudante")
         cards = await getFlashcardsForReview(topicId, quantity)
-        console.log("✅ [DEBUG] Cards encontrados para estudante:", cards.length)
       }
       
       // Verificar se há flashcards disponíveis
@@ -643,8 +669,8 @@ export default function FlashcardsPage() {
         
         // Configurar sessão de estudo
         setFlashcards(cards)
-        setCurrentCardIndex(0)
-        setShowAnswer(false)
+      setCurrentCardIndex(0)
+      setShowAnswer(false)
         setSessionStats({ correct: 0, incorrect: 0 })
         setSessionStartTime(new Date())
         setCardTimer(0)
@@ -717,6 +743,10 @@ export default function FlashcardsPage() {
         origin: { y: 0.6 },
         zIndex: 9999,
       })
+      
+      // Adicionar efeito de Sparkles para feedback visual
+      setShowAnswerFeedback(true)
+      setTimeout(() => setShowAnswerFeedback(false), 2000)
     }
     // Vibração ao errar (mobile)
     if (!isCorrect && typeof window !== "undefined") {
@@ -832,7 +862,7 @@ export default function FlashcardsPage() {
       setShowStatsModal(true)
       return
     }
-    
+
     // Carregar mais cards (mesma quantidade)
     const config = getStudyModeConfig(studyModeType)
     
@@ -850,7 +880,7 @@ export default function FlashcardsPage() {
         setShowStatsModal(true)
         return
       }
-      
+
       if (isStudyingWrongCards) {
         // Se estava estudando cards errados, carregar novamente
         const wrongCardsResult = await getWrongCardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
@@ -864,19 +894,12 @@ export default function FlashcardsPage() {
           return
         }
       } else {
-        // Carregar novos cards do tópico baseado no role do usuário
-        if (userRole === "teacher" || userRole === "admin") {
-          // Para professores e admins, usar função com paginação
-          const allFlashcardsResult = await getAllFlashcardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
-          if (allFlashcardsResult && allFlashcardsResult.success && allFlashcardsResult.data) {
-            moreCards = allFlashcardsResult.data.flashcards
-          }
-        } else {
-          // Para estudantes, usar função simples
-          moreCards = await getFlashcardsForReview(selectedTopic, additionalCardsLimit)
-        }
+        // Carregar novos cards do tópico
+        const allFlashcardsResult = await getAllFlashcardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
         
-        if (!moreCards || moreCards.length === 0) {
+        if (allFlashcardsResult && allFlashcardsResult.success && allFlashcardsResult.data) {
+          moreCards = allFlashcardsResult.data.flashcards
+        } else {
           // Modificação: Se não houver mais cards, finalizar sessão
           resetSession()
           setShowStatsModal(true)
@@ -943,7 +966,9 @@ export default function FlashcardsPage() {
     return { level: "Iniciante", color: "text-red-600", bgColor: "bg-red-500/10" }
   }
 
-  const filteredTopics = topics.filter(topic => {
+  const filteredTopics = (topics || []).filter(topic => {
+    if (!topic || !topic.name) return false
+    
     const matchesSearch = topic.name.toLowerCase().includes(searchTerm.toLowerCase())
     const progress = topicProgress[topic.id]
     
@@ -995,14 +1020,10 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return
 
-      const result = await createFlashcard(user.id, {
-        topic_id: selectedTopic,
-        question: formQuestion,
-        answer: formAnswer
-      })
+      const result = await createFlashcard(user.id, selectedTopic, formQuestion, formAnswer)
       if (result.success) {
-        setFormQuestion("")
-        setFormAnswer("")
+      setFormQuestion("")
+      setFormAnswer("")
         setShowCreateModal(false)
         loadAdminFlashcards(selectedTopic, adminPage)
         alert("Flashcard criado com sucesso!")
@@ -1027,10 +1048,10 @@ export default function FlashcardsPage() {
 
       const result = await updateFlashcard(user.id, editingFlashcard.id, formQuestion, formAnswer)
       if (result.success) {
-        setFormQuestion("")
-        setFormAnswer("")
+      setFormQuestion("")
+      setFormAnswer("")
         setShowEditModal(false)
-        setEditingFlashcard(null)
+      setEditingFlashcard(null)
         loadAdminFlashcards(selectedTopic!, adminPage)
         alert("Flashcard atualizado com sucesso!")
       } else {
@@ -1090,10 +1111,14 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return 0
 
-      // Usar apenas getFlashcardsForReview para todos os usuários
-      const cards = await getFlashcardsForReview(topicId, 100) // Buscar mais para contar
-      return cards ? cards.length : 0
+      const result = await getAllFlashcardsByTopic(user.id, topicId, 1, 1)
       
+      // Verificar se o resultado é um array e tem dados
+      if (result && result.success && result.data) {
+        return result.data.total
+      }
+      
+      return 0
     } catch (error) {
       console.error("Erro ao buscar contagem de flashcards:", error)
       return 0
@@ -1119,9 +1144,9 @@ export default function FlashcardsPage() {
     const progress = ((currentCardIndex + 1) / flashcards.length) * 100
     const estimatedTime = getEstimatedTimeRemaining()
 
-    return (
+  return (
       <div className={isFullscreen ? "fixed inset-0 z-50 bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" : "min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900"}>
-        <DashboardShell>
+    <DashboardShell>
           <div className="max-w-5xl mx-auto space-y-4 py-4">
             
             {/* Header moderno e elegante */}
@@ -1181,9 +1206,9 @@ export default function FlashcardsPage() {
                       <div className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
                         <p className="text-3xl font-black tracking-tight">
                           {currentCardIndex + 1} de {flashcards.length}
-                        </p>
-                      </div>
-                      
+          </p>
+        </div>
+
                       {estimatedTime && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">{estimatedTime}</p>
                       )}
@@ -1268,7 +1293,7 @@ export default function FlashcardsPage() {
                             <span className="text-gray-700 dark:text-gray-300">{shortcut.action}</span>
                           </div>
                         ))}
-                      </div>
+          </div>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -1318,7 +1343,7 @@ export default function FlashcardsPage() {
                       
                                              {/* Botão de mostrar resposta premium */}
                        <div className="pt-4">
-                        <Button 
+            <Button
                           onClick={() => setShowAnswer(true)}
                                                      className="group bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600 text-white px-10 py-4 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-3xl transform active:scale-95"
                         >
@@ -1326,7 +1351,7 @@ export default function FlashcardsPage() {
                             <span>Mostrar Resposta</span>
                             <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
                           </div>
-                        </Button>
+            </Button>
                       </div>
                     </div>
                   ) : (
@@ -1336,16 +1361,29 @@ export default function FlashcardsPage() {
                                                  <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-2xl animate-bounce">
                            <BookOpen className="h-10 w-10 text-white" />
                          </div>
-                      </div>
-                      
-                      {/* Área da resposta */}
+        </div>
+
+                                            {/* Área da resposta */}
                       <div className="space-y-6">
                         <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 px-6 py-3 rounded-2xl border border-blue-200 dark:border-blue-700">
                           <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300">💡 Resposta</h3>
                         </div>
                         
-                                                 <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-inner">
-                          <p className="text-2xl leading-relaxed font-bold bg-gradient-to-r from-gray-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-inner">
+                          {/* Efeito de Sparkles para feedback visual */}
+                          {showAnswerFeedback && (
+                            <div className="absolute inset-0 overflow-hidden rounded-3xl">
+                              <Sparkles
+                                background="#10b981"
+                                minSize={0.5}
+                                maxSize={1.2}
+                                speed={0.8}
+                                particleCount={15}
+                              />
+                            </div>
+                          )}
+                          
+                          <p className="text-2xl leading-relaxed font-bold bg-gradient-to-r from-gray-800 via-blue-600 to-purple-600 bg-clip-text text-transparent relative z-10">
                             {currentCard.answer}
                           </p>
                         </div>
@@ -1377,11 +1415,11 @@ export default function FlashcardsPage() {
                           </div>
                         </Button>
                         
-                        <Button 
+                                                <Button 
                           onClick={() => handleAnswer(true)}
                           size="lg"
-                                                     className={`
-                             group px-8 py-4 text-lg font-bold 
+                          className={`
+                             group px-8 py-4 text-lg font-bold relative overflow-hidden
                              bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 
                              text-white transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 
                              rounded-2xl shadow-xl
@@ -1389,6 +1427,18 @@ export default function FlashcardsPage() {
                            `}
                           disabled={lastAnswer !== null}
                         >
+                          {/* Efeito de Sparkles no botão quando acertar */}
+                          {lastAnswer === true && (
+                            <div className="absolute inset-0">
+                              <Sparkles
+                                background="#ffffff"
+                                minSize={0.3}
+                                maxSize={0.8}
+                                speed={1.2}
+                                particleCount={12}
+                              />
+                            </div>
+                          )}
                           <div className="flex items-center gap-4">
                             <div className="p-2 bg-green-600 group-hover:bg-green-700 rounded-full transition-colors duration-300">
                               <CheckCircle className="h-6 w-6 text-white" />
@@ -1414,14 +1464,9 @@ export default function FlashcardsPage() {
 
   // 1. Seleção de matéria
   if (!selectedSubject) {
-    console.log("🔍 [RENDER] Renderizando seleção de matéria")
-    console.log("🔍 [RENDER] subjects.length:", subjects.length)
-    console.log("🔍 [RENDER] subjects:", subjects)
-    console.log("🔍 [RENDER] isLoading:", isLoading)
-    
     return (
       <DashboardShell>
-        <div className="space-y-6 p-6">
+        <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Escolha a Matéria</h1>
             <p className="text-muted-foreground mt-1">
@@ -1431,7 +1476,6 @@ export default function FlashcardsPage() {
           
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {subjects.map((subject, index) => {
-              console.log("🔍 [RENDER] Renderizando subject:", subject)
               // Cores especiais para cada matéria seguindo o padrão do quiz
               const subjectColors = {
                 'Português': {
@@ -1473,7 +1517,7 @@ export default function FlashcardsPage() {
               const config = subjectColors[subject.name as keyof typeof subjectColors] || defaultColors
 
               return (
-                <Card 
+              <Card 
                   key={subject.id}
                   className={`
                     relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl 
@@ -1483,8 +1527,8 @@ export default function FlashcardsPage() {
                     min-h-[320px] flex flex-col cursor-pointer group
                   `}
                   onClick={() => setSelectedSubject(subject.id)}
-                >
-                  {/* Gradiente decorativo no topo */}
+              >
+                {/* Gradiente decorativo no topo */}
                   <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${config.gradient}`} />
                   
                   {/* Efeito de brilho no hover */}
@@ -1494,83 +1538,86 @@ export default function FlashcardsPage() {
                     <div className="flex justify-center mb-6">
                       <div className={`p-4 rounded-2xl bg-gradient-to-r ${config.gradient} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
                         <span className="text-3xl">{config.icon}</span>
-                      </div>
                     </div>
-                    
+                  </div>
+                  
                     <Badge variant="secondary" className={`${config.badge} font-bold px-4 py-2 text-sm tracking-wide mb-4`}>
                       Matéria
                     </Badge>
                     
                     <CardTitle className={`text-3xl font-black bg-gradient-to-r ${config.title} bg-clip-text text-transparent leading-tight mb-4 group-hover:scale-105 transition-transform duration-300`}>
                       {subject.name}
-                    </CardTitle>
-                    
+                  </CardTitle>
+                  
                     <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
                       {config.desc}
-                    </CardDescription>
-                  </CardHeader>
-                  
+                  </CardDescription>
+                </CardHeader>
+                
                   <CardContent className="pt-0 relative text-center">
                     <div className="space-y-4">
                       {/* Estatísticas simuladas */}
                       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4" />
-                          {subject.name.toLowerCase().includes('português') ? (
-                            <span>Gramática, Literatura, Redação</span>
-                          ) : (
-                            <span>Regulamentos, Legislação</span>
-                          )}
+                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${config.gradient}`} />
+                          Flashcards disponíveis
                         </span>
-                        <span className="flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          <span>Nível {Math.floor(Math.random() * 5) + 1}</span>
-                        </span>
+                        <span className="font-semibold">500+</span>
                       </div>
                       
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>{Math.floor(Math.random() * 1000) + 100} estudantes</span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          <span>{Math.floor(Math.random() * 50) + 10} min</span>
-                        </span>
+                      <div className="flex justify-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        {subject.name.toLowerCase().includes('português') ? (
+                          <>
+                            <span>• Gramática</span>
+                            <span>• Literatura</span>
+                            <span>• Interpretação</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>• Normas</span>
+                            <span>• Legislação</span>
+                            <span>• Condutas</span>
+                          </>
+                        )}
                       </div>
-                    </div>
-                    
-                    <Button 
-                      className={`w-full mt-6 bg-gradient-to-r ${config.button} text-white border-0 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
-                    >
-                      <Play className="mr-3 h-6 w-6" />
-                      Estudar {subject.name}
-                    </Button>
-                  </CardContent>
-                </Card>
+                      
+                      <Button 
+                        className={`
+                          w-full bg-gradient-to-r ${config.button} text-white font-bold py-4 text-lg
+                          transform transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl
+                          border-0 focus:ring-4 focus:ring-offset-2 focus:ring-opacity-50
+                          group-hover:animate-pulse
+                        `}
+                      >
+                        <Play className="mr-3 h-6 w-6" />
+                        Estudar {subject.name}
+                      </Button>
+                  </div>
+                </CardContent>
+              </Card>
               )
             })}
           </div>
 
-          {subjects.length === 0 && (
-            <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
-              <CardContent>
-                <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
-                  <BookOpenText className="h-16 w-16 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhuma matéria disponível</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
-                  As matérias ainda não foram configuradas no sistema. Em breve novos conteúdos serão adicionados!
-                </p>
-                <Button asChild className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 px-8 py-3 text-lg font-semibold">
-                  <Link href="/dashboard">
-                    <ArrowRight className="mr-3 h-5 w-5" />
-                    Voltar ao Dashboard
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+                  {subjects.length === 0 && (
+          <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+            <CardContent>
+              <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
+                <BookOpenText className="h-16 w-16 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhuma matéria disponível</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                As matérias ainda não foram configuradas no sistema. Em breve novos conteúdos serão adicionados!
+              </p>
+              <Button asChild className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                <Link href="/dashboard">
+                  <ArrowRight className="mr-3 h-5 w-5" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         </div>
       </DashboardShell>
     )
@@ -1579,10 +1626,10 @@ export default function FlashcardsPage() {
   // 4. Página principal de tópicos (após escolher matéria)
   return (
     <DashboardShell>
-              <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header com Stats Globais */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div>
+              <div>
             <div className="flex items-center gap-3 mb-2">
               <Button 
                 variant="ghost" 
@@ -1592,18 +1639,30 @@ export default function FlashcardsPage() {
                 <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
                 Voltar
               </Button>
-              <h1 className="text-3xl font-bold">
-                {selectedSubject === 1 ? "📝 Português" : "⚖️ Regulamentos"}
-              </h1>
+              <div className="relative">
+                <h1 className="text-3xl font-bold">
+                  {selectedSubject === 1 ? "📝 Português" : "⚖️ Regulamentos"}
+                </h1>
+                {/* Efeito sutil de Sparkles no título */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <Sparkles
+                    background="#10b981"
+                    minSize={0.2}
+                    maxSize={0.6}
+                    speed={0.3}
+                    particleCount={8}
+                  />
+                </div>
+              </div>
             </div>
-            <p className="text-muted-foreground">
+                <p className="text-muted-foreground">
               {selectedSubject === 1 
                 ? "Domine gramática, interpretação de texto e literatura"
                 : "Aprenda regulamentos militares e legislação específica"
               }
-            </p>
-          </div>
-
+                </p>
+              </div>
+              
           {/* Stats Cards Rápidas */}
           <div className="flex gap-3">
             <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-700/10 border-emerald-500/20">
@@ -1629,9 +1688,9 @@ export default function FlashcardsPage() {
             >
               <TrendingUp className="h-4 w-4 mr-2" />
               Ver Stats
-            </Button>
-          </div>
-        </div>
+                  </Button>
+              </div>
+            </div>
 
         {/* Filtros Avançados */}
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -1660,8 +1719,8 @@ export default function FlashcardsPage() {
                 <SelectItem value="hard">Difícil</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
+                    </div>
+                    
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Target className="h-4 w-4" />
@@ -1670,9 +1729,9 @@ export default function FlashcardsPage() {
             
             {/* Botão modo administrativo para professores/admins */}
             {(userRole === "teacher" || userRole === "admin") && (
-              <Button
+                        <Button
                 variant={isAdminMode ? "default" : "outline"}
-                size="sm"
+                          size="sm"
                 onClick={toggleAdminMode}
                 className={isAdminMode ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white" : "border-purple-300 text-purple-600 hover:bg-purple-50"}
               >
@@ -1711,7 +1770,7 @@ export default function FlashcardsPage() {
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => {
+                          onClick={() => {
                       resetForm()
                       setShowCreateModal(true)
                     }}
@@ -1757,31 +1816,31 @@ export default function FlashcardsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => openEditModal(flashcard)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
                             variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteFlashcard(flashcard.id)}
+                          size="sm"
+                          onClick={() => handleDeleteFlashcard(flashcard.id)}
                             className="text-red-600 hover:bg-red-50 hover:border-red-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
+                  </div>
                     </CardContent>
-                  </Card>
-                ))}
+                </Card>
+              ))}
                 
                 {adminFlashcards.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <Edit className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum flashcard encontrado para este tópico.</p>
                     <p className="text-sm">Clique em "Novo Flashcard" para criar o primeiro!</p>
-                  </div>
+            </div>
                 )}
-              </div>
+          </div>
             </CardContent>
           </Card>
         )}
@@ -1887,7 +1946,7 @@ export default function FlashcardsPage() {
           const difficultyConfig = getDifficultyConfig(progress.accuracy)
           
           return (
-            <Card 
+            <MagicCard 
               key={topic.id} 
               className={`
                 relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-xl 
@@ -1906,7 +1965,7 @@ export default function FlashcardsPage() {
                   Nv. {levelInfo.level}
                 </Badge>
               </div>
-
+              
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`p-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg`}>
@@ -1921,8 +1980,8 @@ export default function FlashcardsPage() {
                       <span>{difficultyConfig.difficultyText}</span>
                     </div>
                   </div>
-                </div>
-                
+            </div>
+
                 <CardTitle className={`text-lg font-bold ${config.title} leading-tight mb-3 group-hover:scale-105 transition-transform duration-300`}>
                   {topic.name}
                 </CardTitle>
@@ -1960,13 +2019,13 @@ export default function FlashcardsPage() {
                     <div className={`flex items-center gap-1 ${config.title}`}>
                       <Flame className="h-3 w-3" />
                       <span>{progress.streak} dias</span>
-                    </div>
-                  )}
+                  </div>
+                )}
                   {wrongCardsCount[topic.id] > 0 && (
                     <div className="flex items-center gap-1 text-red-600">
                       <XCircle className="h-3 w-3" />
                       <span>{wrongCardsCount[topic.id]} erradas</span>
-                    </div>
+              </div>
                   )}
                   {progress.lastStudied && (
                     <div className="flex items-center gap-1 text-muted-foreground">
@@ -2009,8 +2068,8 @@ export default function FlashcardsPage() {
                   
                   {/* Botões de modo */}
                   <div className="grid grid-cols-2 gap-2 mb-2">
-                    <Button 
-                      variant="outline" 
+              <Button
+                variant="outline"
                       size="sm"
                       onClick={() => handleTopicStart(topic.id, "quick")}
                       className={`text-xs transition-all duration-200 hover:scale-105 ${config.badge.replace('100', '50').replace('800', '600').replace('900', '50').replace('200', '600')} border-current hover:border-current`}
@@ -2018,8 +2077,8 @@ export default function FlashcardsPage() {
                     >
                       <Zap className="h-3 w-3 mr-1" />
                       Rápido
-                    </Button>
-                    
+              </Button>
+
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -2029,7 +2088,7 @@ export default function FlashcardsPage() {
                     >
                       <Timer className="h-3 w-3 mr-1" />
                       Teste
-                    </Button>
+                  </Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -2043,12 +2102,12 @@ export default function FlashcardsPage() {
                       >
                         <RotateCcw className="h-3 w-3 mr-1" />
                         Revisar
-                      </Button>
-                    )}
-                    
+                  </Button>
+                )}
+
                     {wrongCardsCount[topic.id] > 0 && (
-                      <Button 
-                        variant="outline" 
+              <Button
+                variant="outline"
                         size="sm"
                         onClick={() => handleTopicStart(topic.id, "wrong")}
                         className="text-xs hover:bg-red-50 hover:border-red-300 text-red-600 transition-all duration-200 hover:scale-105"
@@ -2056,12 +2115,12 @@ export default function FlashcardsPage() {
                       >
                         <XCircle className="h-3 w-3 mr-1" />
                         Errados ({wrongCardsCount[topic.id]})
-                      </Button>
+              </Button>
                     )}
-                  </div>
-                </div>
+            </div>
+          </div>
               </CardContent>
-            </Card>
+            </MagicCard>
           )
         })}
         </div>
@@ -2091,7 +2150,7 @@ export default function FlashcardsPage() {
         )}
 
         {topics.length === 0 && (
-                          <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
+          <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
             <CardContent>
                               <div className="p-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 mx-auto mb-6 w-fit">
                 <BookOpenText className="h-16 w-16 text-white" />
@@ -2100,7 +2159,7 @@ export default function FlashcardsPage() {
               <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
                 Os tópicos de flashcards ainda não foram configurados para esta matéria. Em breve haverá novos conteúdos!
               </p>
-                              <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+              <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
                 <Link href="/dashboard">
                   <ArrowRight className="mr-3 h-5 w-5" />
                   Voltar ao Dashboard
@@ -2299,7 +2358,7 @@ export default function FlashcardsPage() {
                   min="1"
                   max="50"
                   value={customQuantity}
-                  onChange={(e) => setCustomQuantity(parseInt(e.target.value) || 1)}
+                  onChange={(e) => setCustomQuantity(parseInt(e.target.value))}
                   className="flex-1"
                 />
                 <span className="w-12 text-center font-medium">{customQuantity}</span>
@@ -2379,123 +2438,123 @@ export default function FlashcardsPage() {
          </DialogContent>
        </Dialog>
 
-       {/* Modal Criar Flashcard */}
+      {/* Modal Criar Flashcard */}
        <Dialog open={showCreateModal} onOpenChange={(open) => {
          setShowCreateModal(open)
          if (!open) resetForm()
        }}>
-         <DialogContent className="max-w-2xl">
-           <DialogHeader>
-             <DialogTitle className="flex items-center gap-2">
-               <Plus className="h-5 w-5" />
-               Criar Novo Flashcard
-             </DialogTitle>
-             <DialogDescription>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Criar Novo Flashcard
+            </DialogTitle>
+            <DialogDescription>
                Adicione uma nova pergunta e resposta para o tópico selecionado
-             </DialogDescription>
-           </DialogHeader>
-           <div className="space-y-4">
-             <div>
-               <Label htmlFor="question">Pergunta</Label>
-               <Textarea
-                 id="question"
-                 placeholder="Digite a pergunta do flashcard..."
-                 value={formQuestion}
-                 onChange={(e) => setFormQuestion(e.target.value)}
-                 className="min-h-[100px]"
-               />
-             </div>
-             <div>
-               <Label htmlFor="answer">Resposta</Label>
-               <Textarea
-                 id="answer"
-                 placeholder="Digite a resposta do flashcard..."
-                 value={formAnswer}
-                 onChange={(e) => setFormAnswer(e.target.value)}
-                 className="min-h-[100px]"
-               />
-             </div>
-           </div>
-           <div className="flex gap-3">
-             <Button 
-               onClick={handleCreateFlashcard}
-               disabled={isSubmitting || !formQuestion.trim() || !formAnswer.trim()}
-               className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700"
-             >
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="question">Pergunta</Label>
+              <Textarea
+                id="question"
+                placeholder="Digite a pergunta do flashcard..."
+                value={formQuestion}
+                onChange={(e) => setFormQuestion(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="answer">Resposta</Label>
+              <Textarea
+                id="answer"
+                placeholder="Digite a resposta do flashcard..."
+                value={formAnswer}
+                onChange={(e) => setFormAnswer(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleCreateFlashcard}
+              disabled={isSubmitting || !formQuestion.trim() || !formAnswer.trim()}
+              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700"
+            >
                <Save className="h-4 w-4 mr-2" />
-               {isSubmitting ? "Salvando..." : "Criar Flashcard"}
-             </Button>
-             <Button 
+              {isSubmitting ? "Salvando..." : "Criar Flashcard"}
+            </Button>
+            <Button 
                onClick={() => setShowCreateModal(false)}
-               variant="outline" 
-               className="flex-1"
-               disabled={isSubmitting}
-             >
+              variant="outline" 
+              className="flex-1"
+              disabled={isSubmitting}
+            >
                <X className="h-4 w-4 mr-2" />
-               Cancelar
-             </Button>
-           </div>
-         </DialogContent>
-       </Dialog>
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-       {/* Modal Editar Flashcard */}
+      {/* Modal Editar Flashcard */}
        <Dialog open={showEditModal} onOpenChange={(open) => {
          setShowEditModal(open)
-         if (!open) resetForm()
-       }}>
-         <DialogContent className="max-w-2xl">
-           <DialogHeader>
-             <DialogTitle className="flex items-center gap-2">
-               <Edit className="h-5 w-5" />
-               Editar Flashcard
-             </DialogTitle>
-             <DialogDescription>
-               Modifique a pergunta e resposta do flashcard
-             </DialogDescription>
-           </DialogHeader>
-           <div className="space-y-4">
-             <div>
-               <Label htmlFor="edit-question">Pergunta</Label>
-               <Textarea
-                 id="edit-question"
-                 placeholder="Digite a pergunta do flashcard..."
-                 value={formQuestion}
-                 onChange={(e) => setFormQuestion(e.target.value)}
-                 className="min-h-[100px]"
-               />
-             </div>
-             <div>
-               <Label htmlFor="edit-answer">Resposta</Label>
-               <Textarea
-                 id="edit-answer"
-                 placeholder="Digite a resposta do flashcard..."
-                 value={formAnswer}
-                 onChange={(e) => setFormAnswer(e.target.value)}
-                 className="min-h-[100px]"
-               />
-             </div>
-           </div>
-           <div className="flex gap-3">
-             <Button 
-               onClick={handleEditFlashcard}
-               disabled={isSubmitting || !formQuestion.trim() || !formAnswer.trim()}
-               className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700"
-             >
+        if (!open) resetForm()
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Editar Flashcard
+            </DialogTitle>
+            <DialogDescription>
+              Modifique a pergunta e resposta do flashcard
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-question">Pergunta</Label>
+              <Textarea
+                id="edit-question"
+                placeholder="Digite a pergunta do flashcard..."
+                value={formQuestion}
+                onChange={(e) => setFormQuestion(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-answer">Resposta</Label>
+              <Textarea
+                id="edit-answer"
+                placeholder="Digite a resposta do flashcard..."
+                value={formAnswer}
+                onChange={(e) => setFormAnswer(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleEditFlashcard}
+              disabled={isSubmitting || !formQuestion.trim() || !formAnswer.trim()}
+              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-700"
+            >
                <Save className="h-4 w-4 mr-2" />
-               {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-             </Button>
-             <Button 
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+            <Button 
                onClick={() => setShowEditModal(false)}
-               variant="outline" 
-               className="flex-1"
-               disabled={isSubmitting}
-             >
+              variant="outline" 
+              className="flex-1"
+              disabled={isSubmitting}
+            >
                <X className="h-4 w-4 mr-2" />
-               Cancelar
-             </Button>
-           </div>
-         </DialogContent>
-       </Dialog>
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
        {showQuantityModal && pendingTopicId && (
          <FlashcardQuantityModal

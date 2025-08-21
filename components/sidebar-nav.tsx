@@ -4,7 +4,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { 
   BookOpen, 
   Home, 
@@ -27,7 +27,9 @@ import {
   Crown,
   UserCheck,
   GraduationCap as ClassIcon,
-  PlayCircle
+  PlayCircle,
+  Shield,
+  UserPlus
 } from "lucide-react"
 import {
   Tooltip,
@@ -45,125 +47,121 @@ interface SidebarNavItem {
 }
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
-  items: SidebarNavItem[]
+  items?: SidebarNavItem[]
   collapsed?: boolean
 }
 
-export function SidebarNav({ className, items, collapsed = false, ...props }: SidebarNavProps) {
-  const pathname = usePathname()
-  const { user, isLoading } = useAuth()
+export function SidebarNav({ className, items: propItems, collapsed: propCollapsed, ...props }: SidebarNavProps) {
+  const authResult = useAuth()
+  const [internalCollapsed, setInternalCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   
-  const role = user?.role || 'student'
-  const isTeacher = role === 'teacher' || role === 'admin'
-
-  // Memoizar os itens do menu para evitar re-renderizações
-  const menuItems = useMemo((): SidebarNavItem[] => {
-    if (isTeacher) {
-      console.log('👨‍🏫 [SIDEBAR] Mostrando menu de professor/admin')
-      return [
-        {
-          href: "/dashboard",
-          title: "Dashboard",
-          icon: LayoutDashboard,
-        },
-        {
-          href: "https://alunos.everestpreparatorios.com.br",
-          title: "Aulas",
-          icon: PlayCircle,
-          external: true,
-        },
-        {
-          href: "/flashcards",
-          title: "Flashcards",
-          icon: BookText,
-        },
-        {
-          href: "/quiz",
-          title: "Quiz",
-          icon: GraduationCap,
-        },
-        {
-          href: "/provas",
-          title: "Provas",
-          icon: FileText,
-        },
-        {
-          href: "/livros",
-          title: "Acervo Digital",
-          icon: Archive,
-        },
-        {
-          href: "/redacao",
-          title: "Redação",
-          icon: PenTool,
-        },
-        {
-          href: "/membros",
-          title: "Membros",
-          icon: UserCheck,
-        },
-        {
-          href: "/turmas",
-          title: "Turmas",
-          icon: ClassIcon,
-        },
-        {
-          href: "/community",
-          title: "Comunidade",
-          icon: Users2,
-        },
-        {
-          href: "/calendario",
-          title: "Calendário",
-          icon: Calendar,
-        },
-        {
-          href: "/suporte",
-          title: "Suporte",
-          icon: HelpCircle,
-        },
-      ]
-    } else {
-      console.log('👨‍🎓 [SIDEBAR] Mostrando menu de estudante')
-      return [
-        {
-          href: "/dashboard",
-          title: "Dashboard",
-          icon: Home,
-        },
-        {
-          href: "https://alunos.everestpreparatorios.com.br",
-          title: "Aulas",
-          icon: PlayCircle,
-          external: true,
-        },
-        {
-          href: "/flashcards",
-          title: "Flashcards",
-          icon: BookText,
-        },
-        {
-          href: "/quiz",
-          title: "Quiz",
-          icon: GraduationCap,
-        },
-        {
-          href: "/calendario",
-          title: "Calendário",
-          icon: Calendar,
-        },
-        {
-          href: "/suporte",
-          title: "Suporte",
-          icon: HelpCircle,
-        },
-      ]
+  // Usar collapsed passado como prop ou estado interno
+  const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed
+  
+  // Garantir que todos os valores tenham valores padrão seguros
+  const userRole = authResult?.role || 'student'
+  const isUserAuthenticated = authResult?.isAuthenticated || false
+  const currentUser = authResult?.user || null
+  
+  // Garantir que className tenha um valor padrão
+  const safeClassName = className || ""
+  
+  // Verificação de segurança para evitar erros de renderização
+  if (!authResult) {
+    console.warn('⚠️ [SIDEBAR] useAuth retornou undefined, usando valores padrão')
+  }
+  
+  // Memoizar o menu baseado no role para evitar re-renderizações
+  const menuItems = useMemo(() => {
+    // Se items foi passado como prop, usar eles
+    if (propItems) return propItems
+    
+    // Verificação de segurança adicional
+    if (!isUserAuthenticated || !currentUser || !userRole) {
+      console.log('⚠️ [SIDEBAR] Valores de autenticação não definidos:', { isUserAuthenticated, currentUser, userRole })
+      return []
     }
-  }, [isTeacher])
+    
+    const baseItems = [
+      {
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: Home,
+        variant: "default" as const,
+      },
+      {
+        title: "Flashcards",
+        href: "/flashcards",
+        icon: BookOpen,
+        variant: "default" as const,
+      },
+      {
+        title: "Quiz",
+        href: "/quiz",
+        icon: HelpCircle,
+        variant: "default" as const,
+      },
+    ]
 
+    // Adicionar itens específicos por role
+    if (userRole === 'teacher' || userRole === 'admin') {
+      baseItems.push(
+        {
+          title: "Turmas",
+          href: "/turmas",
+          icon: Users,
+          variant: "default" as const,
+        },
+        {
+          title: "Membros",
+          href: "/membros",
+          icon: UserPlus,
+          variant: "default" as const,
+        },
+        {
+          title: "Redação",
+          href: "/redacao",
+          icon: PenTool,
+          variant: "default" as const,
+        },
+        {
+          title: "Livros",
+          href: "/livros",
+          icon: BookOpen,
+          variant: "default" as const,
+        }
+      )
+    }
+
+    if (userRole === 'admin') {
+      baseItems.push(
+        {
+          title: "Admin",
+          href: "/admin",
+          icon: Shield,
+          variant: "default" as const,
+        }
+      )
+    }
+
+    return baseItems
+  }, [propItems, isUserAuthenticated, currentUser, userRole])
+
+  // Log otimizado - apenas quando o role muda
+  useEffect(() => {
+    if (userRole === 'teacher' || userRole === 'admin') {
+      console.log('👨‍🏫 [SIDEBAR] Mostrando menu de professor/admin')
+    } else if (userRole === 'student') {
+      console.log('👨‍🎓 [SIDEBAR] Mostrando menu de estudante')
+    }
+  }, [userRole])
+
+  const pathname = usePathname()
+  
   return (
     <TooltipProvider>
-      <nav className={cn("flex flex-col space-y-1", className)} {...props}>
+      <nav className={cn("flex flex-col space-y-1", safeClassName)} {...props}>
         {menuItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon

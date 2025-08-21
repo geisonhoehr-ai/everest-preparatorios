@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 
 // Função de debug para testar o sistema de roles
 export async function debugUserSystem(email: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -78,7 +78,7 @@ export async function debugUserSystem(email: string) {
 
 // Função simplificada para criar perfil
 export async function createSimpleProfile(email: string, role: "student" | "teacher") {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -29,6 +29,8 @@ class AuthManager {
   private authSubscription: any = null
   private isInitializing = false
   private initializationTimeout: NodeJS.Timeout | null = null
+  private lastUpdateTime = 0
+  private updateThrottle = 100 // ms
 
   private constructor() {
     console.log('👑 [AUTH_MANAGER] Instância única criada')
@@ -65,11 +67,11 @@ class AuthManager {
     this.isInitializing = true
     console.log('🚀 [AUTH_MANAGER] Inicializando...')
 
-    // Timeout de segurança para evitar loading infinito
+    // Timeout reduzido para 5 segundos
     this.initializationTimeout = setTimeout(() => {
       console.warn('⚠️ [AUTH_MANAGER] Timeout de inicialização - forçando finalização')
       this.forceInitializationComplete()
-    }, 10000) // 10 segundos
+    }, 5000) // 5 segundos
 
     try {
       await this.loadInitialSession()
@@ -152,6 +154,14 @@ class AuthManager {
       async (event: string, session: any) => {
         console.log('🔄 [AUTH_MANAGER] Auth event:', event, session?.user?.email)
 
+        // Ignorar eventos duplicados em sequência rápida
+        const now = Date.now()
+        if (now - this.lastUpdateTime < this.updateThrottle) {
+          console.log('⏭️ [AUTH_MANAGER] Evento ignorado (throttle):', event)
+          return
+        }
+        this.lastUpdateTime = now
+
         switch (event) {
           case 'SIGNED_IN':
             if (session?.user) {
@@ -175,6 +185,11 @@ class AuthManager {
             if (session?.user) {
               await this.updateAuthState(session.user)
             }
+            break
+
+          case 'INITIAL_SESSION':
+            // Ignorar evento inicial para evitar duplicação
+            console.log('ℹ️ [AUTH_MANAGER] Evento ignorado: INITIAL_SESSION')
             break
 
           default:
@@ -237,7 +252,7 @@ class AuthManager {
       case 'admin':
         return '/admin'
       case 'teacher':
-        return '/teacher'
+        return '/dashboard' // Professores vão para dashboard
       case 'student':
       default:
         return '/dashboard'

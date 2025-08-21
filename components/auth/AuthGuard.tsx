@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { ReactElement, useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/lib/auth-simple'
 
 interface AuthGuardProps {
   children: React.ReactNode
-  requiredRole?: 'student' | 'teacher' | 'admin'
-  allowedRoles?: ('student' | 'teacher' | 'admin')[]
+  requiredRole?: string
+  allowedRoles?: string[]
   fallback?: React.ReactNode
 }
 
@@ -32,6 +32,21 @@ export default function AuthGuard({
     isTeacher,
     isStudent
   } = useAuth()
+
+  // Memoizar flags para evitar recálculos
+  const flags = useMemo(() => ({
+    isTeacher: isTeacher,
+    isAdmin: isAdmin,
+    isStudent: isStudent,
+    effectiveRole: role,
+    forcedRole: null
+  }), [isTeacher, isAdmin, isStudent, role])
+
+  // DEBUG: Mostrar informações do usuário
+  console.log('🔍 [DASHBOARD DEBUG] User:', user)
+  console.log('🔍 [DASHBOARD DEBUG] User role:', role)
+  console.log('🔍 [DASHBOARD DEBUG] User metadata:', user?.user_metadata)
+  console.log('🔍 [DASHBOARD DEBUG] Flags:', flags)
 
   useEffect(() => {
     const checkAuthorization = async () => {
@@ -77,58 +92,38 @@ export default function AuthGuard({
         }
 
         // Se está logado e tenta acessar páginas de login, redirecionar para dashboard
-        if (pathname === '/login') {
-          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar login')
-          
-          // Redirecionar para dashboard baseado no role
-          const redirectTo = getDefaultRedirectPath(role)
-          router.replace(redirectTo)
+        const authPages = ['/login', '/signup', '/forgot-password']
+        if (authPages.includes(pathname)) {
+          console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar página de auth, redirecionando')
+          router.replace(getDefaultRedirectPath(role))
           return
         }
 
-        // Verificar autorização baseada no role
-        let authorized = true
-
-        if (requiredRole) {
-          authorized = role === requiredRole
-          console.log('🔍 [AUTH_GUARD] Verificação role específico:', { 
-            requiredRole, 
-            userRole: role, 
-            authorized 
-          })
-        }
-
-        if (allowedRoles && allowedRoles.length > 0) {
-          authorized = allowedRoles.includes(role as any)
-          console.log('🔍 [AUTH_GUARD] Verificação roles permitidos:', { 
-            allowedRoles, 
-            userRole: role, 
-            authorized 
-          })
-        }
-
-        if (!authorized) {
-          console.log('❌ [AUTH_GUARD] Usuário não autorizado')
-          
-          // Redirecionar para página apropriada baseada no role
-          const redirectTo = getDefaultRedirectPath(role)
-          router.replace(redirectTo)
+        // Verificar permissões específicas se necessário
+        if (requiredRole && role !== requiredRole) {
+          console.log('❌ [AUTH_GUARD] Permissão insuficiente. Necessário:', requiredRole, 'Atual:', role)
+          router.replace('/access-denied')
           return
         }
 
-        console.log('✅ [AUTH_GUARD] Usuário autorizado')
+        if (allowedRoles && !allowedRoles.includes(role)) {
+          console.log('❌ [AUTH_GUARD] Role não permitido. Permitidos:', allowedRoles, 'Atual:', role)
+          router.replace('/access-denied')
+          return
+        }
+
+        // Se chegou até aqui, está autorizado
+        console.log('✅ [AUTH_GUARD] Usuário autorizado para:', pathname)
         setIsChecking(false)
 
       } catch (error) {
         console.error('❌ [AUTH_GUARD] Erro na verificação:', error)
-        
-        // Em caso de erro, redirecionar para login
-        router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
+        setIsChecking(false)
       }
     }
 
     checkAuthorization()
-  }, [pathname, requiredRole, allowedRoles, router, isAuthenticated, role, isInitialized, isLoading, user?.email])
+  }, [isAuthenticated, role, isInitialized, isLoading, pathname, requiredRole, allowedRoles, router, user?.email])
 
   // Função para determinar redirecionamento baseado no role
   const getDefaultRedirectPath = (userRole: string): string => {
@@ -164,13 +159,12 @@ export function useAuthGuard() {
   const auth = useAuth()
   
   return {
-    isLoading: auth.isLoading,
-    isAuthenticated: auth.isAuthenticated,
-    user: auth.user,
-    role: auth.role,
-    isAdmin: auth.isAdmin,
-    isTeacher: auth.isTeacher,
-    isStudent: auth.isStudent
+    ...auth,
+    canAccess: (requiredRole?: string) => {
+      if (!auth.isAuthenticated || !auth.role) return false
+      if (!requiredRole) return true
+      return auth.role === requiredRole
+    }
   }
 }
 

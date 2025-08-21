@@ -87,6 +87,128 @@ export function DashboardShell({ children }: DashboardShellProps) {
     )
   }, [user, getInitials, getRoleDisplay, handleLogout])
 
+  // Memoizar o menu mobile para evitar re-renderizações
+  const mobileMenu = useMemo(() => (
+    <div className={cn(
+      "sidebar-stable md:hidden",
+      mobileOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
+      <div className="flex h-full flex-col bg-background border-r">
+        <div className="flex h-16 items-center justify-between px-4 border-b">
+          <span className="text-lg font-semibold">Menu</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          <SidebarNav items={sidebarNavItems} />
+        </div>
+        {/* User section mobile */}
+        {user && (
+          <div className="border-t p-4">
+            {userContent}
+          </div>
+        )}
+      </div>
+    </div>
+  ), [mobileOpen, user, userContent])
+
+  // Memoizar o sidebar desktop para evitar re-renderizações
+  const desktopSidebar = useMemo(() => (
+    <div className={cn(
+      "hidden md:flex md:flex-col sidebar-stable",
+      collapsed && "collapsed"
+    )} style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      height: '100vh',
+      width: collapsed ? '4rem' : '16rem',
+      zIndex: 50
+    }}>
+      <div className="flex h-full flex-col border-r bg-background">
+        {/* Header */}
+        <div className="flex h-16 items-center justify-between px-4 border-b">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-orange-600" />
+            {!collapsed && (
+              <span className="font-bold text-lg">Everest Preparatórios</span>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:flex"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          <SidebarNav items={sidebarNavItems} collapsed={collapsed} />
+        </div>
+        
+        {/* Mobile menu button for collapsed sidebar */}
+        {collapsed && (
+          <div className="px-3 pb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileOpen(true)}
+              className="w-full h-8"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* User section desktop */}
+        {user && (
+          <div className="border-t p-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-orange-100 text-orange-600">
+                  {getInitials(user.email)}
+                </AvatarFallback>
+              </Avatar>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{user.email}</p>
+                  <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
+                </div>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  ), [collapsed, user, getInitials, getRoleDisplay, handleLogout])
+
   // Mostrar loading apenas se ainda não inicializou
   if (isLoading) {
     return (
@@ -111,154 +233,31 @@ export function DashboardShell({ children }: DashboardShellProps) {
         />
       )}
 
-      {/* Menu Mobile - Implementação mais simples */}
-      <div className={cn(
-        "sidebar-stable md:hidden",
-        mobileOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex h-full flex-col bg-background border-r">
-          <div className="flex h-16 items-center justify-between px-4 border-b">
-            <span className="text-lg font-semibold">Menu</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav items={sidebarNavItems} />
-          </div>
-          {/* User section mobile */}
-          {user && (
-            <div className="border-t p-4">
-              {userContent}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Menu Mobile */}
+      {mobileMenu}
 
       {/* Sidebar Desktop */}
-      <div className={cn(
-        "hidden md:flex md:flex-col sidebar-stable",
-        collapsed && "collapsed"
-      )} style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        height: '100vh',
-        width: collapsed ? '4rem' : '16rem',
-        zIndex: 50
-      }}>
-        <div className="flex h-full flex-col border-r bg-background">
-          {/* Header */}
-          <div className="flex h-16 items-center justify-between px-4 border-b">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-orange-600" />
-              {!collapsed && (
-                <span className="font-bold text-lg">Everest Preparatórios</span>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden md:flex"
-            >
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav items={sidebarNavItems} collapsed={collapsed} />
-          </div>
-          
-          {/* Mobile menu button for collapsed sidebar */}
-          {collapsed && (
-            <div className="px-3 pb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileOpen(true)}
-                className="w-full h-8"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {/* User section desktop */}
-          {user && (
-            <div className="border-t p-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {getInitials(user.email)}
-                  </AvatarFallback>
-                </Avatar>
-                {!collapsed && (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
-                  </div>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </DropdownMenuItem>
-                    {(user.role === 'teacher' || user.role === 'admin') && (
-                      <DropdownMenuItem onClick={() => router.push('/membros')}>
-                        <Users className="mr-2 h-4 w-4" />
-                        Membros
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              {/* Theme Icons no menu lateral */}
-              <div className="mt-3">
-                <ThemeIcons collapsed={collapsed} />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {desktopSidebar}
 
       {/* Main content */}
-      <div className={cn(
-        "main-content-stable",
-        collapsed && "collapsed"
-      )} style={{ 
-        margin: 0, 
-        padding: 0, 
-        marginLeft: collapsed ? '4rem' : '16rem',
-        width: collapsed ? 'calc(100vw - 4rem)' : 'calc(100vw - 16rem)',
-        position: 'relative',
-        left: 0,
-        top: 0
-      }}>
+      <div className="md:pl-16 lg:pl-64">
+        {/* Mobile header */}
+        <div className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-4 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-orange-600" />
+            <span className="font-bold text-lg">Everest Preparatórios</span>
+          </div>
+        </div>
+
         {/* Page content */}
-        <main className="content-wrapper" style={{ margin: 0, padding: '1rem 1.5rem' }}>
+        <main className="flex-1">
           {children}
         </main>
       </div>

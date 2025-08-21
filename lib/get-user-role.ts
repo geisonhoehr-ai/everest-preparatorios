@@ -103,83 +103,58 @@ export async function getAuthAndRole(): Promise<{ user: any; role: string; isAut
     }
     
     if (!session?.user) {
-      console.log('❌ [AUTH] Nenhuma sessão encontrada')
+      console.log('ℹ️ [AUTH] Nenhuma sessão encontrada')
       return { user: null, role: 'student', isAuthenticated: false }
     }
-
-    console.log('✅ [AUTH] Sessão encontrada:', session.user.id)
-    console.log('✅ [AUTH] Email do usuário:', session.user.email)
     
-    // Verificar cache primeiro usando UUID
+    console.log('✅ [AUTH] Sessão encontrada:', session.user.email)
+    
+    // Verificar cache primeiro
     const cached = userRoleCache.get(session.user.id)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       console.log('✅ [AUTH] Usando cache para role:', cached.role)
-      return { user: session.user, role: cached.role, isAuthenticated: true }
-    }
-    
-    // Primeiro tentar via RPC segura
-    const { data: rpcRole2, error: rpcError2 } = await supabase.rpc('get_role_for_current_user')
-
-    if (!rpcError2 && rpcRole2) {
-      const role = (rpcRole2 as string) || 'student'
-      console.log('✅ [AUTH] Role via RPC:', role)
-      userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
-      return { user: session.user, role, isAuthenticated: true }
-    }
-
-    // Fallback: SELECT direto
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_uuid', session.user.id)
-      .single()
-
-    if (error) {
-      console.log('ℹ️ [AUTH] Role não encontrada na tabela user_roles')
-      console.log('ℹ️ [AUTH] Erro:', error.message)
-      
-      // Se o usuário não tem role definido, retornar padrão
-      if (error.code === 'PGRST116') {
-        console.log('ℹ️ [AUTH] Usuário sem role definido, usando padrão: student')
-        
-        const role = 'student'
-        // Salvar no cache usando UUID
-        userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
-        
-        return { user: session.user, role, isAuthenticated: true }
+      return { 
+        user: session.user, 
+        role: cached.role, 
+        isAuthenticated: true 
       }
-      
-      const role = 'student'
-      // Salvar no cache usando UUID
-      userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
-      
-      // Retornar student como padrão
-      return { user: session.user, role, isAuthenticated: true }
     }
-
-    const role = data?.role || 'student'
-    console.log('✅ [AUTH] Role encontrada:', role)
     
-    // Salvar no cache usando UUID
-    userRoleCache.set(session.user.id, { role, timestamp: Date.now() })
+    // Buscar role
+    const role = await getUserRoleClient(session.user.id)
     
-    return { user: session.user, role, isAuthenticated: true }
+    return { 
+      user: session.user, 
+      role, 
+      isAuthenticated: true 
+    }
+    
   } catch (error) {
     console.error('❌ [AUTH] Erro na verificação rápida:', error)
-    console.error('❌ [AUTH] Tipo do erro:', typeof error)
-    console.error('❌ [AUTH] Mensagem do erro:', error instanceof Error ? error.message : 'Erro desconhecido')
     return { user: null, role: 'student', isAuthenticated: false }
   }
 }
 
-// Função para limpar cache
+// Função para limpar cache de roles
 export function clearUserRoleCache(userId?: string) {
   if (userId) {
     userRoleCache.delete(userId)
-    console.log('🧹 [CACHE] Cache limpo para usuário:', userId)
+    console.log('🧹 [ROLE] Cache limpo para usuário:', userId)
   } else {
     userRoleCache.clear()
-    console.log('🧹 [CACHE] Cache limpo completamente')
+    console.log('🧹 [ROLE] Cache de roles completamente limpo')
+  }
+}
+
+// Função para obter estatísticas do cache
+export function getRoleCacheStats() {
+  return {
+    size: userRoleCache.size,
+    entries: Array.from(userRoleCache.entries()).map(([userId, data]) => ({
+      userId,
+      role: data.role,
+      age: Date.now() - data.timestamp
+    }))
   }
 }
 

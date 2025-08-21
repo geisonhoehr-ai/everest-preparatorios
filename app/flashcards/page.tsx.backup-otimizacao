@@ -1,0 +1,908 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { DashboardShell } from "@/components/dashboard-shell"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { 
+  BookOpenText, 
+  Play, 
+  RotateCcw, 
+  CheckCircle, 
+  XCircle, 
+  ArrowRight, 
+  BookOpen, 
+  Share2, 
+  Copy, 
+  Trophy, 
+  Star, 
+  Search, 
+  Flame, 
+  Clock,
+  Target,
+  Award,
+  TrendingUp,
+  Zap,
+  Crown,
+  Medal,
+  Timer,
+  Brain,
+  RefreshCw,
+  Maximize,
+  Minimize,
+  Keyboard,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+  Users,
+  Shield
+} from "lucide-react"
+import { getAllTopics, getFlashcardsForReview, updateTopicProgress, getAllSubjects, getTopicsBySubject, saveWrongCard, getWrongCardsByTopic, markWrongCardsAsReviewed, getWrongCardsCount, checkTeacherOrAdminAccess, createFlashcard, updateFlashcard, deleteFlashcard, getAllFlashcardsByTopic, getFlashcardById } from "@/actions"
+import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import confetti from "canvas-confetti"
+import { createClient } from "@/lib/supabase/client"
+import { getUserRoleClient, ensureUserRole, checkAuthentication, getAuthAndRole } from "@/lib/get-user-role"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import FlashcardQuantityModal from "@/components/FlashcardQuantityModal"
+import "@/styles/flashcards.css"
+
+interface Topic {
+  id: string
+  name: string
+}
+
+interface Flashcard {
+  id: number
+  topic_id: string
+  question: string
+  answer: string
+}
+
+interface TopicProgress {
+  accuracy: number
+  lastStudied: string | null
+  streak: number
+  totalStudied: number
+  level: number
+  xp: number
+  bestScore: number
+  timeSpent: number
+}
+
+interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  unlocked: boolean
+  unlockedAt?: string
+}
+
+interface StudyStats {
+  totalXP: number
+  currentStreak: number
+  longestStreak: number
+  topicsCompleted: number
+  totalTimeStudied: number
+  averageAccuracy: number
+}
+
+// Mock data para demonstração
+const generateTopicProgress = (topicId: string): TopicProgress => {
+  const baseAccuracy = Math.floor(Math.random() * 100)
+  const streak = Math.floor(Math.random() * 15)
+  const totalStudied = Math.floor(Math.random() * 200) + 10
+  
+  return {
+    accuracy: baseAccuracy,
+    lastStudied: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : null,
+    streak,
+    totalStudied,
+    level: Math.floor(totalStudied / 50) + 1,
+    xp: totalStudied * 10 + baseAccuracy,
+    bestScore: Math.min(100, baseAccuracy + Math.floor(Math.random() * 20)),
+    timeSpent: Math.floor(Math.random() * 3600) + 300 // 5 min a 1h
+  }
+}
+
+const achievements: Achievement[] = [
+  { id: "first_study", title: "Primeiro Passo", description: "Complete seu primeiro flashcard", icon: "🎯", unlocked: true, unlockedAt: "2024-01-15" },
+  { id: "streak_7", title: "Dedicado", description: "Estude por 7 dias consecutivos", icon: "🔥", unlocked: true, unlockedAt: "2024-01-20" },
+  { id: "perfect_score", title: "Perfeição", description: "Acerte 100% em uma sessão", icon: "⭐", unlocked: false },
+  { id: "level_5", title: "Especialista", description: "Alcance nível 5 em qualquer tópico", icon: "👑", unlocked: false },
+  { id: "master", title: "Mestre", description: "Complete todos os tópicos", icon: "🏆", unlocked: false },
+]
+
+// Estilos CSS movidos para arquivo estático para evitar problemas de hidratação
+
+export default function FlashcardsPage() {
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([])
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
+  const [studyMode, setStudyMode] = useState<"select" | "study" | "finished">("select")
+  const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 })
+  const [isLoading, setIsLoading] = useState(true)
+  const [availableCounts, setAvailableCounts] = useState<{ [topicId: string]: number }>({})
+  const [selectedQuantity, setSelectedQuantity] = useState(20)
+  const [lastAnswer, setLastAnswer] = useState<boolean | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [wrongCards, setWrongCards] = useState<Flashcard[]>([])
+  const [showFinishModal, setShowFinishModal] = useState(false)
+  const [lastSessionStats, setLastSessionStats] = useState({ correct: 0, incorrect: 0 })
+  const [refreshProgress, setRefreshProgress] = useState(0)
+  const supabase = createClient()
+
+  // Estados para as novas funcionalidades
+  const [searchTerm, setSearchTerm] = useState("")
+  const [topicProgress, setTopicProgress] = useState<{ [topicId: string]: TopicProgress }>({})
+  const [studyStats, setStudyStats] = useState<StudyStats>({
+    totalXP: 12450,
+    currentStreak: 8,
+    longestStreak: 15,
+    topicsCompleted: 12,
+    totalTimeStudied: 2840, // em minutos
+    averageAccuracy: 78
+  })
+  const [studyModeType, setStudyModeType] = useState<"normal" | "quick" | "review" | "test" | "custom" | "wrong">("normal")
+  const [showStatsModal, setShowStatsModal] = useState(false)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<"all" | "easy" | "medium" | "hard">("all")
+
+  // Adicionar estado para controlar quantidade de cards
+  const [showQuantityModal, setShowQuantityModal] = useState(false)
+  const [pendingTopicId, setPendingTopicId] = useState<string | null>(null)
+  const [pendingMode, setPendingMode] = useState<string>("normal")
+  const [customQuantity, setCustomQuantity] = useState(10)
+
+  // Estados para cards errados
+  const [wrongCardsCount, setWrongCardsCount] = useState<{ [topicId: string]: number }>({})
+  const [isStudyingWrongCards, setIsStudyingWrongCards] = useState(false)
+
+  // Estados para administração (professores/admins)
+  const [userRole, setUserRole] = useState<string>('student')
+  const [isAdminMode, setIsAdminMode] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingFlashcard, setEditingFlashcard] = useState<any>(null)
+  const [adminFlashcards, setAdminFlashcards] = useState<any[]>([])
+  const [adminPage, setAdminPage] = useState(1)
+  const [adminTotal, setAdminTotal] = useState(0)
+  const [formQuestion, setFormQuestion] = useState("")
+  const [formAnswer, setFormAnswer] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Novos estados para melhorias
+  const [isFullscreen, setIsFullscreen] = useState(true) // Fullscreen como padrão
+  const [showTimer, setShowTimer] = useState(true) // Timer ativo por padrão
+  const [cardTimer, setCardTimer] = useState(0)
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
+  const [showKeyboardHints, setShowKeyboardHints] = useState(true)
+  const [isCardAnimating, setIsCardAnimating] = useState(false)
+  const [showContinueModal, setShowContinueModal] = useState(false)
+
+  useEffect(() => {
+    console.log("🔍 [DEBUG] useEffect triggered, selectedSubject:", selectedSubject)
+    if (selectedSubject) {
+      console.log("🔍 [DEBUG] selectedSubject existe, chamando loadTopicsBySubject()")
+      loadTopicsBySubject()
+    } else {
+      console.log("🔍 [DEBUG] selectedSubject é null, chamando loadSubjects()")
+      loadSubjects()
+    }
+  }, [selectedSubject])
+
+  // Verificar autenticação e role do usuário
+  useEffect(() => {
+    const checkAuthAndRole = async () => {
+      try {
+        console.log('🔍 [DEBUG] Verificando autenticação...')
+        // Por enquanto, definir como student para permitir acesso
+        setUserRole('student')
+        console.log('✅ [DEBUG] Role definida como student (acesso público)')
+    } catch (error) {
+        console.error("❌ [DEBUG] Erro ao verificar autenticação/role:", error)
+        setUserRole('student')
+      }
+    }
+    checkAuthAndRole()
+  }, [])
+
+  useEffect(() => {
+    if (topics && Array.isArray(topics) && topics.length > 0) {
+      const progress: { [topicId: string]: TopicProgress } = {}
+      topics.forEach(topic => {
+        if (topic && topic.id) {
+          progress[topic.id] = generateTopicProgress(topic.id)
+        }
+      })
+      setTopicProgress(progress)
+    }
+  }, [topics])
+
+  // Filtrar tópicos baseado na busca e dificuldade
+  const filteredTopics = (topics || []).filter(topic => {
+    if (!topic || !topic.name) return false
+    
+    const matchesSearch = topic.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const progress = topicProgress[topic.id]
+    if (!progress) return matchesSearch
+    
+    const matchesDifficulty = selectedDifficulty === "all" || 
+      (selectedDifficulty === "easy" && progress.accuracy >= 80) ||
+      (selectedDifficulty === "medium" && progress.accuracy >= 50 && progress.accuracy < 80) ||
+      (selectedDifficulty === "hard" && progress.accuracy < 50)
+    
+    return matchesSearch && matchesDifficulty
+  })
+
+  const loadSubjects = async () => {
+    try {
+      console.log("🔍 [DEBUG] Carregando subjects...")
+      
+      // Usar dados mock para garantir funcionamento
+      const mockSubjects = [
+        { id: 1, name: "Português" },
+        { id: 2, name: "Regulamentos" }
+      ]
+      
+      console.log("✅ [DEBUG] Usando dados mock:", mockSubjects)
+      
+      // Verificação de segurança
+      if (!mockSubjects || !Array.isArray(mockSubjects)) {
+        throw new Error("Dados mock de subjects inválidos")
+      }
+      
+      setSubjects(mockSubjects)
+      
+      // Carregar tópicos após definir subjects
+      await loadTopics()
+      
+    } catch (error) {
+      console.error("❌ [DEBUG] Erro ao carregar matérias:", error)
+      // Em caso de erro, usar dados de fallback
+      const fallbackSubjects = [
+        { id: 1, name: "Matéria Padrão" }
+      ]
+      setSubjects(fallbackSubjects)
+      await loadTopics()
+    } finally {
+      console.log("🔍 [DEBUG] Finalizando loadSubjects, setIsLoading(false)")
+      setIsLoading(false)
+    }
+  }
+
+  const loadTopicsBySubject = async () => {
+    if (!selectedSubject) return
+    try {
+      console.log("🔍 Carregando tópicos para matéria ID:", selectedSubject)
+      
+      // Usar dados mock para garantir funcionamento
+      const mockTopics = [
+        { id: "fonetica-fonologia", name: "Fonetica e Fonologia" },
+        { id: "ortografia", name: "Ortografia" },
+        { id: "acentuacao-grafica", name: "Acentuação Gráfica" },
+        { id: "morfologia-classes", name: "Morfologia: Classes de Palavras" },
+        { id: "morfologia-flexao", name: "Morfologia: Flexão" },
+        { id: "sintaxe-termos-essenciais", name: "Sintaxe: Termos Essenciais" },
+        { id: "sintaxe-termos-integrantes", name: "Sintaxe: Termos Integrantes" },
+        { id: "sintaxe-termos-acessorios", name: "Sintaxe: Termos Acessórios" },
+        { id: "sintaxe-periodo-composto", name: "Sintaxe: Período Composto" },
+        { id: "concordancia", name: "Concordância Verbal e Nominal" },
+        { id: "regencia", name: "Regência Verbal e Nominal" },
+        { id: "crase", name: "Crase" },
+        { id: "colocacao-pronominal", name: "Colocação Pronominal" },
+        { id: "semantica-estilistica", name: "Semântica e Estilística" },
+        { id: "estatuto-militares", name: "Estatuto dos Militares" },
+        { id: "lei-13954-2019", name: "Lei 13.954/2019" },
+        { id: "rdaer", name: "RDAER" },
+        { id: "ica-111-1", name: "ICA 111-1" },
+        { id: "ica-111-2", name: "ICA 111-2" },
+        { id: "ica-111-3", name: "ICA 111-3" },
+        { id: "ica-111-6", name: "ICA 111-6" },
+        { id: "rca-34-1", name: "RCA 34-1" },
+        { id: "portaria-gm-md-1143-2022", name: "Portaria GM-MD Nº 1.143/2022" }
+      ]
+      
+      console.log("✅ [DEBUG] Usando tópicos mock para matéria:", selectedSubject)
+      setTopics(mockTopics)
+    } catch (error) {
+      console.error("❌ Erro ao carregar tópicos por matéria:", error)
+      // Em caso de erro, usar dados mock como fallback
+      const fallbackTopics = [
+        { id: "default-topic", name: "Tópico Padrão" }
+      ]
+      setTopics(fallbackTopics)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const loadTopics = async () => {
+    try {
+      console.log('🔍 [DEBUG] Carregando tópicos...')
+      
+      // Usar dados mock para garantir funcionamento
+      const mockTopics = [
+        { id: "fonetica-fonologia", name: "Fonetica e Fonologia" },
+        { id: "ortografia", name: "Ortografia" },
+        { id: "acentuacao-grafica", name: "Acentuação Gráfica" },
+        { id: "morfologia-classes", name: "Morfologia: Classes de Palavras" },
+        { id: "morfologia-flexao", name: "Morfologia: Flexão" },
+        { id: "sintaxe-termos-essenciais", name: "Sintaxe: Termos Essenciais" },
+        { id: "sintaxe-termos-integrantes", name: "Sintaxe: Termos Integrantes" },
+        { id: "sintaxe-termos-acessorios", name: "Sintaxe: Termos Acessórios" },
+        { id: "sintaxe-periodo-composto", name: "Sintaxe: Período Composto" },
+        { id: "concordancia", name: "Concordância Verbal e Nominal" },
+        { id: "regencia", name: "Regência Verbal e Nominal" },
+        { id: "crase", name: "Crase" },
+        { id: "colocacao-pronominal", name: "Colocação Pronominal" },
+        { id: "semantica-estilistica", name: "Semântica e Estilística" },
+        { id: "estatuto-militares", name: "Estatuto dos Militares" },
+        { id: "lei-13954-2019", name: "Lei 13.954/2019" },
+        { id: "rdaer", name: "RDAER" },
+        { id: "ica-111-1", name: "ICA 111-1" },
+        { id: "ica-111-2", name: "ICA 111-2" },
+        { id: "ica-111-3", name: "ICA 111-3" },
+        { id: "ica-111-6", name: "ICA 111-6" },
+        { id: "rca-34-1", name: "RCA 34-1" },
+        { id: "portaria-gm-md-1143-2022", name: "Portaria GM-MD Nº 1.143/2022" }
+      ]
+      
+      console.log('✅ [DEBUG] Usando tópicos mock:', mockTopics.length)
+      
+      // Verificação de segurança
+      if (!mockTopics || !Array.isArray(mockTopics)) {
+        throw new Error("Dados mock de topics inválidos")
+      }
+      
+      setTopics(mockTopics)
+      
+    } catch (error) {
+      console.error("❌ [DEBUG] Erro ao carregar tópicos:", error)
+      // Em caso de erro, usar dados de fallback
+      const fallbackTopics = [
+        { id: "default-topic", name: "Tópico Padrão" }
+      ]
+      setTopics(fallbackTopics)
+    } finally {
+      console.log('🔍 [DEBUG] Finalizando loadTopics, setIsLoading(false)')
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando flashcards...</p>
+          </div>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Verificar se não há subjects
+  if (subjects.length === 0) {
+  return (
+    <DashboardShell>
+        <div className="space-y-6 p-6">
+        <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Flashcards</h1>
+          <p className="text-muted-foreground mt-1">
+              Sistema de flashcards interativos
+          </p>
+        </div>
+
+          <Card className="text-center py-16 bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-800 dark:to-red-900 border-orange-200 dark:border-orange-700">
+            <CardContent>
+              <div className="p-6 rounded-full bg-gradient-to-r from-orange-400 to-red-600 mx-auto mb-6 w-fit">
+                <BookOpenText className="h-16 w-16 text-white" />
+          </div>
+              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-800 bg-clip-text text-transparent">
+                Nenhuma matéria disponível
+              </h3>
+              <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                As matérias de flashcards ainda não foram configuradas. Entre em contato com o administrador.
+              </p>
+              <Button asChild className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                <Link href="/dashboard">
+                  <ArrowRight className="mr-3 h-5 w-5" />
+                  Voltar ao Dashboard
+                </Link>
+            </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Verificar se nenhum subject está selecionado
+  if (!selectedSubject) {
+    return (
+      <DashboardShell>
+        <div className="space-y-6 p-6">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Flashcards</h1>
+            <p className="text-muted-foreground mt-1">
+              Escolha uma matéria para começar
+            </p>
+          </div>
+          
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {subjects.map((subject, index) => {
+              // Cores especiais para cada matéria
+              const subjectColors = {
+                'Português': {
+                  gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
+                  border: 'border-emerald-200 dark:border-emerald-800',
+                  hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+                  shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
+                  badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                  button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
+                  title: 'from-emerald-600 to-emerald-800',
+                  icon: '📚',
+                  desc: 'Domine gramática, interpretação de texto, literatura e redação com nossos flashcards interativos!'
+                },
+                'Regulamentos': {
+                  gradient: 'from-amber-400 via-amber-500 to-amber-600',
+                  border: 'border-amber-200 dark:border-amber-800',
+                  hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-700',
+                  shadow: 'hover:shadow-amber-100 dark:hover:shadow-amber-900',
+                  badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+                  button: 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700',
+                  title: 'from-amber-600 to-amber-800',
+                  icon: '⚖️',
+                  desc: 'Aprenda normas militares, legislação e regulamentos específicos de forma eficiente!'
+                }
+              }
+
+              const defaultColors = {
+                gradient: 'from-slate-400 via-slate-500 to-slate-600',
+                border: 'border-slate-200 dark:border-slate-800',
+                hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
+                shadow: 'hover:shadow-slate-100 dark:hover:shadow-slate-900',
+                badge: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
+                button: 'from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700',
+                title: 'from-slate-600 to-slate-800',
+                icon: '🎯',
+                desc: 'Estude flashcards interativos sobre os principais tópicos desta matéria.'
+              }
+
+              const config = subjectColors[subject.name as keyof typeof subjectColors] || defaultColors
+              
+              return (
+              <Card 
+                  key={subject.id} 
+                  className={`
+                    relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-xl 
+                    ${config.border} ${config.hoverBorder} ${config.shadow}
+                    bg-gradient-to-br from-white via-gray-50 to-gray-100 
+                    dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
+                    min-h-[320px] flex flex-col group cursor-pointer
+                  `}
+                  onClick={() => setSelectedSubject(subject.id)}
+              >
+                {/* Gradiente decorativo no topo */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
+                  
+                  <CardHeader className="flex-1 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`p-4 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg text-4xl`}>
+                        {config.icon}
+                    </div>
+                  </div>
+                  
+                    <Badge variant="secondary" className={`${config.badge} font-bold px-4 py-2 text-sm tracking-wide mb-4`}>
+                      Matéria
+                    </Badge>
+                    
+                    <CardTitle className={`text-3xl font-black bg-gradient-to-r ${config.title} bg-clip-text text-transparent leading-tight mb-4 group-hover:scale-105 transition-transform duration-300`}>
+                      {subject.name}
+                  </CardTitle>
+                  
+                    <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
+                      {config.desc}
+                  </CardDescription>
+                </CardHeader>
+                
+                  <CardContent className="pt-0 relative text-center">
+                    <div className="space-y-4">
+                      {/* Estatísticas simuladas */}
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          {subject.name.toLowerCase().includes('português') ? (
+                            <span>Gramática, Literatura, Redação</span>
+                          ) : (
+                            <span>Regulamentos, Legislação</span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          <span>Nível {Math.floor(Math.random() * 5) + 1}</span>
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 1000) + 100} estudantes</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{Math.floor(Math.random() * 50) + 10} min</span>
+                        </span>
+                      </div>
+                    </div>
+                    
+                      <Button 
+                      className={`w-full mt-6 bg-gradient-to-r ${config.button} text-white border-0 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
+                      >
+                      <Play className="mr-3 h-6 w-6" />
+                      Estudar {subject.name}
+                      </Button>
+                </CardContent>
+              </Card>
+              )
+            })}
+          </div>
+
+          {subjects.length === 0 && (
+            <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+              <CardContent>
+                <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
+                  <BookOpenText className="h-16 w-16 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhuma matéria disponível</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                  As matérias ainda não foram configuradas no sistema. Em breve novos conteúdos serão adicionados!
+                </p>
+                <Button asChild className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                  <Link href="/dashboard">
+                    <ArrowRight className="mr-3 h-5 w-5" />
+                    Voltar ao Dashboard
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </DashboardShell>
+    )
+  }
+
+  // Página principal de tópicos (após escolher matéria)
+  return (
+    <DashboardShell>
+          <div className="space-y-6">
+        {/* Header com Stats Globais */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setSelectedSubject(null)}
+              >
+                <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                Voltar
+              </Button>
+              <h1 className="text-3xl font-bold">
+                {selectedSubject === 1 ? "📝 Português" : "⚖️ Regulamentos"}
+              </h1>
+            </div>
+                <p className="text-muted-foreground">
+              {selectedSubject === 1 
+                ? "Domine gramática, interpretação de texto e literatura"
+                : "Aprenda regulamentos militares e legislação específica"
+              }
+                </p>
+              </div>
+              
+          {/* Stats Cards Rápidas */}
+          <div className="flex gap-3">
+            <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-700/10 border-emerald-500/20">
+              <CardContent className="p-4 text-center">
+                <Flame className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+                <p className="text-2xl font-bold">{studyStats.currentStreak}</p>
+                <p className="text-xs text-muted-foreground">dias consecutivos</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-700/10 border-emerald-500/20">
+              <CardContent className="p-4 text-center">
+                <Trophy className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+                <p className="text-2xl font-bold">{studyStats.totalXP.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">XP total</p>
+              </CardContent>
+            </Card>
+
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowStatsModal(true)}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Ver Stats
+                  </Button>
+              </div>
+            </div>
+
+        {/* Filtros Avançados */}
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Busca */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar tópicos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-64 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Filtro por dificuldade */}
+            <Select value={selectedDifficulty} onValueChange={(value) => setSelectedDifficulty(value as "all" | "easy" | "medium" | "hard")}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Dificuldade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="easy">Fácil</SelectItem>
+                <SelectItem value="medium">Médio</SelectItem>
+                <SelectItem value="hard">Difícil</SelectItem>
+              </SelectContent>
+            </Select>
+                    </div>
+                    
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Target className="h-4 w-4" />
+              <span>{filteredTopics.length} tópicos encontrados</span>
+            </div>
+            
+            {/* Botão modo administrativo para professores/admins */}
+            {(userRole === "teacher" || userRole === "admin") && (
+                        <Button
+                variant={isAdminMode ? "default" : "outline"}
+                          size="sm"
+                onClick={() => setIsAdminMode(!isAdminMode)}
+                className={isAdminMode ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white" : "border-purple-300 text-purple-600 hover:bg-purple-50"}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                {isAdminMode ? "Sair do Admin" : "Modo Admin"}
+                {userRole === "admin" && <Shield className="h-3 w-3 ml-1" />}
+                        </Button>
+                    )}
+                  </div>
+            </div>
+
+        {/* Grid de Tópicos */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredTopics.map((topic, index) => {
+            const progress = topicProgress[topic.id] || {
+              accuracy: 0,
+              lastStudied: null,
+              streak: 0,
+              totalStudied: 0,
+              level: 1,
+              xp: 0,
+              bestScore: 0,
+              timeSpent: 0
+            }
+            
+            // Sistema de cores rotativas para tópicos
+            const topicColors = [
+              {
+                gradient: 'from-blue-400 via-blue-500 to-blue-600',
+                border: 'border-blue-200 dark:border-blue-800',
+                hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
+                shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
+                badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                title: 'text-blue-800 dark:text-blue-200',
+                iconBg: 'bg-blue-500/10 dark:bg-blue-500/20'
+              },
+              {
+                gradient: 'from-purple-400 via-purple-500 to-purple-600',
+                border: 'border-purple-200 dark:border-purple-800',
+                hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
+                shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
+                badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+                title: 'text-purple-800 dark:text-purple-200',
+                iconBg: 'bg-purple-500/10 dark:bg-purple-500/20'
+              },
+              {
+                gradient: 'from-teal-400 via-teal-500 to-teal-600',
+                border: 'border-teal-200 dark:border-teal-800',
+                hoverBorder: 'hover:border-teal-300 dark:hover:border-teal-700',
+                shadow: 'hover:shadow-teal-100 dark:hover:shadow-teal-900',
+                badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+                button: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
+                title: 'text-teal-800 dark:text-teal-200',
+                iconBg: 'bg-teal-500/10 dark:bg-teal-500/20'
+              },
+              {
+                gradient: 'from-pink-400 via-pink-500 to-pink-600',
+                border: 'border-pink-200 dark:border-pink-800',
+                hoverBorder: 'hover:border-pink-300 dark:hover:border-pink-700',
+                shadow: 'hover:shadow-pink-100 dark:hover:shadow-pink-900',
+                badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+                button: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
+                title: 'text-pink-800 dark:text-pink-200',
+                iconBg: 'bg-pink-500/10 dark:bg-pink-500/20'
+              },
+              {
+                gradient: 'from-indigo-400 via-indigo-500 to-indigo-600',
+                border: 'border-indigo-200 dark:border-indigo-800',
+                hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-700',
+                shadow: 'hover:shadow-indigo-100 dark:hover:shadow-indigo-900',
+                badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+                button: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
+                title: 'text-indigo-800 dark:text-indigo-200',
+                iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20'
+              }
+            ]
+
+            const config = topicColors[index % topicColors.length]
+            
+            return (
+              <Card 
+                key={topic.id} 
+                className={`
+                  relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-xl 
+                  ${config.border} ${config.hoverBorder} ${config.shadow}
+                  bg-gradient-to-br from-white via-gray-50 to-gray-100 
+                  dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
+                  min-h-[380px] flex flex-col group
+                `}
+              >
+                {/* Gradiente decorativo no topo */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
+                
+                <CardHeader className="flex-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg`}>
+                      <BookOpenText className="h-6 w-6 text-white" />
+                    </div>
+                    <Badge variant="secondary" className={`${config.badge} font-semibold px-3 py-1`}>
+                      Tópico
+                    </Badge>
+            </div>
+
+                  <CardTitle className={`text-xl font-bold ${config.title} leading-tight mb-3`}>
+                    {topic.name}
+                  </CardTitle>
+                  
+                  <CardDescription className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                    Explore flashcards interativos sobre este tópico e teste seus conhecimentos de forma dinâmica e envolvente!
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    {/* Progresso do tópico */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Progresso</span>
+                        <span className="font-semibold">{progress.totalStudied} cards</span>
+                  </div>
+                      <Progress value={Math.min(100, (progress.totalStudied / 50) * 100)} className="h-2" />
+              </div>
+
+                    {/* Estatísticas rápidas */}
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Target className="h-3 w-3" />
+                        <span>Nível {progress.level}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Trophy className="h-3 w-3" />
+                        <span>{progress.xp} XP</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Flame className="h-3 w-3" />
+                        <span>{progress.streak} dias</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>{progress.accuracy}%</span>
+                      </div>
+                    </div>
+
+                    {/* Botão principal */}
+              <Button
+                      className={`w-full bg-gradient-to-r ${config.button} text-white font-semibold py-3
+                        transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                        border-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50`}
+                    >
+                      <Play className="mr-2 h-5 w-5" />
+                      {progress.totalStudied === 0 ? "Começar" : "Continuar"}
+              </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+              </div>
+
+        {/* Estado vazio */}
+        {filteredTopics.length === 0 && topics.length > 0 && (
+          <Card className="text-center py-16 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-800 dark:to-yellow-900 border-yellow-200 dark:border-yellow-700 hover:shadow-xl transition-all duration-300">
+            <CardContent>
+              <div className="p-6 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto mb-6 w-fit">
+                <Search className="h-16 w-16 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-yellow-600 to-yellow-800 bg-clip-text text-transparent">Nenhum tópico encontrado</h3>
+              <p className="text-yellow-700 dark:text-yellow-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                Tente ajustar os filtros ou buscar por outro termo para encontrar tópicos disponíveis.
+              </p>
+              <Button
+                onClick={() => {
+                  setSearchTerm("")
+                  setSelectedDifficulty("all")
+                }}
+                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white border-0 px-8 py-3 text-lg font-semibold"
+              >
+                Limpar Filtros
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {topics.length === 0 && (
+          <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
+            <CardContent>
+              <div className="p-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 mx-auto mb-6 w-fit">
+                <BookOpenText className="h-16 w-16 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-800 bg-clip-text text-transparent">Nenhum tópico disponível</h3>
+              <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+                Os tópicos de flashcards ainda não foram configurados para esta matéria. Em breve haverá novos conteúdos!
+              </p>
+              <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+                <Link href="/dashboard">
+                  <ArrowRight className="mr-3 h-5 w-5" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </DashboardShell>
+  )
+}
