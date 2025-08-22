@@ -284,7 +284,7 @@ export default function RedacaoPage() {
       setCurrentStep("verificando_bucket")
       
       const { data: buckets } = await supabase.storage.listBuckets()
-      const redacoesBucket = buckets?.find(bucket => bucket.name === 'redacoes')
+      const redacoesBucket = buckets?.find((bucket: any) => bucket.name === 'redacoes')
       
       if (!redacoesBucket) {
         console.log("📦 [Client] Criando bucket 'redacoes'...")
