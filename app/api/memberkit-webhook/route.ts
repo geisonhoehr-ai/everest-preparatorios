@@ -27,6 +27,12 @@ async function verifyMemberkitSignature(request: Request, payload: string): Prom
 
 export async function POST(request: Request) {
   try {
+    // Verificar se supabaseAdmin está disponível
+    if (!supabaseAdmin) {
+      console.error("Webhook: Supabase admin não disponível")
+      return new NextResponse("Erro interno do servidor", { status: 500 })
+    }
+    
     const payload = await request.text() // Ler o corpo como texto para verificação de assinatura
     const jsonPayload = JSON.parse(payload) // Depois parsear para JSON
 
