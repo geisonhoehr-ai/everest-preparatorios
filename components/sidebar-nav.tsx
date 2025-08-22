@@ -90,24 +90,28 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
         href: "/dashboard",
         icon: Home,
         variant: "default" as const,
+        external: false,
       },
       {
         title: "Flashcards",
         href: "/flashcards",
         icon: BookOpen,
         variant: "default" as const,
+        external: false,
       },
       {
         title: "Quiz",
         href: "/quiz",
         icon: HelpCircle,
         variant: "default" as const,
+        external: false,
       },
       {
         title: "CIAAR",
         href: "/ciaar",
         icon: Plane,
         variant: "default" as const,
+        external: false,
       },
     ]
 
@@ -119,24 +123,28 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
           href: "/turmas",
           icon: Users,
           variant: "default" as const,
+          external: false,
         },
         {
           title: "Membros",
           href: "/membros",
           icon: UserPlus,
           variant: "default" as const,
+          external: false,
         },
         {
           title: "Redação",
           href: "/redacao",
           icon: PenTool,
           variant: "default" as const,
+          external: false,
         },
         {
           title: "Livros",
           href: "/livros",
           icon: BookOpen,
           variant: "default" as const,
+          external: false,
         }
       )
     }
@@ -148,6 +156,7 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
           href: "/admin",
           icon: Shield,
           variant: "default" as const,
+          external: false,
         }
       )
     }
