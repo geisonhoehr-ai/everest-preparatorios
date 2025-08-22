@@ -1366,6 +1366,10 @@ export async function getProvas() {
   try {
     console.log('🔍 [SERVER] Iniciando getProvas...')
     
+    if (!supabaseAdmin) {
+      throw new Error('Supabase Admin não está configurado')
+    }
+    
     // Primeiro, vamos verificar todas as provas sem filtro
     console.log('🔍 [SERVER] Verificando todas as provas...')
     const { data: todasProvas, error: errorTodas } = await supabaseAdmin
