@@ -7,10 +7,15 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Star, Shield, Clock, Users, Award, CheckCircle, Play, ArrowRight, Plane, GraduationCap, Zap, Target, Rocket, Globe, MapPin, Phone, Mail, Facebook, Instagram, Linkedin, Youtube, BookOpen, Trophy, Video, FileText, Headphones, MessageCircle, PenTool } from "lucide-react"
 import { motion } from "framer-motion"
-import dynamic from "next/dynamic"
 
-// Dynamic imports para evitar problemas de SSR
-const MagicCard = dynamic(() => import("@/components/magicui/magic-card").then(mod => ({ default: mod.MagicCard })), { ssr: false })
+// Componente MagicCard simplificado para evitar problemas de SSR
+const MagicCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  return (
+    <div className={`relative overflow-hidden rounded-xl border border-gray-200 bg-white/5 backdrop-blur-sm p-6 shadow-lg transition-all duration-300 hover:scale-105 ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 export default function CIAARPage() {
   const [mounted, setMounted] = useState(false)

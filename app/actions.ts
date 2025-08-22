@@ -1476,7 +1476,7 @@ export async function getProvasProfessor() {
     console.error('💥 Erro em getProvasProfessor:', error);
     
     // Se for erro de autenticação, redirecionar
-    if (error.message.includes('não autenticado') || error.message.includes('Auth')) {
+    if (error instanceof Error && (error.message.includes('não autenticado') || error.message.includes('Auth'))) {
       redirect('/login')
     }
     
@@ -1864,4 +1864,17 @@ export async function getTentativasProfessor() {
     // Usar o supabaseAdmin para acessar dados sem autenticação do servidor
     const { data: tentativas, error } = await supabaseAdmin
       .from('tentativas_prova')
-      .select(`
+      .select('*')
+    
+    if (error) {
+      console.error('❌ Erro ao buscar tentativas:', error)
+      throw error
+    }
+
+    console.log('✅ Tentativas encontradas:', tentativas?.length)
+    return tentativas || []
+  } catch (error) {
+    console.error('❌ Erro em getTentativasProfessor:', error)
+    throw error
+  }
+}

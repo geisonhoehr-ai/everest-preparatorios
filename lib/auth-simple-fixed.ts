@@ -114,13 +114,21 @@ export function useAuth() {
         if (!mounted) return
         
         if (isAuthenticated && user) {
+          console.log('✅ [AUTH] Usuário autenticado na inicialização:', user.email)
+          console.log('✅ [AUTH] Role na inicialização:', userRole)
+          
           setRole(userRole)
           setAuthState({
-            user,
+            user: {
+              id: user.id,
+              email: user.email || '',
+              role: userRole as 'student' | 'teacher' | 'admin'
+            },
             isLoading: false,
             isAuthenticated: true
           })
         } else {
+          console.log('❌ [AUTH] Nenhum usuário autenticado na inicialização')
           setAuthState({
             user: null,
             isLoading: false,
@@ -163,17 +171,26 @@ export function useAuth() {
         console.log('🔄 [AUTH] Auth event:', event, session?.user?.email)
 
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('🔐 [AUTH] Usuário fez login:', session.user.email)
           clearRoleCache() // Limpar cache ao fazer login
+          
           const user = await createUserObject(session.user)
           const userRole = await getUserRole(session.user.id)
           
+          console.log('✅ [AUTH] Role obtido após login:', userRole)
+          
           setRole(userRole)
           setAuthState({
-            user,
+            user: {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: userRole as 'student' | 'teacher' | 'admin'
+            },
             isLoading: false,
             isAuthenticated: true
           })
         } else if (event === 'SIGNED_OUT') {
+          console.log('🚪 [AUTH] Usuário fez logout')
           clearRoleCache() // Limpar cache ao fazer logout
           setRole('student')
           setAuthState({
@@ -182,10 +199,18 @@ export function useAuth() {
             isAuthenticated: false
           })
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          console.log('🔄 [AUTH] Token renovado para:', session.user.email)
           // Atualizar usuário sem limpar cache
           const user = await createUserObject(session.user)
+          const userRole = await getUserRole(session.user.id)
+          
+          setRole(userRole)
           setAuthState({
-            user,
+            user: {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: userRole as 'student' | 'teacher' | 'admin'
+            },
             isLoading: false,
             isAuthenticated: true
           })
@@ -229,7 +254,7 @@ export function useAuth() {
         await supabase
           .from('user_roles')
           .insert({
-            user_uuid: data.user.id,
+            user_uuid: data.user.id, // Usar ID, não email
             role
           })
       }
@@ -260,8 +285,15 @@ export function useAuth() {
       clearRoleCache() // Limpar cache ao fazer refresh
       if (authState.user) {
         const user = await createUserObject(authState.user)
+        const userRole = await getUserRole(authState.user.id)
+        
+        setRole(userRole)
         setAuthState({
-          user,
+          user: {
+            id: authState.user.id,
+            email: authState.user.email,
+            role: userRole as 'student' | 'teacher' | 'admin'
+          },
           isLoading: false,
           isAuthenticated: true
         })
@@ -285,4 +317,4 @@ export function useAuth() {
     signOut,
     refresh
   }
-} 
+}

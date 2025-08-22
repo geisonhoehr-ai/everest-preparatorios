@@ -170,4 +170,31 @@
   background-color: hsl(var(--background)) !important;
 }
 
+/* Animações personalizadas para efeito LED girando */
+@keyframes spin-slow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 400% 50%;
+  }
+}
+
+@keyframes spin-slow-reverse {
+  0% {
+    background-position: 400% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 6s linear infinite;
+}
+
 

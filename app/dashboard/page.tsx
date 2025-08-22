@@ -86,7 +86,7 @@ export default function DashboardPage() {
   // Renderizar conteúdo baseado no role
   const renderDashboardContent = () => {
     // Verificação de segurança para dashboardData
-    if (!dashboardData) {
+    if (!dashboardData || typeof dashboardData !== 'object') {
       return (
         <div className="text-center py-8">
           <p className="text-muted-foreground">Carregando dados do dashboard...</p>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
           {renderDashboardContent()}
           
           {/* Seção de progresso recente para professores */}
-          {(flags.isTeacher || flags.isAdmin) && dashboardData?.recentProgress && Array.isArray(dashboardData.recentProgress) && (
+          {(flags.isTeacher || flags.isAdmin) && dashboardData?.recentProgress && Array.isArray(dashboardData.recentProgress) && dashboardData.recentProgress.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Progresso Recente dos Alunos</CardTitle>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Array.isArray(dashboardData.recentProgress) && dashboardData.recentProgress.map((item, index) => (
+                  {dashboardData.recentProgress.map((item, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <BarChart3 className="h-4 w-4 text-muted-foreground" />

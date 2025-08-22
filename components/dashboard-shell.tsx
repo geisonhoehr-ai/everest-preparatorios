@@ -5,7 +5,7 @@ import { SidebarNav, sidebarNavItems } from "@/components/sidebar-nav"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { ChevronLeft, ChevronRight, Menu, X, User, Settings, LogOut, Sparkles, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ThemeIcons } from "@/components/theme-icons"
+import { SimpleThemeToggle } from "@/components/simple-theme-toggle"
 import { Avatar, AvatarFallback, AvatarImage, AvatarWithAutoFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -68,6 +68,13 @@ export function DashboardShell({ children }: DashboardShellProps) {
   // Memoizar o conteúdo do usuário para evitar re-renderizações
   const userContent = useMemo(() => {
     if (!user) return null
+
+    // Debug: verificar o role do usuário
+    console.log('🔍 [DASHBOARD_SHELL] User role debug:', {
+      email: user.email,
+      role: user.role,
+      userObject: user
+    })
 
     return (
       <div className="flex items-center gap-3">
@@ -205,6 +212,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
           </div>
         )}
+        
+        {/* Theme selector */}
+        <div className="border-t p-4">
+          <SimpleThemeToggle />
+        </div>
       </div>
     </div>
   ), [collapsed, user, getInitials, getRoleDisplay, handleLogout])

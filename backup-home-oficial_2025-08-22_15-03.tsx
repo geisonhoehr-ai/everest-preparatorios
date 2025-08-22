@@ -4,10 +4,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowRight, Play, Clock, Award, Medal, TrendingUp, BarChart3, Brain, CheckSquare, Moon, Video, FileText, Headphones, MessageCircle, Gift, Bookmark, Calendar, MessageCircle as WhatsApp, X, Check, Instagram, Youtube } from "lucide-react";
+import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowRight, Play, Clock, Award, Medal, TrendingUp, BarChart3, Brain, CheckSquare, Moon, Video, FileText, Headphones, MessageCircle, Gift, Bookmark, Calendar, MessageCircle as WhatsApp, X, Check } from "lucide-react";
 import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
 import { TermsOfUseModal } from "@/components/terms-of-use-modal";
-import ProfessorPhoto from "@/components/professor-photo";
 import { useState } from "react";
 
 export default function LandingPage() {
@@ -1162,7 +1161,13 @@ export default function LandingPage() {
             
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <ProfessorPhoto />
+                <div className="w-48 h-48 mx-auto md:mx-0 mb-8 rounded-full overflow-hidden border-4 border-orange-500/20">
+                  <img
+                    src="/professor-tiago-costa.jpg"
+                    alt="Professor Tiago Costa"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <h3 className="text-2xl font-bold mb-4 text-orange-400">Tiago Costa de Oliveira</h3>
                 <p className="text-lg text-gray-300 mb-6">
                   Especialista dedicado exclusivamente aos concursos militares
@@ -1577,31 +1582,10 @@ export default function LandingPage() {
                   Everest Preparatórios
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mb-6">
+              <p className="text-gray-400 text-sm mb-4">
                 Plataforma educacional independente para preparação de concursos militares.
               </p>
-              
-              {/* Redes Sociais */}
-              <div className="flex justify-center space-x-6 mb-6">
-                <a
-                  href="https://www.instagram.com/everestpreparatorios/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center justify-center w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-pink-500/50"
-                >
-                  <Instagram className="w-6 h-6 text-white" />
-                </a>
-                <a
-                  href="https://www.youtube.com/@everestcursospreparatorios"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-red-500/50"
-                >
-                  <Youtube className="w-6 h-6 text-white" />
-                </a>
-              </div>
-              
-              <div className="flex justify-center space-x-6 text-sm text-gray-400">
+                                      <div className="flex justify-center space-x-6 text-sm text-gray-400">
                           <button
                             onClick={() => setIsTermsModalOpen(true)}
                             className="hover:text-orange-400 transition-colors cursor-pointer"

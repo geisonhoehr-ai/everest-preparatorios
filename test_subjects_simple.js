@@ -1,68 +1,49 @@
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({path: '.env.local'});
 
 const { createClient } = require('@supabase/supabase-js');
 
-async function testSubjects() {
-  console.log('🔍 Testando conexão com Supabase...');
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  console.log('URL:', supabaseUrl ? '✅ Configurada' : '❌ Não configurada');
-  console.log('Key:', supabaseKey ? '✅ Configurada' : '❌ Não configurada');
-  
-  if (!supabaseUrl || !supabaseKey) {
-    console.log('❌ Variáveis de ambiente não configuradas');
-    return;
-  }
-  
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+console.log('🔍 [TEST] Testando getAllSubjects...');
+console.log('URL:', supabaseUrl ? '✅' : '❌');
+console.log('KEY:', supabaseKey ? '✅' : '❌');
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Variáveis de ambiente não configuradas');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function testGetAllSubjects() {
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('✅ Cliente Supabase criado');
+    console.log('🔍 [TEST] Executando query...');
     
-    // Testar tabela subjects
-    console.log('🔍 Testando tabela subjects...');
-    const { data: subjects, error: subjectsError } = await supabase
-      .from('subjects')
-      .select('*');
+    const { data, error } = await supabase
+      .from("subjects")
+      .select("id, name")
+      .order("name");
     
-    if (subjectsError) {
-      console.error('❌ Erro ao buscar subjects:', subjectsError);
+    if (error) {
+      console.error('❌ [TEST] Erro na query:', error);
       return;
     }
     
-    console.log('✅ Subjects encontrados:', subjects?.length || 0);
-    if (subjects && subjects.length > 0) {
-      subjects.forEach(subject => {
+    console.log('✅ [TEST] Query executada com sucesso');
+    console.log('📊 [TEST] Dados retornados:', data);
+    console.log('📊 [TEST] Total de subjects:', data?.length || 0);
+    
+    if (data && data.length > 0) {
+      console.log('📋 [TEST] Subjects encontrados:');
+      data.forEach(subject => {
         console.log(`  - ID: ${subject.id}, Nome: ${subject.name}`);
       });
-    } else {
-      console.log('⚠️ Nenhum subject encontrado na tabela');
-    }
-    
-    // Testar tabela topics
-    console.log('🔍 Testando tabela topics...');
-    const { data: topics, error: topicsError } = await supabase
-      .from('topics')
-      .select('*');
-    
-    if (topicsError) {
-      console.error('❌ Erro ao buscar topics:', topicsError);
-      return;
-    }
-    
-    console.log('✅ Topics encontrados:', topics?.length || 0);
-    if (topics && topics.length > 0) {
-      topics.forEach(topic => {
-        console.log(`  - ID: ${topic.id}, Nome: ${topic.name}, Subject ID: ${topic.subject_id}`);
-      });
-    } else {
-      console.log('⚠️ Nenhum topic encontrado na tabela');
     }
     
   } catch (error) {
-    console.error('❌ Erro inesperado:', error);
+    console.error('❌ [TEST] Erro inesperado:', error);
   }
 }
 
-testSubjects();
+testGetAllSubjects();

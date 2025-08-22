@@ -32,6 +32,7 @@ import { getUserRoleClient, getAuthAndRole } from "@/lib/get-user-role"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
+import { DebugTheme } from "@/components/debug-theme"
 
 interface Topic {
   id: string
@@ -1880,7 +1881,10 @@ export default function QuizPage() {
 
   return (
     <DashboardShell>
-              <div className="space-y-6">
+      <div className="space-y-6">
+        {/* Debug do Tema - TEMPORÁRIO */}
+        <DebugTheme />
+        
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
