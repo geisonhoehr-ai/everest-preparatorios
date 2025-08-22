@@ -45,7 +45,7 @@ export default function AuthGuard({
   // DEBUG: Mostrar informações do usuário
   console.log('🔍 [DASHBOARD DEBUG] User:', user)
   console.log('🔍 [DASHBOARD DEBUG] User role:', role)
-  console.log('🔍 [DASHBOARD DEBUG] User metadata:', user?.user_metadata)
+  console.log('🔍 [DASHBOARD DEBUG] User ID:', user?.id)
   console.log('🔍 [DASHBOARD DEBUG] Flags:', flags)
 
   useEffect(() => {
