@@ -928,7 +928,7 @@ export async function salvarCorrecaoRedacao(data: {
 
     // Verificar se é professor
     const userRole = await getUserRoleFromSupabase(user.id)
-    if (userRole !== 'teacher' && userRole !== 'admin') {
+    if (userRole !== 'teacher') {
       return { success: false, error: "Acesso negado" }
     }
 
@@ -1154,7 +1154,7 @@ export async function criarTurma(data: {
 
     // Verificar se é professor
     const userRole = await getUserRoleServer(user.id)
-    if (userRole !== 'teacher' && userRole !== 'admin') {
+    if (userRole !== 'teacher') {
       return { success: false, error: "Apenas professores podem criar turmas" }
     }
 
@@ -1223,7 +1223,7 @@ export async function vincularAlunoTurma(data: {
 
     // Verificar se é professor
     const userRole = await getUserRoleServer(currentUser.id)
-    if (userRole !== 'teacher' && userRole !== 'admin') {
+    if (userRole !== 'teacher') {
       return { success: false, error: "Apenas professores podem vincular alunos" }
     }
 
