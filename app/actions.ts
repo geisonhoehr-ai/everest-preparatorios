@@ -1291,7 +1291,6 @@ export async function vincularAlunoTurma(data: {
         user_uuid: alunoId,
         turma_id: data.turmaId
       })
-      .on('conflict', { do: 'nothing' }) // Ignora se já existe
 
     if (vinculoError) {
       console.error("❌ Erro ao vincular aluno:", vinculoError)
