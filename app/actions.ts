@@ -144,6 +144,8 @@ export async function getFlashcardsForReview(topicId: string, limit = 10) {
   const supabase = await getSupabase()
   console.log(`📚 [Server Action] Buscando flashcards para revisão do tópico: ${topicId}, limite: ${limit}`)
 
+  const offset = 0 // Sempre começar do início para revisão
+
   const { data, error } = await supabase
     .from("flashcards")
     .select("id, topic_id, question, answer")
