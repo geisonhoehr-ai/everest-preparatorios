@@ -1240,13 +1240,17 @@ export async function vincularAlunoTurma(data: {
     }
 
     // Verificar se aluno já existe
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(data.email)
+    const { data: existingUser } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('email', data.email)
+      .single()
     
     let alunoId: string
     
-    if (existingUser.user) {
+    if (existingUser) {
       // Usuário já existe
-      alunoId = existingUser.user.id
+      alunoId = existingUser.id
     } else {
       // Criar novo usuário
       const senhaTemporaria = `everest${Math.random().toString(36).substring(2, 8)}`
