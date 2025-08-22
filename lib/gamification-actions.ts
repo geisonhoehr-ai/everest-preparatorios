@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase-server'
+import { createClientSync } from '@/lib/supabase-server'
 import { getRank, getNextRankInfo, getRankProgress } from './ranking'
 
 // ===================================================================
@@ -69,7 +69,7 @@ export interface ActivityLog {
  */
 export async function getUserGamificationStats(userId: string): Promise<UserGamificationStats | null> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     // Verifica se o usuário tem estatísticas
     let { data: stats, error } = await supabase
@@ -131,7 +131,7 @@ export async function updateUserGamificationStats(
   updates: Partial<UserGamificationStats>
 ): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     const { error } = await supabase
       .from('user_gamification_stats')
@@ -164,7 +164,7 @@ export async function logUserActivity(
   metadata: any = {}
 ): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     // Calcula XP baseado no tipo de atividade
     const xpEarned = calculateActivityXP(activityType, score)
@@ -225,7 +225,7 @@ export async function logUserActivity(
  */
 export async function getAvailableAchievements(): Promise<Achievement[]> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     const { data: achievements, error } = await supabase
       .from('available_achievements')
@@ -250,7 +250,7 @@ export async function getAvailableAchievements(): Promise<Achievement[]> {
  */
 export async function getUserAchievementProgress(userId: string): Promise<UserAchievementProgress[]> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     const { data: progress, error } = await supabase
       .from('user_achievement_progress')
@@ -274,7 +274,7 @@ export async function getUserAchievementProgress(userId: string): Promise<UserAc
  */
 export async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     const stats = await getUserGamificationStats(userId)
     const achievements = await getAvailableAchievements()
@@ -365,7 +365,7 @@ export async function checkAndUnlockAchievements(userId: string): Promise<string
  */
 export async function getGlobalRanking(limit: number = 50): Promise<any[]> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     // Busca apenas usuários com role 'student' (exclui professores e admins)
     const { data: ranking, error } = await supabase
@@ -409,7 +409,7 @@ export async function getGlobalRanking(limit: number = 50): Promise<any[]> {
  */
 export async function updateUserStreak(userId: string): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     const stats = await getUserGamificationStats(userId)
     if (!stats) return false
@@ -476,7 +476,7 @@ function calculateActivityXP(activityType: string, score: number = 0): number {
  */
 export async function syncExistingData(userId: string): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = createClientSync()
     
     // Busca dados existentes
     const [flashcardProgress, quizScores, lessonProgress] = await Promise.all([
