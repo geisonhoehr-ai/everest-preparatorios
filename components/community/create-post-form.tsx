@@ -12,13 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
 import { createCommunityPost } from "@/lib/community-actions"
-import type { CommunityCategory } from "@/lib/types"
 
-interface CreatePostFormProps {
-  categories: CommunityCategory[]
-}
 
-export function CreatePostForm({ categories }: CreatePostFormProps) {
+export function CreatePostForm() {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
