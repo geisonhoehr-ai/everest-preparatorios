@@ -1551,6 +1551,10 @@ export async function criarProva(provaData: {
 
 export async function atualizarProva(provaId: string, dados: any) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1574,6 +1578,10 @@ export async function atualizarProva(provaId: string, dados: any) {
 
 export async function publicarProva(provaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1597,6 +1605,10 @@ export async function publicarProva(provaId: string) {
 
 export async function arquivarProva(provaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1620,6 +1632,10 @@ export async function arquivarProva(provaId: string) {
 
 export async function deletarProva(provaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1641,6 +1657,10 @@ export async function deletarProva(provaId: string) {
 
 export async function getProvaCompleta(provaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const { data: prova, error } = await supabaseAdmin
       .from('provas')
       .select(`
@@ -1672,6 +1692,10 @@ export async function getProvaCompleta(provaId: string) {
 
 export async function iniciarTentativa(provaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     console.log('🔍 [SERVER] Iniciando tentativa para prova:', provaId)
     
     const supabase = await getSupabase();
@@ -1741,6 +1765,10 @@ export async function iniciarTentativa(provaId: string) {
 
 export async function salvarResposta(tentativaId: string, questaoId: string, resposta: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1767,6 +1795,10 @@ export async function salvarResposta(tentativaId: string, questaoId: string, res
 
 export async function finalizarTentativa(tentativaId: string) {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     const supabase = await getSupabase();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -1832,6 +1864,10 @@ export async function finalizarTentativa(tentativaId: string) {
 
 export async function getTentativasAluno() {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     console.log('🔍 Iniciando getTentativasAluno...')
     
     // Usar o supabaseAdmin para acessar dados sem autenticação do servidor
@@ -1859,6 +1895,10 @@ export async function getTentativasAluno() {
 
 export async function getTentativasProfessor() {
   try {
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin não disponível');
+    }
+    
     console.log('🔍 Iniciando getTentativasProfessor...')
     
     // Usar o supabaseAdmin para acessar dados sem autenticação do servidor
