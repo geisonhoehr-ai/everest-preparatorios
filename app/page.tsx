@@ -4,26 +4,40 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowRight, Play, Clock, Award, Medal, TrendingUp, BarChart3, Brain, CheckSquare, Moon, Video, FileText, Headphones, MessageCircle, Gift, Bookmark, Calendar } from "lucide-react";
+import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowRight, Play, Clock, Award, Medal, TrendingUp, BarChart3, Brain, CheckSquare, Moon, Video, FileText, Headphones, MessageCircle, Gift, Bookmark, Calendar, MessageCircle as WhatsApp, X, Check } from "lucide-react";
+import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
+import { TermsOfUseModal } from "@/components/terms-of-use-modal";
+import { useState } from "react";
 
 export default function LandingPage() {
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Conteúdo principal */}
       <div className="relative z-10">
         {/* Header/Navigation */}
-        <header className="relative z-50">
-          <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+        <header className="relative z-50 overflow-hidden">
+          <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between relative w-full">
+              {/* Logo */}
+              <div className="flex items-center mb-4 sm:mb-0">
                 <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
                   <span className="text-white font-bold text-lg">E</span>
                 </div>
                 <span className="text-orange-500 font-bold text-xl">Everest Preparatórios</span>
               </div>
-              <div className="flex items-center space-x-4">
+              
+              {/* Menu Desktop - Só aparece em telas médias e grandes */}
+              <div className="desktop-menu hidden md:flex items-center space-x-4">
+                <Link href="/ciaar">
+                  <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
+                    CIAAR
+                  </Button>
+                </Link>
                 <Link href="/login">
-                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
+                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-blue-500 hover:text-white">
                     Área do Aluno
                   </Button>
                 </Link>
@@ -33,12 +47,31 @@ export default function LandingPage() {
                   </Button>
                 </Link>
               </div>
+
+              {/* Menu Mobile - Sempre visível em telas pequenas */}
+              <div className="mobile-menu flex md:hidden flex-col items-center space-y-3 w-full px-2 max-w-full">
+                <Link href="/ciaar" className="w-full">
+                  <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full">
+                    CIAAR
+                  </Button>
+                </Link>
+                <Link href="/login" className="w-full">
+                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white w-full">
+                    Área do Aluno
+                  </Button>
+                </Link>
+                <Link href="/login" className="w-full">
+                  <Button className="bg-orange-500 hover:bg-orange-600 w-full max-w-full">
+                    Área VIP
+                  </Button>
+                </Link>
+              </div>
             </div>
           </nav>
         </header>
 
         {/* Hero Section */}
-        <section className="relative py-20 overflow-hidden">
+        <section className="relative py-12 sm:py-16 md:py-20 overflow-hidden">
           {/* Background animado com efeitos LED */}
           <div className="absolute inset-0 bg-black">
             {/* Círculos decorativos com efeito LED */}
@@ -53,23 +86,23 @@ export default function LandingPage() {
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               {/* Badge com animação sutil */}
-              <Badge className="mb-6 bg-orange-500/20 text-orange-400 border-orange-500/30 animate-pulse">
+              <Badge className="mb-4 sm:mb-6 bg-orange-500/20 text-orange-400 border-orange-500/30 animate-pulse">
                 <Star className="w-4 h-4 mr-2" />
                 Plataforma #1 para CIAAR
               </Badge>
               
               {/* Título principal sem efeito LED */}
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold bg-gradient-to-r from-white via-orange-100 to-orange-200 bg-clip-text text-transparent leading-tight px-2">
                 Conquiste sua
                 <span className="block bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent leading-tight">
                   Vaga no CIAAR
                 </span>
               </h1>
-              <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed">
-                A plataforma mais completa para estudar Português e Redação para o concurso da Força Aérea Brasileira. 
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-6 sm:mb-8 max-w-4xl mx-auto leading-relaxed px-4">
+                A plataforma mais completa para estudar Português e Redação para concursos militares da aeronáutica. 
                 <span className="text-orange-400 font-semibold"> 785+ flashcards</span>, simulados exclusivos e correção de redações.
               </p>
-              <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 lg:space-x-8 text-sm text-gray-400 px-4">
                 <div className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
                   <span>7 dias grátis</span>
@@ -82,6 +115,170 @@ export default function LandingPage() {
                   <Users className="w-5 h-5 text-purple-500 mr-2" />
                   <span>+80 alunos aprovados</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Botões dos Grupos - WhatsApp e Telegram */}
+        <section className="py-12 sm:py-16 bg-black relative overflow-hidden">
+          {/* Background animado com efeitos LED */}
+          <div className="absolute inset-0 bg-black">
+            <div className="absolute top-10 left-10 w-32 h-32 md:w-48 md:h-48 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-10 right-10 w-40 h-40 md:w-56 md:h-56 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          </div>
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.05)_1px,transparent_1px)] bg-[size:30px_30px]"></div>
+          
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 px-2">
+                Junte-se à nossa
+                <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"> Comunidade Exclusiva</span>
+              </h2>
+              <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4">
+                Entre nos nossos grupos e receba dicas diárias, materiais exclusivos e tire suas dúvidas diretamente com os professores
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto px-2">
+              {/* Botão WhatsApp */}
+              <div className="relative group overflow-hidden">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-400 via-green-500 to-emerald-500 opacity-30 blur-sm"></div>
+                <a
+                  href="https://chat.whatsapp.com/D3hgVDf0Rax5Y6wiBjL1PO"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block"
+                >
+                  <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-green-500/40 rounded-2xl p-6 sm:p-8 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-green-500/25 h-full m-1">
+                    <div className="text-center">
+                      {/* Ícone WhatsApp SVG */}
+                      <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <svg
+                          className="w-12 h-12 text-white"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.515"/>
+                        </svg>
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold mb-3 text-green-400">Grupo WhatsApp</h3>
+                      <p className="text-gray-300 mb-4">
+                        📱 Preparatório CIAAR 2026<br/>
+                        <span className="text-sm text-gray-400">(Português e Redação)</span>
+                      </p>
+                      
+                      <div className="space-y-2 text-sm text-gray-300 mb-6">
+                        <div className="flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                          <span>Dicas diárias exclusivas</span>
+                        </div>
+                        <div className="flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                          <span>Materiais complementares</span>
+                        </div>
+                        <div className="flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                          <span>Suporte direto dos professores</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-full font-semibold group-hover:from-green-600 group-hover:to-green-700 transition-all duration-300 inline-flex items-center">
+                        <Users className="w-5 h-5 mr-2" />
+                        Entrar no Grupo
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              {/* Botão Telegram */}
+              <div className="relative group overflow-hidden">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 opacity-20 blur-sm"></div>
+                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-blue-500/30 rounded-2xl p-6 sm:p-8 h-full opacity-75 m-1">
+                  <div className="text-center">
+                    {/* Ícone Telegram SVG */}
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 opacity-60">
+                      <svg
+                        className="w-12 h-12 text-white"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M12 0C5.374 0 0 5.373 0 12s5.374 12 12 12 12-5.373 12-12S18.626 0 12 0zm5.568 8.16c-.188 1.877-.85 6.515-1.202 8.632-.148.896-.44 1.195-.723 1.224-.613.057-1.08-.404-1.678-.793-0.93-.608-1.455-.985-2.357-1.578-1.043-.686-.367-1.063.228-1.68.155-.162 2.857-2.618 2.911-2.84.007-.028.013-.132-.05-.187-.063-.054-.157-.036-.224-.021-.095.021-1.608 1.022-4.542 3.003-.43.297-.819.441-1.168.432-.384-.009-1.123-.216-1.672-.395-.67-.219-1.202-.335-1.155-.707.025-.194.297-.392.816-.594 3.197-1.375 5.328-2.281 6.393-2.718 3.047-1.281 3.682-1.504 4.099-1.504.091 0 .295.021.427.128.111.09.141.212.156.297.015.085.034.279.019.431z"/>
+                      </svg>
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold mb-3 text-blue-400 opacity-60">Grupo Telegram</h3>
+                    <p className="text-gray-400 mb-4">
+                      📱 Em breve<br/>
+                      <span className="text-sm text-gray-500">(Preparatório CIAAR 2026)</span>
+                    </p>
+                    
+                    <div className="space-y-2 text-sm text-gray-400 mb-6 opacity-60">
+                      <div className="flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                        <span>Conteúdo exclusivo</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                        <span>Arquivos e documentos</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                        <span>Notificações importantes</span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-gray-500 to-gray-600 text-gray-300 px-6 py-3 rounded-full font-semibold inline-flex items-center cursor-not-allowed">
+                      <Clock className="w-5 h-5 mr-2" />
+                      Em Breve
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Badge adicional */}
+            <div className="text-center mt-12">
+              <div className="relative group overflow-hidden">
+                {/* Efeito de brilho pulsante */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Badge principal com gradiente premium */}
+                <div className="relative bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 border-2 border-orange-400/50 text-white px-6 sm:px-8 py-4 rounded-2xl text-base font-semibold shadow-2xl group-hover:shadow-orange-500/40 transition-all duration-300 group-hover:scale-105 group-hover:border-orange-300/70 m-2">
+                  {/* Ícone estrela com brilho */}
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="relative">
+                      <Star className="w-6 h-6 text-yellow-300 drop-shadow-lg" />
+                      {/* Brilho da estrela */}
+                      <div className="absolute inset-0 w-6 h-6 bg-yellow-300 rounded-full blur-sm opacity-60 animate-ping"></div>
+                    </div>
+                    
+                    {/* Texto com gradiente */}
+                    <span className="bg-gradient-to-r from-yellow-200 via-white to-yellow-200 bg-clip-text text-transparent font-bold">
+                      Grupos 100% gratuitos para alunos e interessados no CIAAR
+                    </span>
+                    
+                    {/* Ícone de presente */}
+                    <div className="relative">
+                      <Gift className="w-6 h-6 text-yellow-300 drop-shadow-lg" />
+                      {/* Brilho do presente */}
+                      <div className="absolute inset-0 w-6 h-6 bg-yellow-300 rounded-full blur-sm opacity-60 animate-ping delay-300"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Linha decorativa */}
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-yellow-300 to-transparent rounded-full opacity-60"></div>
+                </div>
+                
+                {/* Partículas flutuantes */}
+                <div className="absolute -top-2 -left-2 w-2 h-2 bg-yellow-400 rounded-full animate-bounce opacity-80"></div>
+                <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce delay-100 opacity-80"></div>
+                <div className="absolute -bottom-1 -left-3 w-1 h-1 bg-yellow-300 rounded-full animate-bounce delay-200 opacity-80"></div>
+                <div className="absolute -bottom-2 -right-2 w-1.5 h-1.5 bg-orange-300 rounded-full animate-bounce delay-300 opacity-80"></div>
               </div>
             </div>
           </div>
@@ -110,11 +307,11 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-2">
               {/* Card SVE com efeito LED */}
-              <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-led-rotate opacity-75"></div>
-                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-blue-500/20 hover:border-blue-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-blue-500/25 h-full flex flex-col">
+              <div className="relative group h-full overflow-hidden">
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500  opacity-75"></div>
+                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-blue-500/30 hover:border-blue-500/50 rounded-lg p-4 sm:p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-blue-500/25 h-full flex flex-col m-1">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
                     SVE
@@ -132,8 +329,8 @@ export default function LandingPage() {
 
               {/* Card GDS com efeito LED */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 animate-led-rotate opacity-75" style={{animationDelay: '1s'}}></div>
-                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-green-500/20 hover:border-green-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-green-500/25 h-full flex flex-col">
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-green-500 via-emerald-500 to-green-500  opacity-75" style={{animationDelay: '1s'}}></div>
+                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-green-500/30 hover:border-green-500/50 rounded-lg p-4 sm:p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-green-500/25 h-full flex flex-col m-1">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
                     GDS
@@ -156,7 +353,7 @@ export default function LandingPage() {
 
               {/* Card CTA com efeito LED */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-led-rotate opacity-75" style={{animationDelay: '2s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500  opacity-75" style={{animationDelay: '2s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-purple-500/20 hover:border-purple-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -175,7 +372,7 @@ export default function LandingPage() {
 
               {/* Card COM com efeito LED */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-led-rotate opacity-75" style={{animationDelay: '3s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75" style={{animationDelay: '3s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-orange-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -195,7 +392,7 @@ export default function LandingPage() {
 
               {/* ANV - Análise */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-red-500 via-pink-500 to-red-500 animate-led-rotate opacity-75" style={{animationDelay: '4s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-red-500 via-pink-500 to-red-500  opacity-75" style={{animationDelay: '4s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-red-500/20 hover:border-red-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-red-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -212,7 +409,7 @@ export default function LandingPage() {
 
               {/* SVA - Serviços Administrativos */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-led-rotate opacity-75" style={{animationDelay: '5s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500  opacity-75" style={{animationDelay: '5s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-indigo-500/20 hover:border-indigo-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-indigo-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -241,7 +438,7 @@ export default function LandingPage() {
 
               {/* SVH - Serviços Hospitalares */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500 animate-led-rotate opacity-75" style={{animationDelay: '6s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-pink-500 via-rose-500 to-pink-500  opacity-75" style={{animationDelay: '6s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-pink-500/20 hover:border-pink-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-pink-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -258,7 +455,7 @@ export default function LandingPage() {
 
               {/* SVI - Serviços de Informática */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-500 animate-led-rotate opacity-75" style={{animationDelay: '7s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-500  opacity-75" style={{animationDelay: '7s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-teal-500/20 hover:border-teal-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-teal-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -273,7 +470,7 @@ export default function LandingPage() {
 
               {/* SVM - Serviços de Manutenção */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 animate-led-rotate opacity-75" style={{animationDelay: '8s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500  opacity-75" style={{animationDelay: '8s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-amber-500/20 hover:border-amber-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-amber-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -292,7 +489,7 @@ export default function LandingPage() {
 
               {/* Outras Especialidades */}
               <div className="relative group h-full">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-gray-500 via-slate-500 to-gray-500 animate-led-rotate opacity-75" style={{animationDelay: '9s'}}></div>
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-gray-500 via-slate-500 to-gray-500  opacity-75" style={{animationDelay: '9s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-gray-500/20 hover:border-gray-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-gray-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
@@ -326,25 +523,50 @@ export default function LandingPage() {
             <p className="text-xl text-gray-300 mb-8">
               Junte-se aos mais de 80 alunos aprovados que já passaram no EAOF com nossa metodologia comprovada.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {/* Botão principal com efeito LED */}
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-led-rotate opacity-75 blur-sm"></div>
-                <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" className="relative bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-lg px-8 py-4">
-                    <Zap className="w-5 h-5 mr-2" />
-                    Garantir Minha Vaga - R$ 998,50
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-2 sm:px-4">
+              {/* Botão principal - Premium */}
+              <div className="relative group w-full sm:w-auto">
+                {/* Efeito de brilho pulsante */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Efeito de borda sutil */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl opacity-30"></div>
+                
+                <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer" className="block w-full">
+                  <Button size="lg" className="relative bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 hover:from-orange-600 hover:via-orange-700 hover:to-red-700 text-white text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-orange-500/50 transition-all duration-300 group-hover:scale-105 border-2 border-orange-400/30 hover:border-orange-300/50 w-full sm:w-auto">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                        {/* Brilho do ícone */}
+                        <div className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-300 rounded-full blur-sm opacity-60 animate-ping"></div>
+                      </div>
+                      <span className="text-base sm:text-lg font-extrabold">Garantir Minha Vaga</span>
+                      <div className="bg-yellow-400 text-orange-900 px-3 py-1 rounded-full text-sm font-bold">
+                        R$ 998,50
+                      </div>
+                    </div>
                   </Button>
                 </a>
               </div>
               
-              {/* Botão secundário com efeito LED */}
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '1s'}}></div>
-                <Link href="/login">
-                  <Button variant="outline" size="lg" className="relative border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white text-lg px-8 py-4">
-                    <ArrowRight className="w-5 h-5 mr-2" />
-                    Já tenho conta
+              {/* Botão secundário - Elegante */}
+              <div className="relative group w-full sm:w-auto">
+                {/* Efeito de brilho pulsante */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-70 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Efeito de borda sutil */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl opacity-20"></div>
+                
+                <Link href="/login" className="block w-full">
+                  <Button variant="outline" size="lg" className="relative bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/90 hover:to-slate-800/90 border-2 border-blue-400/50 hover:border-blue-300 text-blue-300 hover:text-blue-200 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-blue-500/30 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm w-full sm:w-auto">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                        {/* Brilho do ícone */}
+                        <div className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 bg-blue-400 rounded-full blur-sm opacity-60 animate-ping delay-300"></div>
+                      </div>
+                      <span className="text-base sm:text-lg font-semibold">Já tenho conta</span>
+                    </div>
                   </Button>
                 </Link>
               </div>
@@ -357,7 +579,7 @@ export default function LandingPage() {
 
 
 
-        {/* Vídeo Promocional */}
+        {/* Vídeo Demonstrativo das Aulas */}
         <section className="py-20 bg-black">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -372,9 +594,9 @@ export default function LandingPage() {
             
             <div className="relative w-full max-w-4xl mx-auto">
               {/* Container do vídeo com efeito LED */}
-              <div className="relative">
-                <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-led-rotate opacity-75 blur-sm"></div>
-                <div className="relative aspect-video bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl overflow-hidden border border-orange-500/20">
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
+                <div className="relative aspect-video bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
                   <iframe
                     src="https://www.youtube.com/embed/VqvU4orX3qk"
                     title="Depoimentos de Alunos Aprovados - Everest Preparatórios"
@@ -388,7 +610,7 @@ export default function LandingPage() {
               <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-orange-500 text-white px-4 py-2">
                   <Play className="w-4 h-4 mr-2" />
-                  Vídeo Promocional
+                  Vídeo Demonstrativo das Aulas
                 </Badge>
               </div>
             </div>
@@ -408,54 +630,60 @@ export default function LandingPage() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-2">
               {/* Vídeo 1 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-6 border border-orange-500/20">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4">
+              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
+                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
                   <video
                     className="w-full h-full object-cover"
                     controls
+                    poster="/case-sucesso-1-poster.jpg"
+                    preload="metadata"
                   >
                     <source src="/case-sucesso-1.mp4" type="video/mp4" />
                     Seu navegador não suporta vídeos.
                   </video>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400">Depoimento 1</h3>
-                <p className="text-sm text-gray-300">
+                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 1</h3>
+                <p className="text-sm text-gray-300 px-1">
                   "Consegui minha aprovação graças à metodologia do Professor Tiago!"
                 </p>
               </div>
               
               {/* Vídeo 2 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-6 border border-orange-500/20">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4">
+              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
+                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
                   <video
                     className="w-full h-full object-cover"
                     controls
+                    poster="/case-sucesso-2-poster.jpg"
+                    preload="metadata"
                   >
                     <source src="/case-sucesso-2.mp4" type="video/mp4" />
                     Seu navegador não suporta vídeos.
                   </video>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400">Depoimento 2</h3>
-                <p className="text-sm text-gray-300">
+                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 2</h3>
+                <p className="text-sm text-gray-300 px-1">
                   "O curso transformou minha preparação e me deu confiança para a prova"
                 </p>
               </div>
               
               {/* Vídeo 3 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-6 border border-orange-500/20">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4">
+              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
+                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
                   <video
                     className="w-full h-full object-cover"
                     controls
+                    poster="/case-sucesso-3-poster.jpg"
+                    preload="metadata"
                   >
                     <source src="/case-sucesso-3.mp4" type="video/mp4" />
                     Seu navegador não suporta vídeos.
                   </video>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400">Depoimento 3</h3>
-                <p className="text-sm text-gray-300">
+                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 3</h3>
+                <p className="text-sm text-gray-300 px-1">
                   "Sonho realizado! Agora sou oficial da Aeronáutica!"
                 </p>
               </div>
@@ -494,11 +722,11 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-2">
               {/* Card Flashcards com efeito LED */}
-              <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-led-rotate opacity-75 blur-sm"></div>
-                <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
+              <div className="relative h-full overflow-hidden">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
+                <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-orange-500/30 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 h-full flex flex-col shadow-lg m-1">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-4">
                       <BookOpen className="w-6 h-6 text-white" />
@@ -529,7 +757,7 @@ export default function LandingPage() {
 
               {/* Card Simulados com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '1s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500  opacity-75 blur-sm" style={{animationDelay: '1s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
@@ -561,7 +789,7 @@ export default function LandingPage() {
 
               {/* Card Correção com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '2s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500  opacity-75 blur-sm" style={{animationDelay: '2s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
@@ -593,7 +821,7 @@ export default function LandingPage() {
 
               {/* Card Comunidade Exclusiva com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '3s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-emerald-500 to-green-500  opacity-75 blur-sm" style={{animationDelay: '3s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-4">
@@ -625,7 +853,7 @@ export default function LandingPage() {
 
               {/* Card Ranking e Progresso com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '4s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500  opacity-75 blur-sm" style={{animationDelay: '4s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center mb-4">
@@ -657,7 +885,7 @@ export default function LandingPage() {
 
               {/* Card Lives Especiais com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-red-500 via-pink-500 to-red-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '5s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-red-500 via-pink-500 to-red-500  opacity-75 blur-sm" style={{animationDelay: '5s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-red-500/20 hover:border-red-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center mb-4">
@@ -714,11 +942,11 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-2">
               {/* Card Aulas Gravadas com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-led-rotate opacity-75 blur-sm"></div>
-                <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
+                <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-orange-500/30 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 h-full flex flex-col shadow-lg">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-4">
                       <Video className="w-6 h-6 text-white" />
@@ -749,7 +977,7 @@ export default function LandingPage() {
 
               {/* Card Material de Apoio com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '1s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500  opacity-75 blur-sm" style={{animationDelay: '1s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
@@ -781,7 +1009,7 @@ export default function LandingPage() {
 
               {/* Card Simulados com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '2s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500  opacity-75 blur-sm" style={{animationDelay: '2s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
@@ -813,7 +1041,7 @@ export default function LandingPage() {
 
               {/* Card Lives Semanais com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '3s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-green-500 via-emerald-500 to-green-500  opacity-75 blur-sm" style={{animationDelay: '3s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-4">
@@ -845,7 +1073,7 @@ export default function LandingPage() {
 
               {/* Card Grupo VIP com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '4s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500  opacity-75 blur-sm" style={{animationDelay: '4s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center mb-4">
@@ -877,7 +1105,7 @@ export default function LandingPage() {
 
               {/* Card Correção de Redações com efeito LED */}
               <div className="relative h-full">
-                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-red-500 via-pink-500 to-red-500 animate-led-rotate opacity-75 blur-sm" style={{animationDelay: '5s'}}></div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-red-500 via-pink-500 to-red-500  opacity-75 blur-sm" style={{animationDelay: '5s'}}></div>
                 <Card className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105 h-full flex flex-col">
                   <CardHeader className="flex-shrink-0">
                     <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center mb-4">
@@ -1044,74 +1272,165 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card className="bg-gradient-to-br from-[#1e293b] to-[#334155] border-gray-600">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl">De</CardTitle>
-                  <div className="text-4xl font-bold text-gray-400 line-through">R$ 1.497</div>
-                  <CardDescription className="text-gray-300">
-                    Preço original
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 text-sm text-gray-400">
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-gray-500 mr-3" />
-                      <span>Curso básico</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-gray-500 mr-3" />
-                      <span>Sem bônus</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-gray-500 mr-3" />
-                      <span>Acesso limitado</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 px-2">
+              {/* Card Preço Original - Desvalorizado */}
+              <div className="relative group">
+                {/* Efeito de brilho sutil */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-gray-400 to-gray-600 rounded-2xl blur-lg opacity-20 group-hover:opacity-30 transition-all duration-500"></div>
+                
+                <Card className="relative bg-gradient-to-br from-slate-700/80 to-slate-800/80 border-2 border-gray-500/30 hover:border-gray-400/50 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm">
+                  {/* Badge "Não Recomendado" */}
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-gray-500 text-white px-4 py-1 text-xs font-semibold border border-gray-400/50">
+                      <X className="w-3 h-3 mr-1" />
+                      Não Recomendado
+                    </Badge>
+                  </div>
+                  
+                  <CardHeader className="text-center pt-6">
+                    <CardTitle className="text-2xl text-gray-300">De</CardTitle>
+                    <div className="relative">
+                      <div className="text-5xl font-black text-gray-400 line-through opacity-60">R$ 1.497</div>
+                      {/* Símbolo de "não vale a pena" */}
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                        <X className="w-5 h-5 text-white font-bold" />
+                      </div>
+                    </div>
+                    <CardDescription className="text-gray-400 text-lg">
+                      Preço original
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="pb-6">
+                    <ul className="space-y-3 text-sm text-gray-400 mb-6">
+                      <li className="flex items-center">
+                        <X className="w-5 h-5 text-red-400 mr-3" />
+                        <span>Curso básico</span>
+                      </li>
+                      <li className="flex items-center">
+                        <X className="w-5 h-5 text-red-400 mr-3" />
+                        <span>Sem bônus</span>
+                      </li>
+                      <li className="flex items-center">
+                        <X className="w-5 h-5 text-red-400 mr-3" />
+                        <span>Acesso limitado</span>
+                      </li>
+                    </ul>
+                    
+                    {/* Mensagem de desvalorização */}
+                    <div className="text-center p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                      <p className="text-red-400 text-sm font-semibold">❌ Não vale a pena!</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-              <Card className="bg-gradient-to-br from-[#1e293b] to-[#334155] border-orange-500 relative scale-105">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-orange-500 text-white px-4 py-1">
-                    <Gift className="w-4 h-4 mr-2" />
-                    Oferta Limitada
-                  </Badge>
+              {/* Card Oferta Limitada - SUPER ATRATIVO */}
+              <div className="relative group">
+                {/* Efeito de brilho pulsante premium */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Efeito de borda animada */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl  opacity-75"></div>
+                
+                <Card className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-2 border-orange-400/50 hover:border-orange-300/70 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm shadow-2xl group-hover:shadow-orange-500/30">
+                  {/* Badge "Oferta Limitada" Premium */}
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="relative">
+                      {/* Efeito de brilho pulsante */}
+                      <div className="absolute inset-0 bg-orange-400 rounded-full blur-lg opacity-60 animate-ping"></div>
+                      
+                      <Badge className="relative bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 text-sm font-bold border-2 border-orange-300/50 shadow-lg">
+                        <div className="flex items-center space-x-2">
+                          <Gift className="w-5 h-5 text-yellow-300" />
+                          <span>OFERTA LIMITADA</span>
+                          <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
+                        </div>
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <CardHeader className="text-center pt-12">
+                    <CardTitle className="text-2xl text-orange-300">Por</CardTitle>
+                    <div className="relative">
+                      {/* Preço principal com efeito de brilho */}
+                      <div className="text-6xl font-black bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                        R$ 998,50
+                      </div>
+                      
+                      {/* Símbolo de "vale muito a pena" */}
+                      <div className="absolute -top-2 -right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                        <Check className="w-6 h-6 text-white font-bold" />
+                      </div>
+                    </div>
+                    
+                    {/* Parcelamento com destaque */}
+                    <CardDescription className="text-gray-300 text-lg">
+                      <span className="text-orange-400 font-semibold">ou 12x de R$ 99,85</span>
+                    </CardDescription>
+                    
+                    {/* Economia destacada */}
+                    <div className="mt-3 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                      <p className="text-green-400 text-sm font-bold">
+                        💰 ECONOMIA DE R$ 498,50 + BÔNUS!
+                      </p>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="pb-6">
+                    <ul className="space-y-3 text-sm mb-6">
+                      <li className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                        <span className="text-green-300 font-semibold">Curso completo</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                        <span className="text-green-300 font-semibold">+5 bônus exclusivos</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                        <span className="text-green-300 font-semibold">Acesso por 12 meses</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                        <span className="text-green-300 font-semibold">Garantia de 7 dias</span>
+                      </li>
+                    </ul>
+                    
+                    {/* Botão CTA Premium */}
+                    <div className="relative">
+                      {/* Efeito de brilho pulsante no botão */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl blur-lg opacity-60 animate-pulse"></div>
+                      
+                      <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer">
+                                    <Button className="relative w-full py-4 px-4 sm:px-6 bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 hover:from-orange-600 hover:via-orange-700 hover:to-red-700 text-white font-bold text-lg shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 group-hover:scale-105 border-0">
+              <div className="flex items-center justify-center space-x-2 sm:space-x-3">
+                <div className="relative">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                  {/* Brilho do ícone */}
+                  <div className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-300 rounded-full blur-sm opacity-60 animate-ping"></div>
                 </div>
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl">Por</CardTitle>
-                  <div className="text-4xl font-bold text-orange-400">R$ 998,50</div>
-                  <CardDescription className="text-gray-300">
-                    ou 12x de R$ 99,85
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 text-sm">
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                      <span>Curso completo</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                      <span>+5 bônus exclusivos</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                      <span>Acesso vitalício</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
-                      <span>Garantia de 7 dias</span>
-                    </li>
-                  </ul>
-                  <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer">
-                    <Button className="w-full mt-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
-                      <Zap className="w-4 h-4 mr-2" />
-                      Garantir Minha Vaga
-                    </Button>
-                  </a>
-                </CardContent>
-              </Card>
+                <span className="text-sm sm:text-base">GARANTIR MINHA VAGA</span>
+                <div className="bg-yellow-400 text-orange-900 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
+                  AGORA!
+                </div>
+              </div>
+            </Button>
+                      </a>
+                    </div>
+                    
+                    {/* Urgência e escassez */}
+                    <div className="mt-4 text-center p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                      <p className="text-red-300 text-sm font-bold">
+                        ⏰ ÚLTIMAS VAGAS DISPONÍVEIS!
+                      </p>
+                      <p className="text-red-400 text-xs mt-1">
+                        Oferta por tempo limitado
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Bônus */}
@@ -1119,7 +1438,7 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold mb-8">
                 <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">Bônus Exclusivos</span> (Valor: R$ 497)
               </h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-2">
                 <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-lg p-6 border border-orange-500/20">
                   <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4 mx-auto">
                     <Bookmark className="w-6 h-6 text-white" />
@@ -1200,19 +1519,53 @@ export default function LandingPage() {
             <p className="text-xl text-gray-300 mb-8">
               Junte-se aos mais de 80 alunos aprovados que já passaram no EAOF com nossa metodologia comprovada.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer">
-                <Button size="lg" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-lg px-8 py-4">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Garantir Minha Vaga - R$ 998,50
-                </Button>
-              </a>
-              <Link href="/login">
-                <Button variant="outline" size="lg" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white text-lg px-8 py-4">
-                  <ArrowRight className="w-5 h-5 mr-2" />
-                  Já tenho conta
-                </Button>
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-2 sm:px-4">
+              {/* Botão principal - Premium */}
+              <div className="relative group w-full sm:w-auto">
+                {/* Efeito de brilho pulsante */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Efeito de borda animada */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 rounded-2xl  opacity-75"></div>
+                
+                <a href="https://pay.kiwify.com.br/vNzKPkd" target="_blank" rel="noopener noreferrer" className="block w-full">
+                  <Button size="lg" className="relative bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 hover:from-orange-600 hover:via-orange-700 hover:to-red-700 text-white text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-orange-500/50 transition-all duration-300 group-hover:scale-105 border-2 border-orange-400/30 hover:border-orange-300/50 w-full sm:w-auto">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-300" />
+                        {/* Brilho do ícone */}
+                        <div className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-300 rounded-full blur-sm opacity-60 animate-ping"></div>
+                      </div>
+                      <span className="text-base sm:text-lg font-extrabold">Garantir Minha Vaga</span>
+                      <div className="bg-yellow-400 text-orange-900 px-3 py-1 rounded-full text-sm font-bold">
+                        R$ 998,50
+                      </div>
+                    </div>
+                  </Button>
+                </a>
+              </div>
+              
+              {/* Botão secundário - Elegante */}
+              <div className="relative group w-full sm:w-auto">
+                {/* Efeito de brilho pulsante */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-70 transition-all duration-500 animate-pulse"></div>
+                
+                {/* Efeito de borda animada */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl  opacity-50"></div>
+                
+                <Link href="/login" className="block w-full">
+                  <Button variant="outline" size="lg" className="relative bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/90 hover:to-slate-800/90 border-2 border-blue-400/50 hover:border-blue-300 text-blue-300 hover:text-blue-200 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-blue-500/30 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm w-full sm:w-auto">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                        {/* Brilho do ícone */}
+                        <div className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 bg-blue-400 rounded-full blur-sm opacity-60 animate-ping delay-300"></div>
+                      </div>
+                      <span className="text-base sm:text-lg font-semibold">Já tenho conta</span>
+                    </div>
+                  </Button>
+                </Link>
+              </div>
             </div>
             <p className="text-sm text-gray-400 mt-4">
               ⚡ Oferta por tempo limitado - Vagas restritas
@@ -1233,13 +1586,22 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-gray-400 text-sm mb-4">
-                Plataforma não oficial, sem vínculo com a Força Aérea Brasileira.
+                Plataforma educacional independente para preparação de concursos militares.
               </p>
-              <div className="flex justify-center space-x-6 text-sm text-gray-400">
-                <a href="#" className="hover:text-orange-400 transition-colors">Termos de Uso</a>
-                <a href="#" className="hover:text-orange-400 transition-colors">Política de Privacidade</a>
-                <a href="#" className="hover:text-orange-400 transition-colors">Suporte</a>
-              </div>
+                                      <div className="flex justify-center space-x-6 text-sm text-gray-400">
+                          <button
+                            onClick={() => setIsTermsModalOpen(true)}
+                            className="hover:text-orange-400 transition-colors cursor-pointer"
+                          >
+                            Termos de Uso
+                          </button>
+                          <button
+                            onClick={() => setIsPrivacyModalOpen(true)}
+                            className="hover:text-orange-400 transition-colors cursor-pointer"
+                          >
+                            Política de Privacidade
+                          </button>
+                        </div>
               <p className="text-gray-500 text-xs mt-6">
                 &copy; {new Date().getFullYear()} Everest Preparatórios. Todos os direitos reservados.
               </p>
@@ -1247,6 +1609,64 @@ export default function LandingPage() {
           </div>
         </footer>
       </div>
-    </div>
-  );
-}
+
+      {/* WhatsApp Flutuante */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <a
+          href="https://wa.me/55981554037?text=Olá! Gostaria de saber mais sobre os cursos do Everest! 🎯"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group"
+        >
+          <div className="relative">
+            {/* Efeito de brilho pulsante */}
+            <div className="absolute inset-0 bg-green-400 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse scale-110"></div>
+            <div className="absolute inset-0 bg-green-300 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-all duration-500 animate-pulse delay-100 scale-125"></div>
+            
+            {/* Botão principal com gradiente mais bonito */}
+            <div className="relative w-16 h-16 bg-gradient-to-br from-green-400 via-green-500 to-green-600 rounded-full flex items-center justify-center shadow-2xl group-hover:shadow-green-400/60 transition-all duration-300 group-hover:scale-110 border-2 border-green-300/30">
+              {/* Ícone WhatsApp SVG customizado */}
+              <svg
+                className="w-9 h-9 text-white drop-shadow-lg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.515"/>
+              </svg>
+            </div>
+            
+            {/* Badge de notificação mais estilizado */}
+            <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white">
+              <span className="text-white text-xs font-bold">1</span>
+            </div>
+            
+            {/* Ondas de animação */}
+            <div className="absolute inset-0 rounded-full border-2 border-green-400/30 animate-ping"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-green-300/20 animate-ping delay-100 scale-110"></div>
+          </div>
+          
+          {/* Tooltip mais bonito */}
+          <div className="absolute right-20 bottom-2 bg-gradient-to-r from-gray-900 to-black text-white px-4 py-3 rounded-xl text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl border border-gray-700">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="font-medium">Fale conosco no WhatsApp!</span>
+            </div>
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1 w-3 h-3 bg-gray-900 rotate-45 border-r border-b border-gray-700"></div>
+          </div>
+        </a>
+      </div>
+
+              {/* Modal de Política de Privacidade */}
+        <PrivacyPolicyModal 
+          isOpen={isPrivacyModalOpen}
+          onClose={() => setIsPrivacyModalOpen(false)}
+        />
+
+        {/* Modal de Termos de Uso */}
+        <TermsOfUseModal 
+          isOpen={isTermsModalOpen}
+          onClose={() => setIsTermsModalOpen(false)}
+        />
+      </div>
+    );
+  }

@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Regras específicas para o menu mobile */
+@media (max-width: 767px) {
+  .mobile-menu {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  
+  .desktop-menu {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-menu {
+    display: none !important;
+  }
+  
+  .desktop-menu {
+    display: flex !important;
+  }
+}
+
+/* Garantir que os botões mobile não saiam da margem */
+.mobile-menu .w-full {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%; /* Light background - white */
@@ -140,3 +169,5 @@
 .orange-card .progress > div {
   background-color: hsl(var(--background)) !important;
 }
+
+

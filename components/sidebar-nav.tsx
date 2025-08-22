@@ -29,7 +29,8 @@ import {
   GraduationCap as ClassIcon,
   PlayCircle,
   Shield,
-  UserPlus
+  UserPlus,
+  Plane
 } from "lucide-react"
 import {
   Tooltip,
@@ -100,6 +101,12 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
         title: "Quiz",
         href: "/quiz",
         icon: HelpCircle,
+        variant: "default" as const,
+      },
+      {
+        title: "CIAAR",
+        href: "/ciaar",
+        icon: Plane,
         variant: "default" as const,
       },
     ]

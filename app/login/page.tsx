@@ -118,7 +118,7 @@ export default function LoginSimplePage() {
         {/* Efeito LED colorido girando na borda */}
         <div className="relative">
           {/* LED colorido girando no sentido horário */}
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-green-500 via-purple-500 via-pink-500 to-blue-500 animate-led-rotate opacity-75 blur-sm"></div>
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-green-500 via-purple-500 via-pink-500 to-blue-500  opacity-75 blur-sm"></div>
           
           <Card className="relative bg-black border border-gray-800 shadow-2xl rounded-2xl">
             <CardHeader className="text-center pb-6 sm:pb-8">
