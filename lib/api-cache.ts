@@ -1,4 +1,6 @@
 // Sistema de cache inteligente para APIs
+import { useState, useCallback, useEffect } from 'react'
+
 interface CacheEntry<T> {
   data: T
   timestamp: number
