@@ -221,6 +221,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
     href: "/dashboard",
     title: "Dashboard",
     icon: Home,
+    external: false,
   },
   {
     href: "https://alunos.everestpreparatorios.com.br",
@@ -232,50 +233,60 @@ export const sidebarNavItems: SidebarNavItem[] = [
     href: "/flashcards",
     title: "Flashcards",
     icon: BookText,
+    external: false,
   },
   {
     href: "/quiz",
     title: "Quiz",
     icon: GraduationCap,
+    external: false,
   },
   {
     href: "/provas",
     title: "Provas",
     icon: FileText,
+    external: false,
   },
   {
     href: "/livros",
     title: "Acervo Digital",
     icon: Archive,
+    external: false,
   },
   {
     href: "/redacao",
     title: "Redação",
     icon: PenTool,
+    external: false,
   },
   {
     href: "/membros",
     title: "Membros",
     icon: UserCheck,
+    external: false,
   },
   {
     href: "/turmas",
     title: "Turmas",
     icon: ClassIcon,
+    external: false,
   },
   {
     href: "/community",
     title: "Comunidade",
     icon: Users2,
+    external: false,
   },
   {
     href: "/calendario",
     title: "Calendário",
     icon: Calendar,
+    external: false,
   },
   {
     href: "/suporte",
     title: "Suporte",
     icon: HelpCircle,
+    external: false,
   },
 ]
