@@ -84,6 +84,55 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
       return []
     }
     
+    // Menu específico para estudantes
+    if (userRole === 'student') {
+      return [
+        {
+          title: "Dashboard Aluno",
+          href: "/dashboard",
+          icon: Home,
+          variant: "default" as const,
+          external: false,
+        },
+        {
+          title: "Aulas",
+          href: "https://alunos.everestpreparatorios.com.br",
+          icon: PlayCircle,
+          variant: "default" as const,
+          external: true,
+        },
+        {
+          title: "Flashcards",
+          href: "/flashcards",
+          icon: BookOpen,
+          variant: "default" as const,
+          external: false,
+        },
+        {
+          title: "Quiz",
+          href: "/quiz",
+          icon: HelpCircle,
+          variant: "default" as const,
+          external: false,
+        },
+        {
+          title: "Calendário",
+          href: "/calendario",
+          icon: Calendar,
+          variant: "default" as const,
+          external: false,
+        },
+        {
+          title: "Suporte",
+          href: "/suporte",
+          icon: HelpCircle,
+          variant: "default" as const,
+          external: false,
+        },
+      ]
+    }
+
+    // Menu para professores e admins (todas as páginas)
     const baseItems = [
       {
         title: "Dashboard",
@@ -91,6 +140,13 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
         icon: Home,
         variant: "default" as const,
         external: false,
+      },
+      {
+        title: "Aulas",
+        href: "https://alunos.everestpreparatorios.com.br",
+        icon: PlayCircle,
+        variant: "default" as const,
+        external: true,
       },
       {
         title: "Flashcards",
@@ -113,42 +169,65 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
         variant: "default" as const,
         external: false,
       },
+      {
+        title: "Provas",
+        href: "/provas",
+        icon: FileText,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Acervo Digital",
+        href: "/livros",
+        icon: Archive,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Redação",
+        href: "/redacao",
+        icon: PenTool,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Membros",
+        href: "/membros",
+        icon: UserCheck,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Turmas",
+        href: "/turmas",
+        icon: ClassIcon,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Comunidade",
+        href: "/community",
+        icon: Users2,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Calendário",
+        href: "/calendario",
+        icon: Calendar,
+        variant: "default" as const,
+        external: false,
+      },
+      {
+        title: "Suporte",
+        href: "/suporte",
+        icon: HelpCircle,
+        variant: "default" as const,
+        external: false,
+      },
     ]
 
-    // Adicionar itens específicos por role
-    if (userRole === 'teacher' || userRole === 'admin') {
-      baseItems.push(
-        {
-          title: "Turmas",
-          href: "/turmas",
-          icon: Users,
-          variant: "default" as const,
-          external: false,
-        },
-        {
-          title: "Membros",
-          href: "/membros",
-          icon: UserPlus,
-          variant: "default" as const,
-          external: false,
-        },
-        {
-          title: "Redação",
-          href: "/redacao",
-          icon: PenTool,
-          variant: "default" as const,
-          external: false,
-        },
-        {
-          title: "Livros",
-          href: "/livros",
-          icon: BookOpen,
-          variant: "default" as const,
-          external: false,
-        }
-      )
-    }
-
+    // Adicionar página de Admin apenas para admins
     if (userRole === 'admin') {
       baseItems.push(
         {
@@ -167,9 +246,9 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   // Log otimizado - apenas quando o role muda
   useEffect(() => {
     if (userRole === 'teacher' || userRole === 'admin') {
-      console.log('👨‍🏫 [SIDEBAR] Mostrando menu de professor/admin')
+      console.log('👨‍🏫 [SIDEBAR] Mostrando menu completo para professor/admin')
     } else if (userRole === 'student') {
-      console.log('👨‍🎓 [SIDEBAR] Mostrando menu de estudante')
+      console.log('👨‍🎓 [SIDEBAR] Mostrando menu limitado para estudante')
     }
   }, [userRole])
 
