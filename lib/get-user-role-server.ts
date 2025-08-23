@@ -10,6 +10,11 @@ export async function getUserRoleServer(userUuid: string): Promise<string> {
       return 'student'
     }
 
+    if (!supabaseAdmin) {
+      console.error('❌ [SERVER] supabaseAdmin não está disponível')
+      return 'student'
+    }
+
     console.log('✅ [SERVER] Buscando role no servidor para usuário:', userUuid)
     const { data, error } = await supabaseAdmin
       .from('user_roles')
