@@ -66,196 +66,23 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   const isUserAuthenticated = authResult?.isAuthenticated || false
   const currentUser = authResult?.user || null
   
-  // Debug detalhado
-  console.log('🔍 [SIDEBAR DEBUG] Valores completos:', {
-    authResult: authResult,
-    userRole,
-    isUserAuthenticated,
-    currentUser,
-    propItems: !!propItems
-  })
-  
   // Garantir que className tenha um valor padrão
   const safeClassName = className || ""
   
-  // Verificação de segurança para evitar erros de renderização
-  if (!authResult) {
-    console.warn('⚠️ [SIDEBAR] useAuth retornou undefined, usando valores padrão')
+  // Se items foi passado como prop, usar eles
+  if (propItems) {
+    console.log('🔍 [SIDEBAR] Usando items passados como prop')
   }
   
-      // Se items foi passado como prop, usar eles
-    if (propItems) {
-      console.log('🔍 [SIDEBAR] Usando items passados como prop')
-      return propItems
-    }
-    
-    // Menu baseado no role do usuário
-    if (userRole === 'admin' || userRole === 'teacher') {
-      console.log('🔍 [SIDEBAR] Usando menu completo para admin/professor')
-      return adminSidebarNavItems
-    } else {
-      console.log('🔍 [SIDEBAR] Usando menu limitado para aluno')
-      return sidebarNavItems
-    }
-    
-    // Verificação de segurança adicional
-    if (!isUserAuthenticated || !currentUser || !userRole) {
-      console.log('⚠️ [SIDEBAR] Valores de autenticação não definidos:', { isUserAuthenticated, currentUser, userRole })
-      return []
-    }
-    
-    console.log('🔍 [SIDEBAR] Role detectado:', userRole)
-    
-    // Menu específico para estudantes
-    if (userRole === 'student') {
-      console.log('👨‍🎓 [SIDEBAR] Renderizando menu de estudante')
-      return [
-        {
-          title: "Dashboard Aluno",
-          href: "/dashboard/aluno",
-          icon: Home,
-          external: false,
-        },
-        {
-          title: "Aulas",
-          href: "https://alunos.everestpreparatorios.com.br",
-          icon: PlayCircle,
-          external: true,
-        },
-        {
-          title: "Flashcards",
-          href: "/flashcards",
-          icon: BookOpen,
-          external: false,
-        },
-        {
-          title: "Quiz",
-          href: "/quiz",
-          icon: HelpCircle,
-          external: false,
-        },
-        {
-          title: "Calendário",
-          href: "/calendario",
-          icon: Calendar,
-          external: false,
-        },
-        {
-          title: "Suporte",
-          href: "/suporte",
-          icon: HelpCircle,
-          external: false,
-        },
-      ]
-    }
-
-    // Menu para professores e admins (todas as páginas)
-    console.log('👨‍🏫 [SIDEBAR] Renderizando menu completo para:', userRole)
-    const baseItems = [
-      {
-        title: "Dashboard",
-        href: userRole === 'teacher' ? "/dashboard/professor" : "/dashboard/admin",
-        icon: Home,
-        external: false,
-      },
-      {
-        title: "Aulas",
-        href: "https://alunos.everestpreparatorios.com.br",
-        icon: PlayCircle,
-        external: true,
-      },
-      {
-        title: "Flashcards",
-        href: "/flashcards",
-        icon: BookOpen,
-        external: false,
-      },
-      {
-        title: "Quiz",
-        href: "/quiz",
-        icon: HelpCircle,
-        external: false,
-      },
-      {
-        title: "CIAAR",
-        href: "/ciaar",
-        icon: Plane,
-        external: false,
-      },
-      {
-        title: "Provas",
-        href: "/provas",
-        icon: FileText,
-        external: false,
-      },
-      {
-        title: "Acervo Digital",
-        href: "/livros",
-        icon: Archive,
-        external: false,
-      },
-      {
-        title: "Redação",
-        href: "/redacao",
-        icon: PenTool,
-        external: false,
-      },
-      {
-        title: "Membros",
-        href: "/membros",
-        icon: UserCheck,
-        external: false,
-      },
-      {
-        title: "Turmas",
-        href: "/turmas",
-        icon: ClassIcon,
-        external: false,
-      },
-      {
-        title: "Comunidade",
-        href: "/community",
-        icon: Users2,
-        external: false,
-      },
-      {
-        title: "Calendário",
-        href: "/calendario",
-        icon: Calendar,
-        external: false,
-      },
-      {
-        title: "Suporte",
-        href: "/suporte",
-        icon: HelpCircle,
-        external: false,
-      },
-    ]
-
-    // Adicionar página de Admin apenas para admins
-    if (userRole === 'admin') {
-      baseItems.push(
-        {
-          title: "Admin",
-          href: "/admin",
-          icon: Shield,
-          external: false,
-        }
-      )
-    }
-
-    console.log('🔍 [SIDEBAR] Menu final:', baseItems.length, 'itens')
-    return baseItems
+  // Menu baseado no role do usuário
+  let menuItems: SidebarNavItem[]
+  if (userRole === 'admin' || userRole === 'teacher') {
+    console.log('🔍 [SIDEBAR] Usando menu completo para admin/professor')
+    menuItems = adminSidebarNavItems
+  } else {
+    console.log('🔍 [SIDEBAR] Usando menu limitado para aluno')
+    menuItems = sidebarNavItems
   }
-
-  // Log otimizado - apenas quando o role muda
-  useEffect(() => {
-    if (userRole === 'teacher' || userRole === 'admin') {
-      console.log('👨‍🏫 [SIDEBAR] Mostrando menu completo para professor/admin')
-    } else if (userRole === 'student') {
-      console.log('👨‍🎓 [SIDEBAR] Mostrando menu limitado para estudante')
-    }
-  }, [userRole])
 
   const pathname = usePathname()
   
@@ -308,7 +135,7 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   )
 }
 
-// Itens padrão para compatibilidade
+// Itens padrão para alunos (menu limitado)
 export const sidebarNavItems: SidebarNavItem[] = [
   {
     href: "/dashboard",
