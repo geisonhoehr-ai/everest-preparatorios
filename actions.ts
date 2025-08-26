@@ -198,14 +198,14 @@ export async function getAllFlashcardsByTopic(userUuid: string, topicId: string,
 
   const offset = (page - 1) * limit
 
-  const { data, error } = await supabase
-    .from("flashcards")
-    .select("id, topic_id, question, answer")
-    .eq("topic_id", topicId)
+      const { data, error } = await supabase
+        .from("flashcards")
+        .select("id, topic_id, question, answer")
+        .eq("topic_id", topicId)
     .order("id", { ascending: false })
     .range(offset, offset + limit - 1)
 
-  if (error) {
+      if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
     return { success: false, error: error.message }
   }
@@ -240,7 +240,7 @@ export async function getFlashcardById(userUuid: string, flashcardId: number) {
     .eq("id", flashcardId)
     .single()
 
-  if (error) {
+    if (error) {
     console.error("❌ [Server Action] Erro ao buscar flashcard:", error)
     return { success: false, error: error.message }
   }
@@ -378,12 +378,12 @@ export async function getQuizzesByTopic(topicId: string) {
   console.log(`📝 [Server Action] Buscando quizzes por tópico: ${topicId}`)
 
   const { data, error } = await supabase
-    .from("quizzes")
-    .select("id, topic_id, title, description")
-    .eq("topic_id", topicId)
-    .order("title")
+        .from("quizzes")
+        .select("id, topic_id, title, description")
+        .eq("topic_id", topicId)
+        .order("title")
 
-  if (error) {
+      if (error) {
     console.error("❌ [Server Action] Erro ao buscar quizzes:", error)
     return []
   }
@@ -604,7 +604,7 @@ export async function createRedacao(data: {
         console.error("❌ Erro ao criar bucket:", bucketError)
         return { success: false, error: "Erro no sistema de storage. Verifique se o bucket 'redacoes' foi criado manualmente no painel do Supabase." }
       }
-    } else {
+  } else {
       console.log("✅ Bucket 'redacoes' já existe")
     }
 
@@ -1046,8 +1046,8 @@ export async function getAllSubjects() {
     
     const { data, error } = await supabase.from("subjects").select("id, name").order("name")
     console.log("🔍 [Server Action] Query executada, data:", data, "error:", error)
-    
-    if (error) {
+      
+      if (error) {
       console.error("❌ [Server Action] Erro ao buscar matérias:", error)
       return []
     }
@@ -1080,8 +1080,8 @@ export async function getUserRoleServer(userUuid: string): Promise<"student" | "
   console.log(`👤 [Server Action] getUserRoleServer para UUID: ${userUuid}`)
 
   const { data, error } = await supabase.from("user_roles").select("role").eq("user_uuid", userUuid).single()
-
-  if (error) {
+      
+      if (error) {
     console.error("[getUserRoleServer] erro:", error)
     return null
   }
@@ -1233,7 +1233,7 @@ export async function vincularAlunoTurma(data: {
       .select('*')
       .eq('id', data.turmaId)
       .eq('professor_uuid', currentUser.id)
-      .single()
+    .single()
 
     if (turmaError || !turma) {
       return { success: false, error: "Turma não encontrada ou sem permissão" }
@@ -1337,7 +1337,7 @@ export async function getAlunosDaTurma(turmaId: string) {
       .eq('turma_id', turmaId)
       .order('data_entrada', { ascending: false })
 
-    if (error) {
+  if (error) {
       console.error("❌ Erro ao buscar alunos:", error)
       return { success: false, error: "Erro ao buscar alunos" }
     }
@@ -1905,7 +1905,7 @@ export async function getTentativasProfessor() {
     const { data: tentativas, error } = await supabaseAdmin
       .from('tentativas_prova')
       .select('*')
-    
+
     if (error) {
       console.error('❌ Erro ao buscar tentativas:', error)
       throw error
@@ -1939,8 +1939,8 @@ export async function getCalendarEventsByMonth(year: number, month: number) {
   const supabase = await getSupabase()
   const startDate = new Date(year, month - 1, 1).toISOString()
   const endDate = new Date(year, month, 0).toISOString()
-  
-  const { data, error } = await supabase
+    
+    const { data, error } = await supabase
     .from("calendar_events")
     .select("*")
     .gte("event_date", startDate)
@@ -1961,9 +1961,9 @@ export async function createCalendarEvent(eventData: any) {
     .from("calendar_events")
     .insert(eventData)
     .select()
-    .single()
-  
-  if (error) {
+      .single()
+
+    if (error) {
     console.error("Erro ao criar evento:", error)
     return { success: false, error: error.message }
   }
@@ -2026,7 +2026,7 @@ export async function saveWrongCard(userId: string, flashcardId: number, topicId
 
 export async function getWrongCardsByTopic(userId: string, topicId: string) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from("wrong_cards")
     .select(`
       *,
@@ -2035,13 +2035,13 @@ export async function getWrongCardsByTopic(userId: string, topicId: string) {
     .eq("user_id", userId)
     .eq("topic_id", topicId)
     .eq("reviewed", false)
-  
-  if (error) {
+
+    if (error) {
     console.error("Erro ao buscar wrong cards:", error)
     return []
   }
   
-  return data || []
+    return data || []
 }
 
 export async function markWrongCardsAsReviewed(userId: string, flashcardIds: number[]) {
@@ -2080,7 +2080,7 @@ export async function getWrongCardsCount(userId: string, topicId: string) {
 // Funções de Quiz
 export async function getAllQuizzesByTopic(topicId: string) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from("quizzes")
     .select("*")
     .eq("topic_id", topicId)
@@ -2091,7 +2091,7 @@ export async function getAllQuizzesByTopic(topicId: string) {
     return []
   }
   
-  return data || []
+    return data || []
 }
 
 export async function getAllQuestionsByQuiz(quizId: number) {
@@ -2112,12 +2112,12 @@ export async function getAllQuestionsByQuiz(quizId: number) {
 
 export async function createQuiz(quizData: any) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from("quizzes")
     .insert(quizData)
     .select()
-    .single()
-  
+      .single()
+
   if (error) {
     console.error("Erro ao criar quiz:", error)
     return { success: false, error: error.message }
@@ -2128,14 +2128,14 @@ export async function createQuiz(quizData: any) {
 
 export async function updateQuiz(quizId: string, quizData: any) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from("quizzes")
     .update(quizData)
     .eq("id", quizId)
-    .select()
-    .single()
-  
-  if (error) {
+      .select()
+      .single()
+
+    if (error) {
     console.error("Erro ao atualizar quiz:", error)
     return { success: false, error: error.message }
   }
@@ -2176,13 +2176,13 @@ export async function createQuizQuestion(questionData: any) {
 
 export async function updateQuizQuestion(questionId: string, questionData: any) {
   const supabase = await getSupabase()
-  const { data, error } = await supabase
+    const { data, error } = await supabase
     .from("quiz_questions")
     .update(questionData)
     .eq("id", questionId)
-    .select()
-    .single()
-  
+      .select()
+      .single()
+
   if (error) {
     console.error("Erro ao atualizar questão:", error)
     return { success: false, error: error.message }
@@ -2193,9 +2193,9 @@ export async function updateQuizQuestion(questionId: string, questionData: any) 
 
 export async function deleteQuizQuestion(questionId: string) {
   const supabase = await getSupabase()
-  const { error } = await supabase
+    const { error } = await supabase
     .from("quiz_questions")
-    .delete()
+      .delete()
     .eq("id", questionId)
   
   if (error) {
