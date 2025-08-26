@@ -311,10 +311,13 @@ export default function LandingPage() {
                 NOSSOS ALUNOS: PARABÉNS AOS APROVADOS!
               </h2>
               <p className="text-xl text-gray-300 mb-4">
-                É com imensa alegria e orgulho que compartilhamos uma grande notícia: 41 dos nossos dedicados alunos foram aprovados no processo seletivo para o EAOF 2025!
+                É com imensa alegria e orgulho que compartilhamos uma grande notícia: das 248 vagas disponíveis, 41 foram preenchidas por alunos Everest!
+              </p>
+              <p className="text-2xl font-bold text-orange-400 mb-4">
+                🏆 A MAIOR APROVAÇÃO DO BRASIL! 🏆
               </p>
               <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                Confira abaixo a lista completa dos nossos aprovados:
+                Confira abaixo a lista completa dos nossos campeões aprovados:
               </p>
             </div>
 
