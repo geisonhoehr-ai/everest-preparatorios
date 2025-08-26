@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Otimizações de performance */
+@layer base {
+  /* Melhorar performance de scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Otimizar renderização */
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* Melhorar performance de animações */
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+  
+  .animate-spin-slow-reverse {
+    animation: spin 3s linear infinite reverse;
+  }
+}
+
 /* Regras específicas para o menu mobile */
 @media (max-width: 767px) {
   .mobile-menu {

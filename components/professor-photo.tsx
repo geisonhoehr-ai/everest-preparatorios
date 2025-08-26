@@ -18,6 +18,8 @@ export default function ProfessorPhoto() {
             src="/professor-tiago-costa.jpg"
             alt="Professor Tiago Costa"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       </div>

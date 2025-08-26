@@ -600,12 +600,13 @@ export default function LandingPage() {
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
                 <div className="relative aspect-video bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
                   <iframe
-                    src="https://www.youtube.com/embed/VqvU4orX3qk"
+                    src="https://www.youtube.com/embed/VqvU4orX3qk?loading=lazy"
                     title="Depoimentos de Alunos Aprovados - Everest Preparatórios"
                     className="w-full h-full"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    loading="lazy"
                   ></iframe>
                 </div>
               </div>

@@ -74,9 +74,27 @@ const nextConfig = {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
+            priority: 10,
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            priority: 5,
+          },
+          // Separar lucide-react em chunk próprio
+          lucide: {
+            test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+            name: 'lucide',
+            chunks: 'all',
+            priority: 20,
           },
         },
       }
+      
+      // Otimizar tree shaking
+      config.optimization.usedExports = true
+      config.optimization.sideEffects = false
     }
 
     return config

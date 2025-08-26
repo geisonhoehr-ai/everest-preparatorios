@@ -1,11 +1,15 @@
 import type React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
-// import { ThemeProvider } from "@/components/theme-provider"
+import { PerformanceOptimizer } from "@/components/performance-optimizer"
+import { ThemeProvider } from "@/components/theme-provider"
 // import { SafeAuthProvider } from "@/components/safe-auth-provider"
-// import { PerformanceOptimizer } from "@/components/performance-optimizer"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true
+})
 
 export const metadata = {
   title: "Everest Preparatórios",
@@ -21,13 +25,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* <ThemeProvider attribute="class" defaultTheme="system" enableSystem> */}
-          {/* <SafeAuthProvider> */}
-            {/* <PerformanceOptimizer> */}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <PerformanceOptimizer>
+            {/* <SafeAuthProvider> */}
               {children}
-            {/* </PerformanceOptimizer> */}
-          {/* </SafeAuthProvider> */}
-        {/* </ThemeProvider> */}
+            {/* </SafeAuthProvider> */}
+          </PerformanceOptimizer>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -83,21 +83,19 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
     console.warn('⚠️ [SIDEBAR] useAuth retornou undefined, usando valores padrão')
   }
   
-  // Menu baseado no role para evitar re-renderizações
-  const menuItems = (() => {
-    // Debug: verificar valores de autenticação
-    console.log('🔍 [SIDEBAR DEBUG] Valores de autenticação:', {
-      authResult: !!authResult,
-      userRole,
-      isUserAuthenticated,
-      currentUser: !!currentUser,
-      propItems: !!propItems
-    })
-    
-    // Se items foi passado como prop, usar eles
+      // Se items foi passado como prop, usar eles
     if (propItems) {
       console.log('🔍 [SIDEBAR] Usando items passados como prop')
       return propItems
+    }
+    
+    // Menu baseado no role do usuário
+    if (userRole === 'admin' || userRole === 'teacher') {
+      console.log('🔍 [SIDEBAR] Usando menu completo para admin/professor')
+      return adminSidebarNavItems
+    } else {
+      console.log('🔍 [SIDEBAR] Usando menu limitado para aluno')
+      return sidebarNavItems
     }
     
     // Verificação de segurança adicional
@@ -248,7 +246,7 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
 
     console.log('🔍 [SIDEBAR] Menu final:', baseItems.length, 'itens')
     return baseItems
-  })()
+  }
 
   // Log otimizado - apenas quando o role muda
   useEffect(() => {
@@ -337,6 +335,23 @@ export const sidebarNavItems: SidebarNavItem[] = [
     external: false,
   },
   {
+    href: "/calendario",
+    title: "Calendário",
+    icon: Calendar,
+    external: false,
+  },
+  {
+    href: "/suporte",
+    title: "Suporte",
+    icon: HelpCircle,
+    external: false,
+  },
+]
+
+// Itens completos para admin/professor
+export const adminSidebarNavItems: SidebarNavItem[] = [
+  ...sidebarNavItems,
+  {
     href: "/provas",
     title: "Provas",
     icon: FileText,
@@ -370,18 +385,6 @@ export const sidebarNavItems: SidebarNavItem[] = [
     href: "/community",
     title: "Comunidade",
     icon: Users2,
-    external: false,
-  },
-  {
-    href: "/calendario",
-    title: "Calendário",
-    icon: Calendar,
-    external: false,
-  },
-  {
-    href: "/suporte",
-    title: "Suporte",
-    icon: HelpCircle,
     external: false,
   },
 ]
