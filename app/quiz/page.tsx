@@ -221,9 +221,9 @@ function QuizPageContent() {
         return
       }
       
-      const { quizzes: data, total } = await getAllQuizzesByTopic(user.id, topicId, adminPage, 10)
+      const data = await getAllQuizzesByTopic(topicId)
       setAdminQuizzes(data)
-      setAdminTotal(total)
+      setAdminTotal(data.length)
       setSelectedTopic(topicId)
       setMode("quizzes") // Adicionar esta linha para definir o mode
     } catch (error) {
@@ -244,7 +244,7 @@ function QuizPageContent() {
         return
       }
       
-      const data = await getAllQuestionsByQuiz(user.id, quizId)
+      const data = await getAllQuestionsByQuiz(quizId)
       setAdminQuestions(data)
       setSelectedQuiz(adminQuizzes.find(q => q.id === quizId) || null)
       setMode("quiz") // Adicionar esta linha para definir o mode
@@ -307,7 +307,7 @@ function QuizPageContent() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
-        await submitQuizResult(selectedQuiz.id, score, correct, questions.length - correct, questions.length, user.id)
+        await submitQuizResult(selectedQuiz.id, score, correct, questions.length - correct, questions.length)
       }
     } catch (error) {
       console.error("Erro ao salvar resultado:", error)
@@ -398,7 +398,11 @@ function QuizPageContent() {
         return
       }
       
-      await createQuiz(user.id, selectedTopic, formQuizTitle.trim(), formQuizDescription.trim())
+      await createQuiz({
+        topic_id: selectedTopic,
+        title: formQuizTitle.trim(),
+        description: formQuizDescription.trim()
+      })
       setShowCreateQuizModal(false)
       resetQuizForm()
       await loadAdminQuizzes(selectedTopic)
@@ -422,7 +426,10 @@ function QuizPageContent() {
         return
       }
       
-      await updateQuiz(user.id, editingQuiz.id, formQuizTitle.trim(), formQuizDescription.trim())
+      await updateQuiz(editingQuiz.id.toString(), {
+        title: formQuizTitle.trim(),
+        description: formQuizDescription.trim()
+      })
       setShowEditQuizModal(false)
       setEditingQuiz(null)
       resetQuizForm()
@@ -449,7 +456,7 @@ function QuizPageContent() {
         return
       }
       
-      await deleteQuiz(user.id, quizId)
+      await deleteQuiz(quizId.toString())
       if (selectedTopic) {
         await loadAdminQuizzes(selectedTopic)
       }
@@ -484,14 +491,13 @@ function QuizPageContent() {
         return
       }
       
-      await createQuizQuestion(
-        user.id,
-        selectedQuiz.id,
-        formQuestionText.trim(),
-        validOptions,
-        formCorrectAnswer.trim(),
-        formExplanation.trim()
-      )
+      await createQuizQuestion({
+        quiz_id: selectedQuiz.id,
+        question_text: formQuestionText.trim(),
+        options: validOptions,
+        correct_answer: formCorrectAnswer.trim(),
+        explanation: formExplanation.trim()
+      })
       setShowCreateQuestionModal(false)
       resetQuestionForm()
       await loadAdminQuestions(selectedQuiz.id)
@@ -526,14 +532,12 @@ function QuizPageContent() {
         return
       }
       
-      await updateQuizQuestion(
-        user.id,
-        editingQuestion.id,
-        formQuestionText.trim(),
-        validOptions,
-        formCorrectAnswer.trim(),
-        formExplanation.trim()
-      )
+      await updateQuizQuestion(editingQuestion.id.toString(), {
+        question_text: formQuestionText.trim(),
+        options: validOptions,
+        correct_answer: formCorrectAnswer.trim(),
+        explanation: formExplanation.trim()
+      })
       setShowEditQuestionModal(false)
       setEditingQuestion(null)
       resetQuestionForm()
@@ -560,7 +564,7 @@ function QuizPageContent() {
         return
       }
       
-      await deleteQuizQuestion(user.id, questionId)
+      await deleteQuizQuestion(questionId.toString())
       if (selectedQuiz) {
         await loadAdminQuestions(selectedQuiz.id)
       }

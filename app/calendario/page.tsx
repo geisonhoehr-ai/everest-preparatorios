@@ -183,10 +183,10 @@ export default function CalendarioPage() {
       }
 
       if (editingEvent) {
-        await updateCalendarEvent(user.id, editingEvent.id!, formData);
+        await updateCalendarEvent(editingEvent.id!, formData);
         toast.success("Evento atualizado com sucesso!");
       } else {
-        await createCalendarEvent(user.id, formData as CalendarEvent);
+        await createCalendarEvent(formData as CalendarEvent);
         toast.success("Evento criado com sucesso!");
       }
 
@@ -224,7 +224,7 @@ export default function CalendarioPage() {
       }
 
       if (confirm("Tem certeza que deseja deletar este evento?")) {
-        await deleteCalendarEvent(user.id, eventId);
+        await deleteCalendarEvent(eventId);
         toast.success("Evento deletado com sucesso!");
         loadEvents();
       }

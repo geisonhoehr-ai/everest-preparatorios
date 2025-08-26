@@ -764,7 +764,7 @@ function FlashcardsPageContent() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
-        await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect", user.id)
+        await updateTopicProgress(selectedTopic, isCorrect ? "correct" : "incorrect")
         
         // Salvar card errado no banco de dados
         if (!isCorrect && !isStudyingWrongCards) {
@@ -878,7 +878,7 @@ function FlashcardsPageContent() {
 
       if (isStudyingWrongCards) {
         // Se estava estudando cards errados, carregar novamente
-        const wrongCardsResult = await getWrongCardsByTopic(user.id, selectedTopic, 1, additionalCardsLimit)
+        const wrongCardsResult = await getWrongCardsByTopic(user.id, selectedTopic)
         
         if (wrongCardsResult && Array.isArray(wrongCardsResult)) {
           moreCards = wrongCardsResult.flat().slice(0, additionalCardsLimit)
@@ -1004,7 +1004,7 @@ function FlashcardsPageContent() {
       const result = await getAllFlashcardsByTopic(user.id, topicId, page, 10)
       if (result.success && result.data) {
         setAdminFlashcards(result.data.flashcards)
-        setAdminTotal(result.data.total)
+        setAdminTotal(result.data.flashcards.length)
         setAdminPage(page)
       }
     } catch (error) {

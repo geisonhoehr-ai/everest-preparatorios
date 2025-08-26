@@ -329,7 +329,9 @@ export default function LandingPage() {
                   </h3>
                   <div className="space-y-2 flex-grow">
                     <div className="text-sm text-gray-300">🏆 ADRIANO PONTES NEPOMUCENO</div>
-                    <div className="text-sm text-gray-300">🏆 ANTONIO DE PÁDUA AGUIAR FILHO</div>
+                    <div className="text-sm text-gray-300">🏆 CARLOS MAURÍCIO MACHADO AIETA</div>
+                    <div className="text-sm text-gray-300">🏆 HUMBERTO DA COSTA REZENDE</div>
+                    <div className="text-sm text-gray-300">🏆 LUIS ANDRE GARCIA DA SILVA</div>
                   </div>
                 </div>
               </div>
@@ -345,11 +347,10 @@ export default function LandingPage() {
                   <div className="space-y-2 flex-grow">
                     <div className="text-sm text-gray-300">🏆 ALEXANDRE ALEX LUDOVINO DA FONSECA</div>
                     <div className="text-sm text-gray-300">🏆 ANDERSON BARBOSA MARTINS</div>
-                    <div className="text-sm text-gray-300">🏆 DANIEL ELIAS VELASCO</div>
-                    <div className="text-sm text-gray-300">🏆 MARCELO SANTOS PACHECO</div>
+                    <div className="text-sm text-gray-300">🏆 GILSON CONCEIÇÃO DE ARAÚJO</div>
+                    <div className="text-sm text-gray-300">🏆 MANUEL COSTA SOARES</div>
                     <div className="text-sm text-gray-300">🏆 ROBSON MARTINS REIS</div>
-                    <div className="text-sm text-gray-300">🏆 THENÓRIO ALMEIDA LOPES DE ARAÚJO</div>
-                    <div className="text-sm text-gray-300">🏆 WAGNER DA SILVA DE FARIAS</div>
+                    <div className="text-sm text-gray-300">🏆 THIAGO SOARES DE BARROS</div>
                   </div>
                 </div>
               </div>
@@ -363,9 +364,10 @@ export default function LandingPage() {
                     CTA
                   </h3>
                   <div className="space-y-2 flex-grow">
+                    <div className="text-sm text-gray-300">🏆 ALINE VEIGA DO NASCIMENTO</div>
+                    <div className="text-sm text-gray-300">🏆 FLÁVIA CARVALHO CALDAS</div>
                     <div className="text-sm text-gray-300">🏆 GEANDRO PINHEIRO PIRES</div>
-                    <div className="text-sm text-gray-300">🏆 NARA LUANA XAVIER DA SILVA FERREIRA</div>
-                    <div className="text-sm text-gray-300">🏆 VITOR EMANUEL REZENDE PEREIRA</div>
+                    <div className="text-sm text-gray-300">🏆 MARCOS CORREIA DOS SANTOS</div>
                   </div>
                 </div>
               </div>
@@ -379,12 +381,7 @@ export default function LandingPage() {
                     COM
                   </h3>
                   <div className="space-y-2 flex-grow">
-                    <div className="text-sm text-gray-300">🏆 DAVI NILSON MOREIRA CARDOSO</div>
-                    <div className="text-sm text-gray-300">🏆 GERSON FÁBIO DE PINHO GONÇALVES</div>
-                    <div className="text-sm text-gray-300">🏆 GILSOMAR DE OLIVEIRA THOMAZ</div>
-                    <div className="text-sm text-gray-300">🏆 WILLIAM DO NASCIMENTO FERREIRA</div>
-                    <div className="text-sm text-gray-300">🏆 FREDSON ALVES DE FARIA</div>
-                    <div className="text-sm text-gray-300">🏆 FLÁVIA CARVALHO CALDAS</div>
+                    <div className="text-sm text-gray-300">🏆 (Nenhum aprovado nesta especialidade)</div>
                   </div>
                 </div>
               </div>
@@ -424,6 +421,9 @@ export default function LandingPage() {
                     <div className="text-sm text-gray-300">🏆 PRISCILA PONTES DOS SANTOS</div>
                     <div className="text-sm text-gray-300">🏆 SHIRLEY DOS SANTOS</div>
                     <div className="text-sm text-gray-300">🏆 ROGÉRIO PINTO DE AZEVEDO</div>
+                    <div className="text-sm text-gray-300">🏆 RAQUEL MACIAS DOS SANTOS</div>
+                    <div className="text-sm text-gray-300">🏆 ANDRÉ LUIZ MOREIRA TEIXEIRA</div>
+                    <div className="text-sm text-gray-300">🏆 CLÁUDIO JOSÉ DA SILVA</div>
                   </div>
                 </div>
               </div>
@@ -440,6 +440,7 @@ export default function LandingPage() {
                     <div className="text-sm text-gray-300">🏆 RAQUEL WEISHEIMER DE SOUZA</div>
                     <div className="text-sm text-gray-300">🏆 THIAGO RODRIGUES EVANGELISTA</div>
                     <div className="text-sm text-gray-300">🏆 VIVIANE MANHAES XAVIER</div>
+                    <div className="text-sm text-gray-300">🏆 PRISCILA BORDUAM DA SILVA</div>
                   </div>
                 </div>
               </div>
@@ -453,6 +454,10 @@ export default function LandingPage() {
                     SVI
                   </h3>
                   <div className="space-y-2 flex-grow">
+                    <div className="text-sm text-gray-300">🏆 ALISSON ALVES OLIVEIRA LEITE</div>
+                    <div className="text-sm text-gray-300">🏆 ANTONIO DE PÁDUA AGUIAR FILHO</div>
+                    <div className="text-sm text-gray-300">🏆 REGINALDO CESAR DUARTE</div>
+                    <div className="text-sm text-gray-300">🏆 VICTOR SALUSTRINO BEZERRA</div>
                     <div className="text-sm text-gray-300">🏆 WAGNER DOS SANTOS DA SILVA</div>
                   </div>
                 </div>
@@ -467,10 +472,7 @@ export default function LandingPage() {
                     SVM
                   </h3>
                   <div className="space-y-2 flex-grow">
-                    <div className="text-sm text-gray-300">🏆 ALAN TEIXEIRA REIS</div>
-                    <div className="text-sm text-gray-300">🏆 ARMANDO HENRIQUE LOPES CORRÊA</div>
                     <div className="text-sm text-gray-300">🏆 CARLOS EDUARDO BEZERRA DE SOUZA</div>
-                    <div className="text-sm text-gray-300">🏆 DOUGLAS LEÃO</div>
                     <div className="text-sm text-gray-300">🏆 WESLEY BARLATTI DE MACEDO</div>
                   </div>
                 </div>
@@ -485,7 +487,13 @@ export default function LandingPage() {
                     Outras
                   </h3>
                   <div className="space-y-2 flex-grow">
-                    <div className="text-sm text-gray-300">🏆 EMERSON MAXWELL MARCIANO PEDRONI SILVA - MET</div>
+                    <div className="text-sm text-gray-300">🏆 ANDERSON CARVALHO DE LIMA (MET)</div>
+                    <div className="text-sm text-gray-300">🏆 FERNANDA DE SOUZA BERNARDO (SUP)</div>
+                    <div className="text-sm text-gray-300">🏆 GETULIO TIAGO VALENTE SANFELICE (SUP)</div>
+                    <div className="text-sm text-gray-300">🏆 NATÁLIA FERNANDES GALENO (SIA)</div>
+                    <div className="text-sm text-gray-300">🏆 ROBERTO MÁRCIO DE MELO JUNIOR (FOT)</div>
+                    <div className="text-sm text-gray-300">🏆 ALEX DIAS GUIMARÃES (SIA)</div>
+                    <div className="text-sm text-gray-300">🏆 ANTONIO FIDELIS DIAS (SIA)</div>
                   </div>
                 </div>
               </div>
