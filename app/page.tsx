@@ -374,28 +374,18 @@ export default function LandingPage() {
 
 
 
-              {/* ANV - Análise + Outras Especialidades */}
+              {/* ANV - Análise */}
               <div className="relative group h-full">
                 <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-red-500 via-pink-500 to-red-500  opacity-75" style={{animationDelay: '4s'}}></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-red-500/20 hover:border-red-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-red-500/25 h-full flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                    ANV + Outras
+                    ANV
                   </h3>
                   <div className="space-y-2 flex-grow">
-                    <div className="text-sm text-gray-300 font-medium text-red-300">ANV - Análise:</div>
                     <div className="text-sm text-gray-300">🏆 DAVID RODRIGO GONÇALVES RIBEIRO</div>
                     <div className="text-sm text-gray-300">🏆 FÁBIO HENRIQUE PEREIRA DOS SANTOS</div>
                     <div className="text-sm text-gray-300">🏆 ROBERVAL CORRÊA ESPADIM</div>
-                    
-                    <div className="text-sm text-gray-300 font-medium text-red-300 mt-4">Outras Especialidades:</div>
-                    <div className="text-sm text-gray-300">🏆 ANDERSON CARVALHO DE LIMA (MET)</div>
-                    <div className="text-sm text-gray-300">🏆 FERNANDA DE SOUZA BERNARDO (SUP)</div>
-                    <div className="text-sm text-gray-300">🏆 GETULIO TIAGO VALENTE SANFELICE (SUP)</div>
-                    <div className="text-sm text-gray-300">🏆 NATÁLIA FERNANDES GALENO (SIA)</div>
-                    <div className="text-sm text-gray-300">🏆 ROBERTO MÁRCIO DE MELO JUNIOR (FOT)</div>
-                    <div className="text-sm text-gray-300">🏆 ALEX DIAS GUIMARÃES (SIA)</div>
-                    <div className="text-sm text-gray-300">🏆 ANTONIO FIDELIS DIAS (SIA)</div>
                   </div>
                 </div>
               </div>
@@ -476,6 +466,25 @@ export default function LandingPage() {
                 </div>
               </div>
 
+              {/* Outras Especialidades */}
+              <div className="relative group h-full">
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-gray-500 via-slate-500 to-gray-500  opacity-75" style={{animationDelay: '9s'}}></div>
+                <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-gray-500/20 hover:border-gray-500/40 rounded-lg p-6 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-gray-500/25 h-full flex flex-col">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center flex-shrink-0">
+                    <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                    Outras
+                  </h3>
+                  <div className="space-y-2 flex-grow">
+                    <div className="text-sm text-gray-300">🏆 ANDERSON CARVALHO DE LIMA (MET)</div>
+                    <div className="text-sm text-gray-300">🏆 FERNANDA DE SOUZA BERNARDO (SUP)</div>
+                    <div className="text-sm text-gray-300">🏆 GETULIO TIAGO VALENTE SANFELICE (SUP)</div>
+                    <div className="text-sm text-gray-300">🏆 NATÁLIA FERNANDES GALENO (SIA)</div>
+                    <div className="text-sm text-gray-300">🏆 ROBERTO MÁRCIO DE MELO JUNIOR (FOT)</div>
+                    <div className="text-sm text-gray-300">🏆 ALEX DIAS GUIMARÃES (SIA)</div>
+                    <div className="text-sm text-gray-300">🏆 ANTONIO FIDELIS DIAS (SIA)</div>
+                  </div>
+                </div>
+              </div>
 
             </div>
 
