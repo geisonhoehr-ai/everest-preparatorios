@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Star, Share2, Copy, Settings, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Users, Shield, Target, Clock, RefreshCw } from "lucide-react"
+import { BrainCircuit, Play, CheckCircle, XCircle, ArrowRight, RotateCcw, Trophy, Star, Share2, Copy, Settings, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Users, Shield, Target, Clock, RefreshCw, BookOpen } from "lucide-react"
 import { 
   getAllTopics, 
   getQuizzesByTopic, 
@@ -29,10 +29,12 @@ import {
   getAllQuestionsByQuiz
 } from "@/actions"
 import { getUserRoleClient, getAuthAndRole } from "@/lib/get-user-role"
+import { PageAuthWrapper } from "@/components/page-auth-wrapper"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 import { DebugTheme } from "@/components/debug-theme"
+import { SearchQuizzes } from "@/components/search-quizzes"
 
 interface Topic {
   id: string
@@ -56,6 +58,16 @@ interface QuizQuestion {
 }
 
 export default function QuizPage() {
+  return (
+    <PageAuthWrapper>
+      <DashboardShell>
+        <QuizPageContent />
+      </DashboardShell>
+    </PageAuthWrapper>
+  )
+}
+
+function QuizPageContent() {
   const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([])
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
@@ -70,6 +82,8 @@ export default function QuizPage() {
   const [quizResult, setQuizResult] = useState<{ score: number; correct: number; total: number } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mode, setMode] = useState<"topics" | "quizzes" | "quiz" | "result">("topics")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredQuizzes, setFilteredQuizzes] = useState<Quiz[]>([])
   
   // Estados para modo admin
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -135,6 +149,7 @@ export default function QuizPage() {
         setIsLoading(false)
       }
     }
+
     fetchData()
   }, [])
 
@@ -156,6 +171,26 @@ export default function QuizPage() {
     }
     fetchTopics()
   }, [selectedSubject])
+  
+  // Efeito para filtrar quizzes com base no termo de busca
+  useEffect(() => {
+    if (quizzes.length > 0) {
+      if (searchTerm.trim() === '') {
+        // Se não houver termo de busca, mostrar todos os quizzes
+        setFilteredQuizzes(quizzes)
+      } else {
+        // Filtrar quizzes com base no termo de busca
+        const filtered = quizzes.filter(quiz => 
+          quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (quiz.description && quiz.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        setFilteredQuizzes(filtered)
+        console.log(`🔍 [QUIZ PAGE] Filtrados ${filtered.length} quizzes para o termo "${searchTerm}"`)
+      }
+    } else {
+      setFilteredQuizzes([])
+    }
+  }, [quizzes, searchTerm])
 
          const loadQuizzes = async (topicId: string) => {
     setIsLoading(true)
@@ -165,6 +200,7 @@ export default function QuizPage() {
       console.log("✅ [QUIZ PAGE] Quizzes carregados:", quizzesData)
       
       setQuizzes(quizzesData)
+      setFilteredQuizzes(quizzesData) // Inicialmente, os quizzes filtrados são os mesmos que os carregados
       setSelectedTopic(topicId)
       setMode("quizzes")
     } catch (error) {
@@ -639,714 +675,182 @@ export default function QuizPage() {
      }
    }, [])
 
+  // Loading state
   if (isLoading) {
     return (
-      <DashboardShell>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
         </div>
-      </DashboardShell>
+      </div>
     )
   }
 
-  // Verificar se não há subjects
-  if (subjects.length === 0) {
+  // Renderizar baseado no modo
+  if (mode === "topics" && !selectedSubject) {
     return (
-      <DashboardShell>
-        <div className="space-y-6 p-6">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
-            <p className="text-muted-foreground mt-1">
-              Sistema de quizzes interativos
-            </p>
-          </div>
-          
-          <Card className="text-center py-16 bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-800 dark:to-red-900 border-orange-200 dark:border-orange-700">
-            <CardContent>
-              <div className="p-6 rounded-full bg-gradient-to-r from-orange-400 to-red-600 mx-auto mb-6 w-fit">
-                <BrainCircuit className="h-16 w-16 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-600 to-red-800 bg-clip-text text-transparent">
-                Nenhuma matéria disponível
-              </h3>
-              <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
-                As matérias de quiz ainda não foram configuradas. Entre em contato com o administrador.
-              </p>
-              <Button asChild className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0 px-8 py-3 text-lg font-semibold">
-                <Link href="/dashboard">
-                  <ArrowRight className="mr-3 h-5 w-5" />
-                  Voltar ao Dashboard
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardShell>
-    )
-  }
-
-  // Verificar se nenhum subject está selecionado
-  if (!selectedSubject) {
-    return (
-      <DashboardShell>
-        <div className="space-y-6 p-6">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
-            <p className="text-muted-foreground mt-1">
-              Escolha uma matéria para começar
-            </p>
-          </div>
-          
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject, index) => {
-              // Cores especiais para cada matéria seguindo o padrão do quiz
-              const subjectColors = {
-                'Português': {
-                  gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
-                  border: 'border-emerald-200 dark:border-emerald-800',
-                  hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
-                  shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
-                  badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-                  button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
-                  title: 'from-emerald-600 to-emerald-800',
-                  icon: '📚',
-                  desc: 'Domine gramática, interpretação de texto, literatura e redação com nossos quizzes interativos!'
-                },
-                'Regulamentos': {
-                  gradient: 'from-amber-400 via-amber-500 to-amber-600',
-                  border: 'border-amber-200 dark:border-amber-800',
-                  hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-700',
-                  shadow: 'hover:shadow-amber-100 dark:hover:shadow-amber-900',
-                  badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-                  button: 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700',
-                  title: 'from-amber-600 to-amber-800',
-                  icon: '⚖️',
-                  desc: 'Aprenda normas militares, legislação e regulamentos específicos de forma eficiente!'
-                }
-              }
-
-              const defaultColors = {
-                gradient: 'from-slate-400 via-slate-500 to-slate-600',
-                border: 'border-slate-200 dark:border-slate-800',
-                hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
-                shadow: 'hover:shadow-slate-100 dark:hover:shadow-slate-900',
-                badge: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
-                button: 'from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700',
-                title: 'from-slate-600 to-slate-800',
-                icon: '🎯',
-                desc: 'Estude quizzes interativos sobre os principais tópicos desta matéria.'
-              }
-
-              const config = subjectColors[subject.name as keyof typeof subjectColors] || defaultColors
-
-              return (
-                <Card 
-                  key={subject.id}
-                  className={`
-                    relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl 
-                    ${config.border} ${config.hoverBorder} ${config.shadow}
-                    bg-gradient-to-br from-white via-gray-50 to-gray-100 
-                    dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
-                    min-h-[320px] flex flex-col cursor-pointer group
-                  `}
-                  onClick={() => setSelectedSubject(subject.id)}
-                >
-                  {/* Gradiente decorativo no topo */}
-                  <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${config.gradient}`} />
-                  
-                  {/* Efeito de brilho no hover */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 group-hover:animate-pulse" />
-                  
-                  <CardHeader className="flex-1 relative text-center pb-4">
-                    <div className="flex justify-center mb-6">
-                      <div className={`p-4 rounded-2xl bg-gradient-to-r ${config.gradient} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
-                        <span className="text-3xl">{config.icon}</span>
-                      </div>
-                    </div>
-                    
-                    <Badge variant="secondary" className={`${config.badge} font-bold px-4 py-2 text-sm tracking-wide mb-4`}>
-                      Matéria
-                    </Badge>
-                    
-                    <CardTitle className={`text-3xl font-black bg-gradient-to-r ${config.title} bg-clip-text text-transparent leading-tight mb-4 group-hover:scale-105 transition-transform duration-300`}>
-                      {subject.name}
-                    </CardTitle>
-                    
-                    <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
-                      {config.desc}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0 relative text-center">
-                    <div className="space-y-4">
-                      {/* Estatísticas simuladas */}
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-2">
-                          <BrainCircuit className="h-4 w-4" />
-                          {subject.name.toLowerCase().includes('português') ? (
-                            <span>Gramática, Literatura, Redação</span>
-                          ) : (
-                            <span>Regulamentos, Legislação</span>
-                          )}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          <span>Nível {Math.floor(Math.random() * 5) + 1}</span>
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>{Math.floor(Math.random() * 1000) + 100} estudantes</span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          <span>{Math.floor(Math.random() * 50) + 10} min</span>
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      className={`w-full mt-6 bg-gradient-to-r ${config.button} text-white border-0 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
-                    >
-                      <Play className="mr-3 h-6 w-6" />
-                      Estudar {subject.name}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      </DashboardShell>
-    )
-  }
-
-  if (mode === "result" && quizResult) {
-    const taxaAcerto = quizResult.total > 0 ? Math.round((quizResult.correct / quizResult.total) * 100) : 0;
-    return (
-      <DashboardShell>
-        <div className="max-w-2xl mx-auto text-center">
-          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-emerald-200 dark:border-emerald-800">
-            <CardHeader>
-              <div className="mx-auto mb-4">
-                {taxaAcerto === 100 ? (
-                  <Trophy className="h-16 w-16 text-yellow-400 mb-1 animate-bounce" />
-                ) : taxaAcerto >= 70 ? (
-                  <Star className="h-16 w-16 text-emerald-500 mb-1 animate-pulse" />
-                ) : (
-                  <XCircle className="h-16 w-16 text-red-500 mb-1 animate-bounce" />
-                )}
-              </div>
-              <CardTitle className="text-3xl bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
-                {taxaAcerto === 100
-                  ? "🎉 Parabéns, você gabaritou!"
-                  : taxaAcerto >= 70
-                  ? "⭐ Ótimo desempenho!"
-                  : "📚 Continue estudando!"}
-              </CardTitle>
-              <CardDescription className="text-lg">Você completou o quiz: {selectedQuiz?.title}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <div className="text-5xl font-bold text-emerald-600 mb-4">{taxaAcerto}%</div>
-                <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                  <div className="bg-emerald-100 dark:bg-emerald-900 p-4 rounded-lg">
-                    <p className="text-emerald-600 font-bold text-2xl">{quizResult.correct}</p>
-                    <p className="text-emerald-700 dark:text-emerald-300 text-sm">Acertos</p>
-                  </div>
-                  <div className="bg-red-100 dark:bg-red-900 p-4 rounded-lg">
-                    <p className="text-red-600 font-bold text-2xl">{quizResult.total - quizResult.correct}</p>
-                    <p className="text-red-700 dark:text-red-300 text-sm">Erros</p>
-                  </div>
-                </div>
-              </div>
-              <Progress value={taxaAcerto} className="h-4 bg-emerald-100 dark:bg-emerald-900">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-1000" style={{width: `${taxaAcerto}%`}} />
-              </Progress>
-              <div className="mt-6 flex flex-col items-center gap-4">
-                <span className="font-semibold text-zinc-700 dark:text-zinc-200 mb-2">Compartilhe seu resultado:</span>
-                <div className="flex gap-2 flex-wrap justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950"
-                    onClick={() => {
-                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
-                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`)
-                    }}
-                  >
-                    <Share2 className="mr-1 h-4 w-4" /> WhatsApp
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950"
-                    onClick={() => {
-                      const text = `Acabei de fazer um quiz no Everest Preparatórios!\nAcertos: ${quizResult.correct}\nErros: ${quizResult.total - quizResult.correct}\nTaxa de acerto: ${taxaAcerto}%\nhttps://everest-preparatorios.vercel.app`;
-                      navigator.clipboard.writeText(text)
-                      alert("Resultado copiado para a área de transferência!")
-                    }}
-                  >
-                    <Copy className="mr-1 h-4 w-4" /> Copiar
-                  </Button>
-                </div>
-              </div>
-              <div className="flex gap-4 justify-center mt-6">
-                <Button onClick={resetStudyMode} variant="outline" className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Fazer Outro Quiz
-                </Button>
-                <Button asChild className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Link href="/dashboard">
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                    Voltar ao Dashboard
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardShell>
-    )
-  }
-
-  if (mode === "quiz" && questions.length > 0) {
-    const currentQuestion = questions[currentQuestionIndex]
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100
-
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">{selectedQuiz?.title}</h1>
-            <p className="text-muted-foreground">
-              Questão {currentQuestionIndex + 1} de {questions.length}
-            </p>
-          </div>
-          <Button variant="outline" onClick={resetStudyMode} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Sair do Quiz
-          </Button>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
+          <p className="text-muted-foreground mt-1">
+            Escolha uma matéria para começar
+          </p>
         </div>
 
-        <div className="mb-6">
-          <Progress value={progress} className="h-3 bg-emerald-100 dark:bg-emerald-900">
-            <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500" style={{width: `${progress}%`}} />
-          </Progress>
-        </div>
-
-        <Card className="max-w-3xl mx-auto border-emerald-200 dark:border-emerald-800">
-          <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900">
-            <CardTitle className="text-xl text-emerald-800 dark:text-emerald-200">{currentQuestion.question_text}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-              {currentQuestion.options.map((option, index) => (
-                <div key={index} className="flex items-center space-x-3 p-4 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 transition-all duration-200 hover:border-emerald-300 dark:hover:border-emerald-700">
-                  <RadioGroupItem value={option} id={`option-${index}`} className="border-emerald-300 text-emerald-600" />
-                  <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer font-medium">
-                    {option}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-                disabled={currentQuestionIndex === 0}
-                className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950"
-              >
-                Anterior
-              </Button>
-              <Button 
-                onClick={handleNextQuestion} 
-                disabled={!selectedAnswer}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {currentQuestionIndex === questions.length - 1 ? "Finalizar Quiz" : "Próxima"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </DashboardShell>
-    )
-  }
-
-  // Renderização do modo admin para questões
-  if (isAdminMode && selectedQuiz && mode === "quiz") {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gerenciar Questões</h1>
-            <p className="text-muted-foreground">Quiz: {selectedQuiz.title}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowCreateQuestionModal(true)} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Questão
-            </Button>
-            <Button variant="outline" onClick={() => setSelectedQuiz(null)}>
-              <ArrowRight className="mr-2 h-4 w-4" />
-              Voltar aos Quizzes
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid gap-4">
-          {adminQuestions.map((question, index) => (
-            <Card key={question.id} className="border-emerald-200 dark:border-emerald-800">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Questão {index + 1}</CardTitle>
-                    <CardDescription className="mt-2">{question.question_text}</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEditQuestionModal(question)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDeleteQuestion(question.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {question.options.map((option, optIndex) => (
-                    <div key={optIndex} className={`p-2 rounded flex items-center gap-2 ${option === question.correct_answer ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' : 'bg-gray-50 dark:bg-gray-900'}`}>
-                      {option === question.correct_answer && <CheckCircle className="h-4 w-4 text-emerald-600" />}
-                      {option}
-                    </div>
-                  ))}
-                </div>
-                {question.explanation && (
-                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <p className="text-sm text-blue-800 dark:text-blue-200"><strong>Explicação:</strong> {question.explanation}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {adminQuestions.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <BrainCircuit className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhuma questão cadastrada</h3>
-              <p className="text-muted-foreground mb-4">Comece criando a primeira questão para este quiz.</p>
-              <Button onClick={() => setShowCreateQuestionModal(true)} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Primeira Questão
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Modal para criar questão */}
-        <Dialog open={showCreateQuestionModal} onOpenChange={setShowCreateQuestionModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Criar Nova Questão</DialogTitle>
-              <DialogDescription>
-                Adicione uma nova questão ao quiz "{selectedQuiz.title}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="question-text">Texto da Questão</Label>
-                <Textarea
-                  id="question-text"
-                  placeholder="Digite a questão..."
-                  value={formQuestionText}
-                  onChange={(e) => setFormQuestionText(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div>
-                <Label>Opções de Resposta</Label>
-                {formOptions.map((option, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      placeholder={`Opção ${index + 1}${index < 2 ? ' (obrigatória)' : ' (opcional)'}`}
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-input rounded-md"
-                    />
-                  </div>
-                ))}
-              </div>
-              <div>
-                <Label htmlFor="correct-answer">Resposta Correta</Label>
-                <Select value={formCorrectAnswer} onValueChange={setFormCorrectAnswer}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a resposta correta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formOptions.filter(opt => opt.trim()).map((option, index) => (
-                      <SelectItem key={index} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="explanation">Explicação (Opcional)</Label>
-                <Textarea
-                  id="explanation"
-                  placeholder="Explique por que esta é a resposta correta..."
-                  value={formExplanation}
-                  onChange={(e) => setFormExplanation(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowCreateQuestionModal(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreateQuestion} disabled={isSubmitting} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Salvando..." : "Salvar Questão"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal para editar questão */}
-        <Dialog open={showEditQuestionModal} onOpenChange={setShowEditQuestionModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Editar Questão</DialogTitle>
-              <DialogDescription>
-                Modifique a questão do quiz "{selectedQuiz.title}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-question-text">Texto da Questão</Label>
-                <Textarea
-                  id="edit-question-text"
-                  placeholder="Digite a questão..."
-                  value={formQuestionText}
-                  onChange={(e) => setFormQuestionText(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div>
-                <Label>Opções de Resposta</Label>
-                {formOptions.map((option, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      placeholder={`Opção ${index + 1}${index < 2 ? ' (obrigatória)' : ' (opcional)'}`}
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-input rounded-md"
-                    />
-                  </div>
-                ))}
-              </div>
-              <div>
-                <Label htmlFor="edit-correct-answer">Resposta Correta</Label>
-                <Select value={formCorrectAnswer} onValueChange={setFormCorrectAnswer}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a resposta correta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formOptions.filter(opt => opt.trim()).map((option, index) => (
-                      <SelectItem key={index} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-explanation">Explicação (Opcional)</Label>
-                <Textarea
-                  id="edit-explanation"
-                  placeholder="Explique por que esta é a resposta correta..."
-                  value={formExplanation}
-                  onChange={(e) => setFormExplanation(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowEditQuestionModal(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleEditQuestion} disabled={isSubmitting} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </DashboardShell>
-    )
-  }
-
-  // Renderização do modo admin para quizzes
-  if (isAdminMode && selectedTopic && mode === "quizzes") {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gerenciar Quizzes</h1>
-            <p className="text-muted-foreground">Tópico: {topics.find((t) => t.id === selectedTopic)?.name}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowCreateQuizModal(true)} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Quiz
-            </Button>
-            <Button variant="outline" onClick={() => resetStudyMode()}>
-              <ArrowRight className="mr-2 h-4 w-4" />
-              Voltar aos Tópicos
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {adminQuizzes.map((quiz) => (
-            <Card key={quiz.id} className="hover:shadow-lg transition-shadow border-emerald-200 dark:border-emerald-800">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <Card 
+              key={subject.id} 
+              className="hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-emerald-200 dark:border-emerald-800 cursor-pointer"
+              onClick={() => setSelectedSubject(subject.id)}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <BrainCircuit className="h-8 w-8 text-emerald-600" />
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => openEditQuizModal(quiz)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDeleteQuiz(quiz.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="p-3 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600">
+                    <BookOpen className="h-6 w-6 text-white" />
                   </div>
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                    Matéria
+                  </Badge>
                 </div>
-                <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                <CardDescription>{quiz.description || "Teste seus conhecimentos neste quiz"}</CardDescription>
+                <CardTitle className="text-xl text-emerald-800 dark:text-emerald-200">
+                  {subject.name}
+                </CardTitle>
+                <CardDescription>
+                  Explore quizzes sobre {subject.name.toLowerCase()}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button onClick={() => loadAdminQuestions(quiz.id)} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Gerenciar Questões
-                </Button>
-              </CardContent>
             </Card>
           ))}
         </div>
+      </div>
+    )
+  }
 
-        {adminQuizzes.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <BrainCircuit className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum quiz cadastrado</h3>
-              <p className="text-muted-foreground mb-4">Comece criando o primeiro quiz para este tópico.</p>
-              <Button onClick={() => setShowCreateQuizModal(true)} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Primeiro Quiz
+  if (mode === "topics") {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Tópicos</h1>
+            <p className="text-muted-foreground">Matéria: {subjects.find((s) => s.id === selectedSubject)?.name}</p>
+          </div>
+          
+          <div className="flex gap-2">
+            {(userRole === 'teacher' || userRole === 'admin') && (
+              <Button 
+                onClick={() => setIsAdminMode(!isAdminMode)} 
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                {isAdminMode ? 'Modo Aluno' : 'Modo Admin'}
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            )}
+            <Button variant="outline" onClick={() => setSelectedSubject(null)} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
+              Voltar às Matérias
+            </Button>
+          </div>
+        </div>
 
-        {/* Modal para criar quiz */}
-        <Dialog open={showCreateQuizModal} onOpenChange={setShowCreateQuizModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Novo Quiz</DialogTitle>
-              <DialogDescription>
-                Adicione um novo quiz ao tópico "{topics.find((t) => t.id === selectedTopic)?.name}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="quiz-title">Título do Quiz</Label>
-                <input
-                  id="quiz-title"
-                  type="text"
-                  placeholder="Digite o título do quiz..."
-                  value={formQuizTitle}
-                  onChange={(e) => setFormQuizTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md"
-                />
-              </div>
-              <div>
-                <Label htmlFor="quiz-description">Descrição (Opcional)</Label>
-                <Textarea
-                  id="quiz-description"
-                  placeholder="Descreva o conteúdo do quiz..."
-                  value={formQuizDescription}
-                  onChange={(e) => setFormQuizDescription(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowCreateQuizModal(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreateQuiz} disabled={isSubmitting} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Salvando..." : "Salvar Quiz"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal para editar quiz */}
-        <Dialog open={showEditQuizModal} onOpenChange={setShowEditQuizModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Quiz</DialogTitle>
-              <DialogDescription>
-                Modifique as informações do quiz
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-quiz-title">Título do Quiz</Label>
-                <input
-                  id="edit-quiz-title"
-                  type="text"
-                  placeholder="Digite o título do quiz..."
-                  value={formQuizTitle}
-                  onChange={(e) => setFormQuizTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-quiz-description">Descrição (Opcional)</Label>
-                <Textarea
-                  id="edit-quiz-description"
-                  placeholder="Descreva o conteúdo do quiz..."
-                  value={formQuizDescription}
-                  onChange={(e) => setFormQuizDescription(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowEditQuizModal(false)}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancelar
-                </Button>
-                <Button onClick={handleEditQuiz} disabled={isSubmitting} className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700">
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </DashboardShell>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {topics.map((topic, index) => {
+            // Sistema de cores por índice
+            const topicColors = [
+              {
+                gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
+                border: 'border-emerald-200 dark:border-emerald-800',
+                hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+                shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
+                badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
+                title: 'text-emerald-800 dark:text-emerald-200',
+                iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20'
+              },
+              {
+                gradient: 'from-blue-400 via-blue-500 to-blue-600',
+                border: 'border-blue-200 dark:border-blue-800',
+                hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
+                shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
+                badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                title: 'text-blue-800 dark:text-blue-200',
+                iconBg: 'bg-blue-500/10 dark:bg-blue-500/20'
+              },
+              {
+                gradient: 'from-purple-400 via-purple-500 to-purple-600',
+                border: 'border-purple-200 dark:border-purple-800',
+                hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
+                shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
+                badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+                title: 'text-purple-800 dark:text-purple-200',
+                iconBg: 'bg-purple-500/10 dark:bg-purple-500/20'
+              }
+            ]
+            
+            const config = topicColors[index % topicColors.length]
+            
+            return (
+              <Card 
+                key={topic.id} 
+                className={`
+                  hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer
+                  ${config.border} ${config.hoverBorder} ${config.shadow}
+                `}
+                onClick={() => isAdminMode ? loadAdminQuizzes(topic.id) : loadQuizzes(topic.id)}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className={`p-3 rounded-full ${config.iconBg}`}>
+                      <BrainCircuit className={`h-6 w-6 ${config.title}`} />
+                    </div>
+                    <Badge variant="secondary" className={`${config.badge}`}>
+                      Tópico
+                    </Badge>
+                  </div>
+                  
+                  <CardTitle className={`text-xl font-bold ${config.title} leading-tight mb-3`}>
+                    {topic.name}
+                  </CardTitle>
+                  
+                  <CardDescription className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                    Explore quizzes interativos sobre este tópico e teste seus conhecimentos de forma dinâmica e envolvente!
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <Button 
+                    onClick={() => isAdminMode ? loadAdminQuizzes(topic.id) : loadQuizzes(topic.id)} 
+                    className={`
+                      w-full bg-gradient-to-r ${config.button} text-white font-semibold py-3
+                      transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                      border-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
+                    `}
+                  >
+                    {isAdminMode ? (
+                      <>
+                        <Settings className="mr-2 h-5 w-5" />
+                        Gerenciar Quizzes
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-5 w-5" />
+                        Ver Quizzes
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+        <Button variant="outline" className="mt-8 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950" onClick={() => setSelectedSubject(null)}>
+          Voltar às Matérias
+        </Button>
+      </div>
     )
   }
 
@@ -1355,545 +859,166 @@ export default function QuizPage() {
     console.log("🔍 [QUIZ PAGE] Deve mostrar botão admin:", userRole === 'teacher' || userRole === 'admin')
     
     return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quizzes</h1>
             <p className="text-muted-foreground">Tópico: {topics.find((t) => t.id === selectedTopic)?.name}</p>
           </div>
-          <div className="flex gap-2">
-            {(userRole === 'teacher' || userRole === 'admin') && (
-              <Button 
-                onClick={toggleAdminMode} 
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Modo Admin
+          
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            {/* Componente de busca */}
+            <div className="w-full md:w-[300px]">
+              <SearchQuizzes
+                onSearch={(query) => setSearchTerm(query)}
+                placeholder="Buscar quizzes..."
+                className="w-full"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              {(userRole === 'teacher' || userRole === 'admin') && (
+                <Button 
+                  onClick={toggleAdminMode} 
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Modo Admin
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => isAdminMode ? resetStudyMode() : resetAll()} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Voltar aos Tópicos
               </Button>
-            )}
-            <Button variant="outline" onClick={() => isAdminMode ? resetStudyMode() : resetAll()} className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Voltar aos Tópicos
-            </Button>
+            </div>
           </div>
         </div>
 
-                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-           {quizzes.map((quiz, index) => {
-             // Sistema de cores por dificuldade baseado no título
-             const getDifficultyLevel = (title: string, index: number) => {
-               const lowerTitle = title.toLowerCase()
-               if (lowerTitle.includes('básico') || lowerTitle.includes('iniciante') || lowerTitle.includes('fácil')) {
-                 return 'easy'
-               } else if (lowerTitle.includes('avançado') || lowerTitle.includes('difícil') || lowerTitle.includes('expert')) {
-                 return 'hard'
-               }
-               // Alternar entre níveis baseado no índice se não especificado
-               return index % 3 === 0 ? 'easy' : index % 3 === 1 ? 'medium' : 'hard'
-             }
-
-             const level = getDifficultyLevel(quiz.title, index)
-             
-             // Sistema de cores similar ao dos flashcards
-             const topicColors = [
-               {
-                 gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
-                 border: 'border-emerald-200 dark:border-emerald-800',
-                 hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
-                 shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
-                 badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-                 button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
-                 title: 'text-emerald-800 dark:text-emerald-200',
-                 iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20'
-               },
-               {
-                 gradient: 'from-blue-400 via-blue-500 to-blue-600',
-                 border: 'border-blue-200 dark:border-blue-800',
-                 hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
-                 shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
-                 badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                 button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-                 title: 'text-blue-800 dark:text-blue-200',
-                 iconBg: 'bg-blue-500/10 dark:bg-blue-500/20'
-               },
-               {
-                 gradient: 'from-purple-400 via-purple-500 to-purple-600',
-                 border: 'border-purple-200 dark:border-purple-800',
-                 hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
-                 shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
-                 badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-                 button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-                 title: 'text-purple-800 dark:text-purple-200',
-                 iconBg: 'bg-purple-500/10 dark:bg-purple-500/20'
-               },
-               {
-                 gradient: 'from-teal-400 via-teal-500 to-teal-600',
-                 border: 'border-teal-200 dark:border-teal-800',
-                 hoverBorder: 'hover:border-teal-300 dark:hover:border-teal-700',
-                 shadow: 'hover:shadow-teal-100 dark:hover:shadow-teal-900',
-                 badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-                 button: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
-                 title: 'text-teal-800 dark:text-teal-200',
-                 iconBg: 'bg-teal-500/10 dark:bg-teal-500/20'
-               },
-               {
-                 gradient: 'from-pink-400 via-pink-500 to-pink-600',
-                 border: 'border-pink-200 dark:border-pink-800',
-                 hoverBorder: 'hover:border-pink-300 dark:hover:border-pink-700',
-                 shadow: 'hover:shadow-pink-100 dark:hover:shadow-pink-900',
-                 badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-                 button: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
-                 title: 'text-pink-800 dark:text-pink-200',
-                 iconBg: 'bg-pink-500/10 dark:bg-pink-500/20'
-               },
-               {
-                 gradient: 'from-indigo-400 via-indigo-500 to-indigo-600',
-                 border: 'border-indigo-200 dark:border-indigo-800',
-                 hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-700',
-                 shadow: 'hover:shadow-indigo-100 dark:hover:shadow-indigo-900',
-                 badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-                 button: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
-                 title: 'text-indigo-800 dark:text-indigo-200',
-                 iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20'
-               }
-             ]
-
-             // Sistema de cores por dificuldade baseado no nível
-             const getDifficultyConfig = (level: string) => {
-               if (level === 'easy') {
-                 return {
-                   gradient: 'from-green-400 via-green-500 to-green-600',
-                   difficultyBadge: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                   difficultyText: 'Fácil',
-                   difficultyIcon: '🟢'
-                 }
-               } else if (level === 'medium') {
-                 return {
-                   gradient: 'from-yellow-400 via-orange-500 to-orange-600',
-                   difficultyBadge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-                   difficultyText: 'Médio',
-                   difficultyIcon: '🟡'
-                 }
-               } else {
-                 return {
-                   gradient: 'from-red-400 via-red-500 to-red-600',
-                   difficultyBadge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                   difficultyText: 'Difícil',
-                   difficultyIcon: '🔴'
-                 }
-               }
-             }
-
-             const config = topicColors[index % topicColors.length]
-             const difficultyConfig = getDifficultyConfig(level)
-             
-             return (
-               <Card 
-                 key={quiz.id} 
-                 className={`
-                   relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-xl 
-                   ${config.border} ${config.hoverBorder} ${config.shadow}
-                   bg-gradient-to-br from-white via-gray-50 to-gray-100 
-                   dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
-                   min-h-[380px] flex flex-col group
-                 `}
-               >
-                 {/* Gradiente decorativo no topo */}
-                 <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
-                 
-                 {/* Badge de nível no canto */}
-                 <div className="absolute top-3 right-3 z-10">
-                   <Badge className={`bg-gradient-to-r ${config.gradient} text-white shadow-lg`}>
-                     Quiz
-                   </Badge>
-                 </div>
-
-                 <CardHeader className="pb-3">
-                   <div className="flex items-center gap-3 mb-3">
-                     <div className={`p-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg`}>
-                       <BrainCircuit className="h-6 w-6 text-white" />
-                     </div>
-                     <div className="flex flex-col gap-1">
-                       <Badge variant="secondary" className={`${config.badge} font-semibold px-2 py-1 text-xs`}>
-                         Quiz
-                       </Badge>
-                       <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${difficultyConfig.difficultyBadge}`}>
-                         <span>{difficultyConfig.difficultyIcon}</span>
-                         <span>{difficultyConfig.difficultyText}</span>
-                       </div>
-                     </div>
-                   </div>
-                   
-                   <CardTitle className={`text-lg font-bold ${config.title} leading-tight mb-3 group-hover:scale-105 transition-transform duration-300`}>
-                     {quiz.title}
-                   </CardTitle>
-                   
-                   {/* Progresso e XP simulados */}
-                   <div className="space-y-3">
-                     <div className="flex items-center justify-between text-sm">
-                       <span className="text-muted-foreground">Dificuldade</span>
-                       <span className={`font-medium ${config.title}`}>
-                         {level === 'easy' ? '33%' : level === 'medium' ? '66%' : '100%'}
-                       </span>
-                     </div>
-                     <Progress value={level === 'easy' ? 33 : level === 'medium' ? 66 : 100} className={`h-2 [&>div]:bg-gradient-to-r [&>div]:${difficultyConfig.gradient}`} />
-                     
-                     <div className="flex items-center justify-between text-sm">
-                       <span className="text-muted-foreground">Questões</span>
-                       <span className={`font-medium ${config.title}`}>
-                         ~10
-                       </span>
-                     </div>
-                     <Progress value={70} className={`h-2 [&>div]:bg-gradient-to-r [&>div]:${config.gradient}`} />
-                   </div>
-
-                   {/* Stats adicionais */}
-                   <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
-                     <div className="flex items-center gap-1 text-muted-foreground">
-                       <Target className="h-3 w-3" />
-                       <span>Múltipla escolha</span>
-                     </div>
-                     <div className="flex items-center gap-1 text-muted-foreground">
-                       <Clock className="h-3 w-3" />
-                       <span>~15 min</span>
-                     </div>
-                     <div className={`flex items-center gap-1 ${config.title}`}>
-                       <Trophy className="h-3 w-3" />
-                       <span>Pontuação</span>
-                     </div>
-                     <div className="flex items-center gap-1 text-muted-foreground">
-                       <RefreshCw className="h-3 w-3" />
-                       <span>Interativo</span>
-                     </div>
-                   </div>
-                 </CardHeader>
-                 
-                 <CardContent className="flex-1 flex flex-col justify-end pt-0">
-                   <div className="space-y-2">
-                     {/* Botão principal */}
-                     <Button 
-                       onClick={() => startQuiz(quiz)} 
-                       className={`
-                         w-full bg-gradient-to-r ${config.button} text-white border-0 transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg font-semibold py-3
-                         focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
-                       `}
-                     >
-                       <Play className="mr-2 h-5 w-5" />
-                       Iniciar Quiz
-                     </Button>
-                   </div>
-                 </CardContent>
-               </Card>
-             )
-           })}
-        </div>
-
-                 {quizzes.length === 0 && (
-           <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
-             <CardContent>
-               <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
-                 <BrainCircuit className="h-16 w-16 text-white" />
-               </div>
-               <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">Nenhum quiz disponível</h3>
-               <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto">
-                 Não há quizzes disponíveis para este tópico no momento. Novos conteúdos serão adicionados em breve!
-               </p>
-               <div className="mt-8">
-                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
-                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                   Em desenvolvimento
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-         )}
-      </DashboardShell>
-    )
-  }
-
-  // Renderização principal - seleção de matéria
-  if (!selectedSubject) {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
-            <p className="text-muted-foreground">Escolha uma matéria para fazer quizzes e testar seus conhecimentos</p>
-          </div>
-          {(userRole === 'teacher' || userRole === 'admin') && (
-            <Button 
-              onClick={toggleAdminMode} 
-              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Modo Admin
+        {filteredQuizzes.length === 0 && searchTerm.trim() !== '' ? (
+          <div className="text-center py-10">
+            <BrainCircuit className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum quiz encontrado</h3>
+            <p className="text-muted-foreground mb-4">Não encontramos quizzes para o termo &quot;{searchTerm}&quot;</p>
+            <Button onClick={() => setSearchTerm('')} variant="outline">
+              <X className="mr-2 h-4 w-4" />
+              Limpar busca
             </Button>
-          )}
-        </div>
-                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-           {subjects.map((subject, index) => {
-             // Cores especiais para cada matéria
-             const subjectColors = {
-               'Português': {
-                 gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
-                 border: 'border-emerald-200 dark:border-emerald-800',
-                 hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
-                 shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
-                 badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-                 button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
-                 title: 'from-emerald-600 to-emerald-800',
-                 icon: '📚',
-                 desc: 'Teste seus conhecimentos em gramática, interpretação de texto, literatura e redação!'
-               },
-               'Regulamentos': {
-                 gradient: 'from-amber-400 via-amber-500 to-amber-600',
-                 border: 'border-amber-200 dark:border-amber-800',
-                 hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-700',
-                 shadow: 'hover:shadow-amber-100 dark:hover:shadow-amber-900',
-                 badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-                 button: 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700',
-                 title: 'from-amber-600 to-amber-800',
-                 icon: '⚖️',
-                 desc: 'Domine os regulamentos militares e fique pronto para qualquer questão da banca!'
-               }
-             }
-
-             const defaultColors = {
-               gradient: 'from-slate-400 via-slate-500 to-slate-600',
-               border: 'border-slate-200 dark:border-slate-800',
-               hoverBorder: 'hover:border-slate-300 dark:hover:border-slate-700',
-               shadow: 'hover:shadow-slate-100 dark:hover:shadow-slate-900',
-               badge: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
-               button: 'from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700',
-               title: 'from-slate-600 to-slate-800',
-               icon: '🎯',
-               desc: 'Faça quizzes interativos sobre os principais tópicos desta matéria.'
-             }
-
-             const config = subjectColors[subject.name as keyof typeof subjectColors] || defaultColors
-
-             return (
-               <Card 
-                 key={subject.id} 
-                 className={`
-                   relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-2xl 
-                   ${config.border} ${config.hoverBorder} ${config.shadow}
-                   bg-gradient-to-br from-white via-gray-50 to-gray-100 
-                   dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
-                   min-h-[300px] flex flex-col cursor-pointer group
-                 `}
-               >
-                 {/* Gradiente decorativo no topo */}
-                 <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${config.gradient}`} />
-                 
-                 {/* Efeito de brilho no hover */}
-                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 group-hover:animate-pulse" />
-                 
-                 <CardHeader className="flex-1 relative">
-                   <div className="flex items-start justify-between mb-6">
-                     <div className={`p-4 rounded-2xl bg-gradient-to-r ${config.gradient} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
-                       <span className="text-2xl">{config.icon}</span>
-                     </div>
-                     <Badge variant="secondary" className={`${config.badge} font-bold px-4 py-2 text-sm tracking-wide`}>
-                       Matéria
-                     </Badge>
-                   </div>
-                   
-                   <CardTitle className={`text-3xl font-black bg-gradient-to-r ${config.title} bg-clip-text text-transparent leading-tight mb-4 group-hover:scale-105 transition-transform duration-300`}>
-                     {subject.name}
-                   </CardTitle>
-                   
-                   <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed font-medium">
-                     {config.desc}
-                   </CardDescription>
-                 </CardHeader>
-                 
-                 <CardContent className="pt-0 relative">
-                   <div className="space-y-4">
-                     {/* Estatísticas simuladas */}
-                     <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                       <span className="flex items-center gap-2">
-                         <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${config.gradient}`} />
-                         Quizzes disponíveis
-                       </span>
-                       <span className="font-semibold">15+</span>
-                     </div>
-                     
-                     <Button 
-                       className={`
-                         w-full bg-gradient-to-r ${config.button} text-white font-bold py-4 text-lg
-                         transform transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl
-                         border-0 focus:ring-4 focus:ring-offset-2 focus:ring-opacity-50
-                         group-hover:animate-pulse
-                       `} 
-                       onClick={() => setSelectedSubject(subject.id)}
-                     >
-                       <Play className="mr-3 h-6 w-6" />
-                       Começar Quiz
-                     </Button>
-                   </div>
-                 </CardContent>
-               </Card>
-             )
-           })}
-        </div>
-      </DashboardShell>
-    )
-  }
-
-  // Seleção de tópico
-  if (mode === "topics") {
-    return (
-      <DashboardShell>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Escolha o Tópico</h1>
-            <p className="text-muted-foreground">Selecione um tópico para ver os quizzes disponíveis</p>
           </div>
-          {(userRole === 'teacher' || userRole === 'admin') && (
-            <Button 
-              onClick={toggleAdminMode} 
-              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Modo Admin
-            </Button>
-          )}
-        </div>
-                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
-           {topics.map((topic, index) => {
-             // Cores rotativas para os tópicos
-             const topicColors = [
-               {
-                 gradient: 'from-blue-400 via-blue-500 to-blue-600',
-                 border: 'border-blue-200 dark:border-blue-800',
-                 hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
-                 shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
-                 badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                 button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-                 title: 'text-blue-800 dark:text-blue-200'
-               },
-               {
-                 gradient: 'from-purple-400 via-purple-500 to-purple-600',
-                 border: 'border-purple-200 dark:border-purple-800',
-                 hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
-                 shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
-                 badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-                 button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
-                 title: 'text-purple-800 dark:text-purple-200'
-               },
-               {
-                 gradient: 'from-teal-400 via-teal-500 to-teal-600',
-                 border: 'border-teal-200 dark:border-teal-800',
-                 hoverBorder: 'hover:border-teal-300 dark:hover:border-teal-700',
-                 shadow: 'hover:shadow-teal-100 dark:hover:shadow-teal-900',
-                 badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-                 button: 'from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700',
-                 title: 'text-teal-800 dark:text-teal-200'
-               },
-               {
-                 gradient: 'from-pink-400 via-pink-500 to-pink-600',
-                 border: 'border-pink-200 dark:border-pink-800',
-                 hoverBorder: 'hover:border-pink-300 dark:hover:border-pink-700',
-                 shadow: 'hover:shadow-pink-100 dark:hover:shadow-pink-900',
-                 badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-                 button: 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
-                 title: 'text-pink-800 dark:text-pink-200'
-               },
-               {
-                 gradient: 'from-indigo-400 via-indigo-500 to-indigo-600',
-                 border: 'border-indigo-200 dark:border-indigo-800',
-                 hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-700',
-                 shadow: 'hover:shadow-indigo-100 dark:hover:shadow-indigo-900',
-                 badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-                 button: 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
-                 title: 'text-indigo-800 dark:text-indigo-200'
-               }
-             ]
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredQuizzes.map((quiz, index) => {
+              // Sistema de cores por dificuldade baseado no título
+              const getDifficultyLevel = (title: string, index: number) => {
+                const lowerTitle = title.toLowerCase()
+                if (lowerTitle.includes('básico') || lowerTitle.includes('iniciante') || lowerTitle.includes('fácil')) {
+                  return 'easy'
+                } else if (lowerTitle.includes('avançado') || lowerTitle.includes('difícil') || lowerTitle.includes('expert')) {
+                  return 'hard'
+                }
+                // Alternar entre níveis baseado no índice se não especificado
+                return index % 3 === 0 ? 'easy' : index % 3 === 1 ? 'medium' : 'hard'
+              }
 
-             const config = topicColors[index % topicColors.length]
-
-             return (
-               <Card 
-                 key={topic.id} 
-                 className={`
-                   relative overflow-hidden transition-all duration-300 transform hover:scale-105 hover:shadow-xl 
-                   ${config.border} ${config.hoverBorder} ${config.shadow}
-                   bg-gradient-to-br from-white via-gray-50 to-gray-100 
-                   dark:from-gray-900 dark:via-gray-800 dark:to-gray-700
-                   min-h-[240px] flex flex-col
-                 `}
-               >
-                 {/* Gradiente decorativo no topo */}
-                 <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
-                 
-                 <CardHeader className="flex-1">
-                   <div className="flex items-start justify-between mb-4">
-                     <div className={`p-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg`}>
-                       <BrainCircuit className="h-6 w-6 text-white" />
-                     </div>
-                     <Badge variant="secondary" className={`${config.badge} font-semibold px-3 py-1`}>
-                       Tópico
-                     </Badge>
-                   </div>
-                   
-                   <CardTitle className={`text-xl font-bold ${config.title} leading-tight mb-3`}>
-                     {topic.name}
-                   </CardTitle>
-                   
-                   <CardDescription className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                     Explore quizzes interativos sobre este tópico e teste seus conhecimentos de forma dinâmica e envolvente!
-                   </CardDescription>
-                 </CardHeader>
-                 
-                 <CardContent className="pt-0">
-                   <Button 
-                     onClick={() => isAdminMode ? loadAdminQuizzes(topic.id) : loadQuizzes(topic.id)} 
-                     className={`
-                       w-full bg-gradient-to-r ${config.button} text-white font-semibold py-3
-                       transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
-                       border-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
-                     `}
-                   >
-                     {isAdminMode ? (
-                       <>
-                         <Settings className="mr-2 h-5 w-5" />
-                         Gerenciar Quizzes
-                       </>
-                     ) : (
-                       <>
-                         <Play className="mr-2 h-5 w-5" />
-                         Ver Quizzes
-                       </>
-                     )}
-                   </Button>
-                 </CardContent>
-               </Card>
-             )
-           })}
-        </div>
-        <Button variant="outline" className="mt-8 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950" onClick={() => setSelectedSubject(null)}>
-          Voltar às Matérias
-        </Button>
-      </DashboardShell>
+              const level = getDifficultyLevel(quiz.title, index)
+              
+              // Sistema de cores similar ao dos flashcards
+              const topicColors = [
+                {
+                  gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
+                  border: 'border-emerald-200 dark:border-emerald-800',
+                  hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700',
+                  shadow: 'hover:shadow-emerald-100 dark:hover:shadow-emerald-900',
+                  badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                  button: 'from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700',
+                  title: 'text-emerald-800 dark:text-emerald-200',
+                  iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20'
+                },
+                {
+                  gradient: 'from-blue-400 via-blue-500 to-blue-600',
+                  border: 'border-blue-200 dark:border-blue-800',
+                  hoverBorder: 'hover:border-blue-300 dark:hover:border-blue-700',
+                  shadow: 'hover:shadow-blue-100 dark:hover:shadow-blue-900',
+                  badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                  button: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
+                  title: 'text-blue-800 dark:text-blue-200',
+                  iconBg: 'bg-blue-500/10 dark:bg-blue-500/20'
+                },
+                {
+                  gradient: 'from-purple-400 via-purple-500 to-purple-600',
+                  border: 'border-purple-200 dark:border-purple-800',
+                  hoverBorder: 'hover:border-purple-300 dark:hover:border-purple-700',
+                  shadow: 'hover:shadow-purple-100 dark:hover:shadow-purple-900',
+                  badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                  button: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
+                  title: 'text-purple-800 dark:text-purple-200',
+                  iconBg: 'bg-purple-500/10 dark:bg-purple-500/20'
+                }
+              ]
+              
+              const config = topicColors[index % topicColors.length]
+              
+              return (
+                <Card 
+                  key={quiz.id} 
+                  className={`
+                    hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer
+                    ${config.border} ${config.hoverBorder} ${config.shadow}
+                  `}
+                  onClick={() => startQuiz(quiz)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className={`p-3 rounded-full ${config.iconBg}`}>
+                        <BrainCircuit className={`h-6 w-6 ${config.title}`} />
+                      </div>
+                      <Badge variant="secondary" className={`${config.badge}`}>
+                        {level === 'easy' ? 'Fácil' : level === 'medium' ? 'Médio' : 'Difícil'}
+                      </Badge>
+                    </div>
+                    
+                    <CardTitle className={`text-xl font-bold ${config.title} leading-tight mb-3`}>
+                      {quiz.title}
+                    </CardTitle>
+                    
+                    <CardDescription className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {quiz.description || 'Teste seus conhecimentos com este quiz interativo!'}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <Button 
+                      onClick={() => startQuiz(quiz)} 
+                      className={`
+                        w-full bg-gradient-to-r ${config.button} text-white font-semibold py-3
+                        transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                        border-0 focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50
+                      `}
+                    >
+                      <Play className="mr-2 h-5 w-5" />
+                      Iniciar Quiz
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+      </div>
     )
   }
 
+  // Modo padrão - mostrar tópicos
   return (
-    <DashboardShell>
-      <div className="space-y-6">
-        {/* Debug do Tema - TEMPORÁRIO */}
-        <DebugTheme />
-        
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
-          <p className="text-muted-foreground mt-1">
-            Escolha um tópico para fazer quizzes e testar seus conhecimentos
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">Quiz</h1>
+        <p className="text-muted-foreground mt-1">
+          Escolha um tópico para fazer quizzes e testar seus conhecimentos
+        </p>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {topics.map((topic) => (
           <Card key={topic.id} className="hover:shadow-lg transition-shadow border-emerald-200 dark:border-emerald-800">
             <CardHeader>
@@ -1912,28 +1037,27 @@ export default function QuizPage() {
             </CardContent>
           </Card>
         ))}
-        </div>
-
-                 {topics.length === 0 && (
-                           <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
-             <CardContent>
-                               <div className="p-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 mx-auto mb-6 w-fit">
-                 <BrainCircuit className="h-16 w-16 text-white" />
-               </div>
-                               <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-800 bg-clip-text text-transparent">Nenhum tópico disponível</h3>
-               <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
-                 Os tópicos de quiz ainda não foram configurados para esta matéria. Em breve haverá novos conteúdos!
-               </p>
-                               <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
-                 <Link href="/dashboard">
-                   <ArrowRight className="mr-3 h-5 w-5" />
-                   Voltar ao Dashboard
-                 </Link>
-               </Button>
-             </CardContent>
-           </Card>
-         )}
       </div>
-    </DashboardShell>
+
+      {topics.length === 0 && (
+        <Card className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-100 dark:from-blue-800 dark:to-purple-900 border-blue-200 dark:border-blue-700 hover:shadow-xl transition-all duration-300">
+          <CardContent>
+            <div className="p-6 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 mx-auto mb-6 w-fit">
+              <BrainCircuit className="h-16 w-16 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-800 bg-clip-text text-transparent">Nenhum tópico disponível</h3>
+            <p className="text-orange-700 dark:text-orange-300 text-lg leading-relaxed max-w-md mx-auto mb-8">
+              Os tópicos de quiz ainda não foram configurados para esta matéria. Em breve haverá novos conteúdos!
+            </p>
+            <Button asChild className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-semibold">
+              <Link href="/dashboard">
+                <ArrowRight className="mr-3 h-5 w-5" />
+                Voltar ao Dashboard
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }

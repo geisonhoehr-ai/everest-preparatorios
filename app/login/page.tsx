@@ -1,99 +1,53 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
+import { useAuth } from "@/components/page-auth-wrapper"
+import { PageAuthWrapper } from "@/components/page-auth-wrapper"
 
-export default function LoginSimplePage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+export default function LoginPage() {
+  return (
+    <PageAuthWrapper>
+      <LoginPageContent />
+    </PageAuthWrapper>
+  )
+}
+
+function LoginPageContent() {
+  const [email, setEmail] = useState("aluno@teste.com")
+  const [password, setPassword] = useState("123456")
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { signIn } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
     
-    const supabase = createClient()
-    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) {
-        setError(error.message)
-        setIsLoading(false)
-        return
+      console.log('🔐 [LOGIN] Tentativa de login para:', email)
+      
+      // Usar o sistema de autenticação real
+      const result = await signIn(email, password)
+      
+      if (result.success) {
+        console.log('✅ [LOGIN] Login bem-sucedido!')
+        // Redirecionar diretamente para a página do aluno para testar
+        router.push('/dashboard/aluno')
+      } else {
+        setError(result.error || 'Credenciais inválidas')
       }
-
-      if (!data.user) {
-        setError('Erro inesperado no login')
-        setIsLoading(false)
-        return
-      }
-
-      // Buscar role do usuário
-      try {
-        // 1) Tenta via RPC segura (requer execução do script scripts/100_create_get_user_role_rpc.sql)
-        const { data: roleFromRpc, error: rpcError } = await supabase.rpc('get_role_for_current_user')
-
-        let userRole = (roleFromRpc as string) || 'student'
-
-        // 2) Fallback: SELECT direto caso RPC não exista/retorne erro
-        if (rpcError || !roleFromRpc) {
-          let { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_uuid', data.user.id)
-            .single()
-
-          if (roleError) {
-            const { data: roleDataByEmail, error: roleErrorByEmail } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('email', data.user.email)
-              .single()
-
-            if (roleErrorByEmail) {
-              router.push('/dashboard')
-              return
-            }
-
-            roleData = roleDataByEmail
-          }
-
-          userRole = roleData?.role || 'student'
-        }
-
-        // Redirecionar baseado no role
-        let redirectPath = '/dashboard'
-        
-        if (userRole === 'admin') {
-          redirectPath = '/admin'
-        } else if (userRole === 'teacher') {
-          redirectPath = '/dashboard'
-        } else {
-          redirectPath = '/dashboard'
-        }
-
-        router.push(redirectPath)
-
-      } catch (roleError) {
-        // Se houver erro ao buscar role, redirecionar para dashboard
-        router.push('/dashboard')
-      }
-
-    } catch (error) {
+      
+    } catch (error: any) {
+      console.error('❌ [LOGIN] Erro inesperado:', error)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -118,7 +72,7 @@ export default function LoginSimplePage() {
         {/* Efeito LED colorido girando na borda */}
         <div className="relative">
           {/* LED colorido girando no sentido horário */}
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-green-500 via-purple-500 via-pink-500 to-blue-500  opacity-75 blur-sm"></div>
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-green-500 via-purple-500 via-pink-500 to-blue-500 opacity-75 blur-sm"></div>
           
           <Card className="relative bg-black border border-gray-800 shadow-2xl rounded-2xl">
             <CardHeader className="text-center pb-6 sm:pb-8">
@@ -141,9 +95,9 @@ export default function LoginSimplePage() {
             <CardContent className="px-6 sm:px-8 pb-6 sm:pb-8">
               <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-xs sm:text-sm font-medium text-gray-200">
+                  <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-gray-200">
                     Email
-                  </label>
+                  </Label>
                   <Input
                     id="email"
                     name="email"
@@ -157,9 +111,9 @@ export default function LoginSimplePage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-xs sm:text-sm font-medium text-gray-200">
+                  <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-gray-200">
                     Senha
-                  </label>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -186,17 +140,15 @@ export default function LoginSimplePage() {
                 </div>
 
                 {error && (
-                  <Alert className="border-red-500/50 bg-red-900/20 backdrop-blur-sm">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                    <AlertDescription className="text-red-300 text-xs sm:text-sm">
-                      {error}
-                    </AlertDescription>
-                  </Alert>
+                  <div className="flex items-center gap-2 text-red-400 text-xs sm:text-sm">
+                    <Lock className="h-4 w-4" />
+                    {error}
+                  </div>
                 )}
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-500 via-green-500 to-purple-500 hover:from-blue-600 hover:via-green-600 hover:to-purple-600 text-white font-medium h-10 sm:h-12 shadow-lg hover:shadow-xl transition-all duration-200 animate-gradient-shift text-sm"
+                  className="w-full bg-gradient-to-r from-blue-500 via-green-500 to-purple-500 hover:from-blue-600 hover:via-green-600 hover:to-purple-600 text-white font-medium h-10 sm:h-12 shadow-lg hover:shadow-xl transition-all duration-200 text-sm"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -206,7 +158,7 @@ export default function LoginSimplePage() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
                       Entrar
                     </div>
                   )}
@@ -228,4 +180,4 @@ export default function LoginSimplePage() {
       </div>
     </div>
   )
-} 
+}

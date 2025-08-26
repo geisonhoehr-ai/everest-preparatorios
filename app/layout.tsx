@@ -1,7 +1,8 @@
 import type React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
+// import { ThemeProvider } from "@/components/theme-provider"
+// import { SafeAuthProvider } from "@/components/safe-auth-provider"
 // import { PerformanceOptimizer } from "@/components/performance-optimizer"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,11 +21,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {/* <PerformanceOptimizer> */}
-            {children}
-          {/* </PerformanceOptimizer> */}
-        </ThemeProvider>
+        {/* <ThemeProvider attribute="class" defaultTheme="system" enableSystem> */}
+          {/* <SafeAuthProvider> */}
+            {/* <PerformanceOptimizer> */}
+              {children}
+            {/* </PerformanceOptimizer> */}
+          {/* </SafeAuthProvider> */}
+        {/* </ThemeProvider> */}
       </body>
     </html>
   )

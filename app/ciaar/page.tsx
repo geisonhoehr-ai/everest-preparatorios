@@ -161,7 +161,7 @@ export default function CIAARPage() {
               <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">Professor Tiago</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Especialista em concursos militares com metodologia comprovada e +80 aprovados
+                              Especialista em concursos militares com metodologia comprovada e +41 aprovados EAOF 2025
             </p>
           </motion.div>
           
@@ -187,7 +187,7 @@ export default function CIAARPage() {
               
               <div className="space-y-4">
                 {[
-                  "Metodologia comprovada com +80 aprovados",
+                  "Metodologia comprovada com +41 aprovados EAOF 2025",
                   "Aulas estruturadas entre teoria e prática",
                   "Abordagem direta e objetiva",
                   "Suporte personalizado durante todo o curso"
@@ -235,7 +235,7 @@ export default function CIAARPage() {
                           <div className="w-12 h-12 bg-orange-500/60 rounded-xl flex items-center justify-center">
                             <Users className="w-6 h-6 text-white" />
                           </div>
-                          <span className="text-white font-medium">+80 Aprovados</span>
+                          <span className="text-white font-medium">+41 Aprovados EAOF 2025</span>
                         </div>
                       </div>
                       <div className="space-y-4">

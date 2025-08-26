@@ -235,7 +235,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link href="/dashboard">
+                <Link href="/login">
                   Ver Relatórios
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

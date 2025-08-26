@@ -33,8 +33,33 @@ export const supabaseAdmin = supabaseUrl && supabaseServiceKey ?
 //  Helper to create scoped clients inside server code
 // ---------------------------------------------------
 export function createClient() {
-  if (!supabaseAdmin) {
-    throw new Error('Supabase não está configurado. Verifique as variáveis de ambiente.')
+  console.log("🔗 [DEBUG] createClient chamada")
+  console.log("🔗 [DEBUG] supabaseUrl:", !!supabaseUrl)
+  console.log("🔗 [DEBUG] supabaseAnonKey:", !!supabaseAnonKey)
+  
+  // Usar chave anônima para operações básicas de leitura
+  if (supabaseUrl && supabaseAnonKey) {
+    console.log("🔗 [DEBUG] Criando cliente com chave anônima")
+    try {
+      const client = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+      console.log("🔗 [DEBUG] Cliente criado com sucesso:", !!client)
+      return client
+    } catch (error) {
+      console.error("❌ [DEBUG] Erro ao criar cliente anônimo:", error)
+    }
   }
-  return supabaseAdmin
+  
+  // Fallback para chave de serviço se disponível
+  if (supabaseAdmin) {
+    console.log("🔗 [DEBUG] Usando cliente admin como fallback")
+    return supabaseAdmin
+  }
+  
+  console.error("❌ [DEBUG] Nenhum cliente disponível")
+  throw new Error('Supabase não está configurado. Verifique as variáveis de ambiente.')
 }

@@ -131,7 +131,48 @@ export default function MembrosPage() {
   const supabase = createClient()
   const { toast } = useToast()
 
+  // Verificar permissões do usuário
+  const [userRole, setUserRole] = useState<string>('student')
+  const [canManageMembers, setCanManageMembers] = useState(false)
+
   useEffect(() => {
+    // Verificar permissões do usuário
+    const checkUserPermissions = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          // Buscar role do usuário
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_uuid', user.id)
+            .single()
+          
+          const role = roleData?.role || 'student'
+          setUserRole(role)
+          setCanManageMembers(role === 'teacher' || role === 'admin')
+          
+          // Se não pode gerenciar membros, redirecionar
+          if (role !== 'teacher' && role !== 'admin') {
+            toast({
+              title: "Acesso Negado",
+              description: "Apenas professores e admins podem acessar esta página",
+              variant: "destructive"
+            })
+            // Redirecionar para dashboard
+            window.location.href = '/dashboard'
+            return
+          }
+        }
+      } catch (error) {
+        console.error('❌ [MEMBROS] Erro ao verificar permissões:', error)
+        // Em caso de erro, redirecionar para dashboard
+        window.location.href = '/dashboard'
+        return
+      }
+    }
+
+    checkUserPermissions()
     loadMembers()
   }, [])
 
@@ -168,6 +209,16 @@ export default function MembrosPage() {
   }
 
   const handleAddMember = async () => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem adicionar membros",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       if (!newMember.full_name || !newMember.email) {
         toast({
@@ -236,6 +287,16 @@ export default function MembrosPage() {
   }
 
   const handleUpdateMember = async () => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem editar membros",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (!editingMember) return
 
     try {
@@ -278,6 +339,16 @@ export default function MembrosPage() {
   }
 
   const handleDeleteMember = async (memberId: number) => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem excluir membros",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (!confirm('Tem certeza que deseja excluir este membro?')) return
 
     try {
@@ -310,6 +381,16 @@ export default function MembrosPage() {
   }
 
   const handleUpdateRole = async (memberId: number, newRole: 'student' | 'teacher' | 'admin') => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem alterar roles",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       const member = members.find(m => m.id === memberId)
       if (!member) return
@@ -354,6 +435,16 @@ export default function MembrosPage() {
   }
 
   const handleResendPassword = async (member: Member) => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem reenviar senhas",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       // Simular reenvio de senha
       toast({
@@ -370,6 +461,16 @@ export default function MembrosPage() {
   }
 
   const handleBlockAccess = async (member: Member) => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem bloquear acessos",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('members')
@@ -401,6 +502,16 @@ export default function MembrosPage() {
 
   // Funções de import/export
   const handleExport = () => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem exportar membros",
+        variant: "destructive"
+      })
+      return
+    }
+
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Nome,Email,Telefone,Status,Data de Criação\n" +
       members.map(m => 
@@ -422,6 +533,16 @@ export default function MembrosPage() {
   }
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Verificar permissão
+    if (!canManageMembers) {
+      toast({
+        title: "Acesso Negado",
+        description: "Apenas professores e admins podem importar membros",
+        variant: "destructive"
+      })
+      return
+    }
+
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -602,22 +723,27 @@ export default function MembrosPage() {
             <h2 className="text-2xl font-semibold">Membros</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Importar</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Exportar</span>
-            </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Novo membro</span>
-                  <span className="sm:hidden">Novo</span>
-                </Button>
-              </DialogTrigger>
+            {canManageMembers && (
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Importar</span>
+              </Button>
+            )}
+            {canManageMembers && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Exportar</span>
+              </Button>
+            )}
+            {canManageMembers && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Novo membro</span>
+                    <span className="sm:hidden">Novo</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Adicionar Novo Membro</DialogTitle>
@@ -684,8 +810,9 @@ export default function MembrosPage() {
                     Adicionar Membro
                   </Button>
                 </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                              </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
 
@@ -858,17 +985,21 @@ export default function MembrosPage() {
                                   <Eye className="h-4 w-4 mr-2" />
                                   Ver perfil
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleResendPassword(member)}>
-                                  <Key className="h-4 w-4 mr-2" />
-                                  Reenviar senha
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-red-600"
-                                  onClick={() => handleBlockAccess(member)}
-                                >
-                                  <Ban className="h-4 w-4 mr-2" />
-                                  Bloquear acesso
-                                </DropdownMenuItem>
+                                {canManageMembers && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleResendPassword(member)}>
+                                      <Key className="h-4 w-4 mr-2" />
+                                      Reenviar senha
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      className="text-red-600"
+                                      onClick={() => handleBlockAccess(member)}
+                                    >
+                                      <Ban className="h-4 w-4 mr-2" />
+                                      Bloquear acesso
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/lib/auth-simple'
+import { useAuth } from '@/components/page-auth-wrapper'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -78,7 +78,7 @@ export function UserInfo() {
             </p>
           </div>
         </div>
-        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+        <DropdownMenuItem onClick={() => router.push('/login')}>
           <User className="mr-2 h-4 w-4" />
           <span>Dashboard</span>
         </DropdownMenuItem>

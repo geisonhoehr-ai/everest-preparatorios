@@ -2,7 +2,7 @@
 
 import { ReactElement, useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useAuth } from '@/lib/auth-simple'
+import { useAuth } from '@/components/page-auth-wrapper'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -22,30 +22,21 @@ export default function AuthGuard({
   const pathname = usePathname()
   
   // Usar o novo hook useAuth otimizado
-  const { 
-    user, 
-    role, 
-    isAuthenticated, 
-    isLoading, 
-    isInitialized,
-    isAdmin,
-    isTeacher,
-    isStudent
-  } = useAuth()
+  const auth = useAuth()
 
   // Memoizar flags para evitar recálculos
   const flags = useMemo(() => ({
-    isTeacher: isTeacher,
-    isAdmin: isAdmin,
-    isStudent: isStudent,
-    effectiveRole: role,
+    isTeacher: auth.user?.role === 'teacher',
+    isAdmin: auth.user?.role === 'admin',
+    isStudent: auth.user?.role === 'student',
+    effectiveRole: auth.user?.role,
     forcedRole: null
-  }), [isTeacher, isAdmin, isStudent, role])
+  }), [auth.user?.role])
 
   // DEBUG: Mostrar informações do usuário
-  console.log('🔍 [DASHBOARD DEBUG] User:', user)
-  console.log('🔍 [DASHBOARD DEBUG] User role:', role)
-  console.log('🔍 [DASHBOARD DEBUG] User ID:', user?.id)
+  console.log('🔍 [DASHBOARD DEBUG] User:', auth.user)
+  console.log('🔍 [DASHBOARD DEBUG] User role:', auth.user?.role)
+  console.log('🔍 [DASHBOARD DEBUG] User ID:', auth.user?.id)
   console.log('🔍 [DASHBOARD DEBUG] Flags:', flags)
 
   useEffect(() => {
@@ -53,20 +44,19 @@ export default function AuthGuard({
       try {
         console.log('🛡️ [AUTH_GUARD] Verificando autorização para:', pathname)
         console.log('👤 [AUTH_GUARD] Estado atual:', { 
-          isAuthenticated, 
-          role, 
-          isInitialized, 
-          isLoading 
+          isAuthenticated: auth.isAuthenticated, 
+          role: auth.user?.role, 
+          isLoading: auth.isLoading 
         })
 
         // Aguardar inicialização
-        if (!isInitialized || isLoading) {
+        if (auth.isLoading) {
           console.log('⏳ [AUTH_GUARD] Aguardando inicialização...')
           return
         }
 
         // Se não está autenticado e está tentando acessar rota protegida
-        if (!isAuthenticated) {
+        if (!auth.isAuthenticated) {
           console.log('❌ [AUTH_GUARD] Usuário não autenticado')
           
           // Rotas públicas que não precisam de autenticação
@@ -82,10 +72,10 @@ export default function AuthGuard({
           return
         }
 
-        console.log('✅ [AUTH_GUARD] Usuário autenticado:', user?.email, 'Role:', role)
+        console.log('✅ [AUTH_GUARD] Usuário autenticado:', auth.user?.email, 'Role:', auth.user?.role)
 
         // Se tem sessão, verificar role
-        if (!role) {
+        if (!auth.user?.role) {
           console.log('⚠️ [AUTH_GUARD] Usuário sem role definido, redirecionando para dashboard')
           router.replace('/dashboard')
           return
@@ -95,19 +85,19 @@ export default function AuthGuard({
         const authPages = ['/login', '/signup', '/forgot-password']
         if (authPages.includes(pathname)) {
           console.log('🔄 [AUTH_GUARD] Usuário logado tentando acessar página de auth, redirecionando')
-          router.replace(getDefaultRedirectPath(role))
+          router.replace(getDefaultRedirectPath(auth.user?.role || 'student'))
           return
         }
 
         // Verificar permissões específicas se necessário
-        if (requiredRole && role !== requiredRole) {
-          console.log('❌ [AUTH_GUARD] Permissão insuficiente. Necessário:', requiredRole, 'Atual:', role)
+        if (requiredRole && auth.user?.role !== requiredRole) {
+          console.log('❌ [AUTH_GUARD] Permissão insuficiente. Necessário:', requiredRole, 'Atual:', auth.user?.role)
           router.replace('/access-denied')
           return
         }
 
-        if (allowedRoles && !allowedRoles.includes(role)) {
-          console.log('❌ [AUTH_GUARD] Role não permitido. Permitidos:', allowedRoles, 'Atual:', role)
+        if (allowedRoles && !allowedRoles.includes(auth.user?.role || '')) {
+          console.log('❌ [AUTH_GUARD] Role não permitido. Permitidos:', allowedRoles, 'Atual:', auth.user?.role)
           router.replace('/access-denied')
           return
         }
@@ -123,7 +113,7 @@ export default function AuthGuard({
     }
 
     checkAuthorization()
-  }, [isAuthenticated, role, isInitialized, isLoading, pathname, requiredRole, allowedRoles, router, user?.email])
+  }, [auth.isAuthenticated, auth.user?.role, auth.isLoading, pathname, requiredRole, allowedRoles, router, auth.user?.email])
 
   // Função para determinar redirecionamento baseado no role
   const getDefaultRedirectPath = (userRole: string): string => {
@@ -139,7 +129,7 @@ export default function AuthGuard({
   }
 
   // Mostrar loading enquanto verifica
-  if (isLoading || isChecking || !isInitialized) {
+  if (auth.isLoading || isChecking) {
     return fallback || (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -156,14 +146,14 @@ export default function AuthGuard({
 
 // Hook para usar informações de autenticação (versão simplificada)
 export function useAuthGuard() {
-  const auth = useAuth()
+          const auth = useAuth()
   
   return {
     ...auth,
     canAccess: (requiredRole?: string) => {
-      if (!auth.isAuthenticated || !auth.role) return false
+      if (!auth.isAuthenticated || !auth.user?.role) return false
       if (!requiredRole) return true
-      return auth.role === requiredRole
+      return auth.user?.role === requiredRole
     }
   }
 }

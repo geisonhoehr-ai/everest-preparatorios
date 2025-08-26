@@ -82,7 +82,7 @@ export function useAuth() {
     console.log('🧹 [AUTH] Cache de roles limpo')
   }, [])
 
-  // Verificação de sessão otimizada
+  // Verificação de sessão otimizada com redirecionamento automático
   const checkSession = useCallback(async () => {
     if (isCheckingSession.current && sessionCheckPromise.current) {
       console.log('⏭️ [AUTH] Verificação de sessão já em andamento, aguardando...')
@@ -94,6 +94,18 @@ export function useAuth() {
     
     try {
       const result = await sessionCheckPromise.current
+      
+      // Se autenticado e com role definido, redirecionar automaticamente
+      if (result.isAuthenticated && result.role) {
+        console.log('✅ [AUTH] Usuário autenticado com role:', result.role)
+        
+        // Salvar role na sessão para uso posterior
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('userRole', result.role)
+          sessionStorage.setItem('userId', result.user?.id || '')
+        }
+      }
+      
       return result
     } finally {
       isCheckingSession.current = false
@@ -273,6 +285,11 @@ export function useAuth() {
     }
   }
 
+  // Função para verificar permissões de forma simples
+  const canManageMembers = role === 'teacher' || role === 'admin'
+  const canAccessAdmin = role === 'admin'
+  const canManageClasses = role === 'teacher' || role === 'admin'
+
   return {
     ...authState,
     role,
@@ -280,6 +297,9 @@ export function useAuth() {
     isTeacher: role === 'teacher',
     isAdmin: role === 'admin',
     isStudent: role === 'student',
+    canManageMembers,
+    canAccessAdmin,
+    canManageClasses,
     signIn,
     signUp,
     signOut,

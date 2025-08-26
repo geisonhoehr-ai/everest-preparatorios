@@ -4,7 +4,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useMemo, useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { 
   BookOpen, 
   Home, 
@@ -38,13 +38,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useAuth } from "@/lib/auth-simple"
+import { useAuth } from '@/components/page-auth-wrapper'
 
 interface SidebarNavItem {
   href: string
   title: string
   icon: React.ElementType
   external?: boolean
+  variant?: "default" | "secondary" | "destructive" | "outline" | "ghost" | "link"
 }
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
@@ -61,9 +62,18 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed
   
   // Garantir que todos os valores tenham valores padrão seguros
-  const userRole = authResult?.role || 'student'
+  const userRole = authResult?.user?.role || 'student'
   const isUserAuthenticated = authResult?.isAuthenticated || false
   const currentUser = authResult?.user || null
+  
+  // Debug detalhado
+  console.log('🔍 [SIDEBAR DEBUG] Valores completos:', {
+    authResult: authResult,
+    userRole,
+    isUserAuthenticated,
+    currentUser,
+    propItems: !!propItems
+  })
   
   // Garantir que className tenha um valor padrão
   const safeClassName = className || ""
@@ -73,10 +83,22 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
     console.warn('⚠️ [SIDEBAR] useAuth retornou undefined, usando valores padrão')
   }
   
-  // Memoizar o menu baseado no role para evitar re-renderizações
-  const menuItems = useMemo(() => {
+  // Menu baseado no role para evitar re-renderizações
+  const menuItems = (() => {
+    // Debug: verificar valores de autenticação
+    console.log('🔍 [SIDEBAR DEBUG] Valores de autenticação:', {
+      authResult: !!authResult,
+      userRole,
+      isUserAuthenticated,
+      currentUser: !!currentUser,
+      propItems: !!propItems
+    })
+    
     // Se items foi passado como prop, usar eles
-    if (propItems) return propItems
+    if (propItems) {
+      console.log('🔍 [SIDEBAR] Usando items passados como prop')
+      return propItems
+    }
     
     // Verificação de segurança adicional
     if (!isUserAuthenticated || !currentUser || !userRole) {
@@ -84,145 +106,130 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
       return []
     }
     
+    console.log('🔍 [SIDEBAR] Role detectado:', userRole)
+    
     // Menu específico para estudantes
     if (userRole === 'student') {
+      console.log('👨‍🎓 [SIDEBAR] Renderizando menu de estudante')
       return [
         {
           title: "Dashboard Aluno",
-          href: "/dashboard",
+          href: "/dashboard/aluno",
           icon: Home,
-          variant: "default" as const,
           external: false,
         },
         {
           title: "Aulas",
           href: "https://alunos.everestpreparatorios.com.br",
           icon: PlayCircle,
-          variant: "default" as const,
           external: true,
         },
         {
           title: "Flashcards",
           href: "/flashcards",
           icon: BookOpen,
-          variant: "default" as const,
           external: false,
         },
         {
           title: "Quiz",
           href: "/quiz",
           icon: HelpCircle,
-          variant: "default" as const,
           external: false,
         },
         {
           title: "Calendário",
           href: "/calendario",
           icon: Calendar,
-          variant: "default" as const,
           external: false,
         },
         {
           title: "Suporte",
           href: "/suporte",
           icon: HelpCircle,
-          variant: "default" as const,
           external: false,
         },
       ]
     }
 
     // Menu para professores e admins (todas as páginas)
+    console.log('👨‍🏫 [SIDEBAR] Renderizando menu completo para:', userRole)
     const baseItems = [
       {
         title: "Dashboard",
-        href: "/dashboard",
+        href: userRole === 'teacher' ? "/dashboard/professor" : "/dashboard/admin",
         icon: Home,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Aulas",
         href: "https://alunos.everestpreparatorios.com.br",
         icon: PlayCircle,
-        variant: "default" as const,
         external: true,
       },
       {
         title: "Flashcards",
         href: "/flashcards",
         icon: BookOpen,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Quiz",
         href: "/quiz",
         icon: HelpCircle,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "CIAAR",
         href: "/ciaar",
         icon: Plane,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Provas",
         href: "/provas",
         icon: FileText,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Acervo Digital",
         href: "/livros",
         icon: Archive,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Redação",
         href: "/redacao",
         icon: PenTool,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Membros",
         href: "/membros",
         icon: UserCheck,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Turmas",
         href: "/turmas",
         icon: ClassIcon,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Comunidade",
         href: "/community",
         icon: Users2,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Calendário",
         href: "/calendario",
         icon: Calendar,
-        variant: "default" as const,
         external: false,
       },
       {
         title: "Suporte",
         href: "/suporte",
         icon: HelpCircle,
-        variant: "default" as const,
         external: false,
       },
     ]
@@ -234,14 +241,14 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
           title: "Admin",
           href: "/admin",
           icon: Shield,
-          variant: "default" as const,
           external: false,
         }
       )
     }
 
+    console.log('🔍 [SIDEBAR] Menu final:', baseItems.length, 'itens')
     return baseItems
-  }, [propItems, isUserAuthenticated, currentUser, userRole])
+  })()
 
   // Log otimizado - apenas quando o role muda
   useEffect(() => {
