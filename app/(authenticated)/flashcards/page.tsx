@@ -225,8 +225,8 @@ export default function FlashcardsPage() {
     if (user && selectedTopic) {
       try {
         const result = await updateFlashcardProgress(user.id, selectedTopic, true, 0)
-        if (result.success) {
-          setXpGained(prev => prev + result.xpGained)
+        if (result.success && result.xpGained !== undefined) {
+          setXpGained(prev => prev + result.xpGained!)
           console.log(`✅ +${result.xpGained} XP ganho!`)
         }
       } catch (error) {
@@ -244,8 +244,8 @@ export default function FlashcardsPage() {
     if (user && selectedTopic) {
       try {
         const result = await updateFlashcardProgress(user.id, selectedTopic, false, 0)
-        if (result.success) {
-          setXpGained(prev => prev + result.xpGained)
+        if (result.success && result.xpGained !== undefined) {
+          setXpGained(prev => prev + result.xpGained!)
           console.log(`✅ +${result.xpGained} XP ganho!`)
         }
       } catch (error) {

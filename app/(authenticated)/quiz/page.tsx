@@ -260,7 +260,7 @@ export default function QuizPage() {
             timeSpent
           )
           
-          if (result.success) {
+          if (result.success && result.xpGained !== undefined) {
             setXpGained(result.xpGained)
             console.log(`✅ Quiz finalizado! +${result.xpGained} XP ganho!`)
           }
