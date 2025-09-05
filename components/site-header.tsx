@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
-import { UserInfo } from "./user-info"
+// UserInfo removido - sistema de autenticação limpo
 
 const marqueeMessages = [
   "🎯 Mantenha o foco! Você está mais perto do seu objetivo.",
@@ -60,7 +60,7 @@ export function SiteHeader() {
         </div>
         
         <div className="flex items-center space-x-2 min-w-fit flex-shrink-0">
-          <UserInfo />
+          {/* UserInfo removido - sistema de autenticação limpo */}
         </div>
       </div>
     </header>

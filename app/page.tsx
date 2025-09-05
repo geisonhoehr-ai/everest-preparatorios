@@ -13,6 +13,7 @@ import { useState } from "react";
 export default function LandingPage() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -32,12 +33,14 @@ export default function LandingPage() {
               
               {/* Menu Desktop - Só aparece em telas médias e grandes */}
               <div className="desktop-menu hidden md:flex items-center space-x-4">
-                <Link href="/ciaar">
-                  <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
-                    CIAAR
-                  </Button>
-                </Link>
-                <Link href="/login">
+                <Button 
+                  variant="outline" 
+                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                  onClick={() => setIsMaintenanceModalOpen(true)}
+                >
+                  CIAAR
+                </Button>
+                <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-blue-500 hover:text-white">
                     Área do Aluno
                   </Button>
@@ -51,12 +54,14 @@ export default function LandingPage() {
 
               {/* Menu Mobile - Sempre visível em telas pequenas */}
               <div className="mobile-menu flex md:hidden flex-col items-center space-y-3 w-full px-2 max-w-full">
-                <Link href="/ciaar" className="w-full">
-                  <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full">
-                    CIAAR
-                  </Button>
-                </Link>
-                <Link href="/login" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full"
+                  onClick={() => setIsMaintenanceModalOpen(true)}
+                >
+                  CIAAR
+                </Button>
+                <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer" className="w-full">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white w-full">
                     Área do Aluno
                   </Button>
@@ -104,10 +109,6 @@ export default function LandingPage() {
                 <span className="text-orange-400 font-semibold"> 785+ flashcards</span>, simulados exclusivos e correção de redações.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 lg:space-x-8 text-sm text-gray-400 px-4">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>7 dias grátis</span>
-                </div>
                 <div className="flex items-center">
                   <Shield className="w-5 h-5 text-blue-500 mr-2" />
                   <span>Cancelamento a qualquer momento</span>
@@ -1385,10 +1386,6 @@ export default function LandingPage() {
                         <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
                         <span className="text-green-300 font-semibold">Acesso por 12 meses</span>
                       </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
-                        <span className="text-green-300 font-semibold">Garantia de 7 dias</span>
-                      </li>
                     </ul>
                     
                     {/* Botão CTA Premium */}
@@ -1459,38 +1456,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Garantia */}
-        <section className="py-20 bg-black">
-          <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-8 border border-orange-500/20">
-              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4">
-                Garantia de
-                <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent"> 7 dias</span>
-              </h2>
-              <p className="text-lg text-gray-300 mb-6">
-                Se em até 7 dias você não estiver satisfeito, devolvemos 100% do seu dinheiro. 
-                Sem perguntas, sem complicações.
-              </p>
-              <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Devolução integral</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Sem perguntas</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                  <span>Processo simples</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* CTA Final */}
         <section className="py-20 bg-black relative overflow-hidden">
@@ -1671,7 +1636,28 @@ export default function LandingPage() {
         </a>
       </div>
 
-              {/* Modal de Política de Privacidade */}
+              {/* Modal de Manutenção */}
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${isMaintenanceModalOpen ? 'block' : 'hidden'}`}>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMaintenanceModalOpen(false)}></div>
+          <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="w-8 h-8 text-orange-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">Em Manutenção</h3>
+            <p className="text-gray-300 mb-6">
+              A seção CIAAR está temporariamente em manutenção para melhorias. 
+              Em breve estará disponível com novos recursos!
+            </p>
+            <Button 
+              onClick={() => setIsMaintenanceModalOpen(false)}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
+            >
+              Entendi
+            </Button>
+          </div>
+        </div>
+
+        {/* Modal de Política de Privacidade */}
         <PrivacyPolicyModal 
           isOpen={isPrivacyModalOpen}
           onClose={() => setIsPrivacyModalOpen(false)}

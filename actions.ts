@@ -1044,11 +1044,30 @@ export async function getAllSubjects() {
       return cached
     }
     
+    // Tentar buscar subjects
     const { data, error } = await supabase.from("subjects").select("id, name").order("name")
     console.log("🔍 [Server Action] Query executada, data:", data, "error:", error)
       
-      if (error) {
+    if (error) {
       console.error("❌ [Server Action] Erro ao buscar matérias:", error)
+      
+      // Se a tabela não existe, retornar dados mock temporários
+      if (error.code === 'PGRST205') {
+        console.log("⚠️ [Server Action] Tabela subjects não encontrada, usando dados temporários")
+        const mockSubjects = [
+          { id: 1, name: "Português" },
+          { id: 2, name: "Regulamentos" },
+          { id: 3, name: "Matemática" },
+          { id: 4, name: "Física" },
+          { id: 5, name: "Química" },
+          { id: 6, name: "Biologia" }
+        ]
+        
+        // Salvar no cache por 5 minutos
+        await setCache(cacheKey, mockSubjects, 5 * 60)
+        return mockSubjects
+      }
+      
       return []
     }
     
@@ -2223,4 +2242,381 @@ export interface CalendarEvent {
   event_url: string
   created_at: string
   updated_at: string
+}
+
+// ==================== SISTEMA DE PROGRESSO E RANKING ====================
+
+/**
+ * Inicializa o progresso do usuário (chamado quando usuário se cadastra)
+ */
+export async function initializeUserProgress(userId: string) {
+  console.log("🎯 [Server Action] Inicializando progresso para usuário:", userId)
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se já existe progresso
+    const { data: existingProgress } = await supabase
+      .from("user_gamification_stats")
+      .select("user_uuid")
+      .eq("user_uuid", userId)
+      .single()
+    
+    if (existingProgress) {
+      console.log("✅ [Server Action] Progresso já inicializado para usuário:", userId)
+      return { success: true, message: "Progresso já inicializado" }
+    }
+    
+    // Inicializar estatísticas de gamificação
+    const { error: gamificationError } = await supabase
+      .from("user_gamification_stats")
+      .insert({
+        user_uuid: userId,
+        total_xp: 0,
+        current_level: 1,
+        current_rank: "Iniciante",
+        current_league: "Bronze",
+        total_score: 0,
+        flashcards_completed: 0,
+        quizzes_completed: 0,
+        lessons_completed: 0,
+        current_streak: 0,
+        longest_streak: 0,
+        last_study_date: null,
+        achievements_unlocked: 0,
+        total_study_time: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+    
+    if (gamificationError) {
+      console.error("❌ [Server Action] Erro ao inicializar gamificação:", gamificationError)
+    }
+    
+    // Inicializar ranking
+    const { error: rankingError } = await supabase
+      .from("user_rankings")
+      .insert({
+        user_uuid: userId,
+        period_type: "all_time",
+        period_start: new Date().toISOString().split('T')[0],
+        period_end: new Date().toISOString().split('T')[0],
+        total_score: 0,
+        total_xp: 0,
+        rank_position: 999999,
+        league_position: 999999,
+        created_at: new Date().toISOString()
+      })
+    
+    if (rankingError) {
+      console.error("❌ [Server Action] Erro ao inicializar ranking:", rankingError)
+    }
+    
+    console.log("✅ [Server Action] Progresso inicializado com sucesso para:", userId)
+    return { success: true, message: "Progresso inicializado com sucesso" }
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao inicializar progresso:", error)
+    return { success: false, message: "Erro ao inicializar progresso" }
+  }
+}
+
+/**
+ * Atualiza progresso de flashcard
+ */
+export async function updateFlashcardProgress(
+  userId: string, 
+  topicId: string, 
+  isCorrect: boolean,
+  timeSpent: number = 0
+) {
+  console.log("📚 [Server Action] Atualizando progresso flashcard:", { userId, topicId, isCorrect })
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Atualizar progresso do tópico
+    const { error: topicError } = await supabase
+      .from("user_topic_progress")
+      .upsert({
+        user_uuid: userId,
+        topic_id: topicId,
+        correct_count: isCorrect ? 1 : 0,
+        incorrect_count: isCorrect ? 0 : 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_uuid,topic_id'
+      })
+    
+    if (topicError) {
+      console.error("❌ [Server Action] Erro ao atualizar progresso do tópico:", topicError)
+    }
+    
+    // Atualizar estatísticas gerais
+    const xpGained = isCorrect ? 10 : 5 // XP por resposta (correta ou incorreta)
+    
+    const { error: statsError } = await supabase
+      .from("user_gamification_stats")
+      .update({
+        total_xp: supabase.raw('total_xp + ?', [xpGained]),
+        total_score: supabase.raw('total_score + ?', [xpGained]),
+        flashcards_completed: supabase.raw('flashcards_completed + 1'),
+        current_streak: supabase.raw('current_streak + 1'),
+        total_study_time: supabase.raw('total_study_time + ?', [timeSpent]),
+        last_study_date: new Date().toISOString().split('T')[0],
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_uuid", userId)
+    
+    if (statsError) {
+      console.error("❌ [Server Action] Erro ao atualizar estatísticas:", statsError)
+    }
+    
+    // Atualizar ranking
+    await updateUserRanking(userId)
+    
+    console.log("✅ [Server Action] Progresso flashcard atualizado")
+    return { success: true, xpGained }
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao atualizar progresso flashcard:", error)
+    return { success: false, message: "Erro ao atualizar progresso" }
+  }
+}
+
+/**
+ * Atualiza progresso de quiz
+ */
+export async function updateQuizProgress(
+  userId: string,
+  topicId: string,
+  score: number,
+  totalQuestions: number,
+  timeSpent: number = 0
+) {
+  console.log("🧠 [Server Action] Atualizando progresso quiz:", { userId, topicId, score, totalQuestions })
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Salvar pontuação do quiz
+    const { error: quizError } = await supabase
+      .from("user_quiz_scores")
+      .insert({
+        user_uuid: userId,
+        quiz_id: parseInt(topicId) || 1,
+        score: score,
+        total_questions: totalQuestions,
+        correct_answers: score,
+        incorrect_answers: totalQuestions - score,
+        completed_at: new Date().toISOString()
+      })
+    
+    if (quizError) {
+      console.error("❌ [Server Action] Erro ao salvar pontuação do quiz:", quizError)
+    }
+    
+    // Atualizar estatísticas gerais
+    const xpGained = Math.floor((score / totalQuestions) * 50) // Até 50 XP por quiz
+    
+    const { error: statsError } = await supabase
+      .from("user_gamification_stats")
+      .update({
+        total_xp: supabase.raw('total_xp + ?', [xpGained]),
+        total_score: supabase.raw('total_score + ?', [xpGained]),
+        quizzes_completed: supabase.raw('quizzes_completed + 1'),
+        current_streak: supabase.raw('current_streak + 1'),
+        total_study_time: supabase.raw('total_study_time + ?', [timeSpent]),
+        last_study_date: new Date().toISOString().split('T')[0],
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_uuid", userId)
+    
+    if (statsError) {
+      console.error("❌ [Server Action] Erro ao atualizar estatísticas:", statsError)
+    }
+    
+    // Atualizar ranking
+    await updateUserRanking(userId)
+    
+    console.log("✅ [Server Action] Progresso quiz atualizado")
+    return { success: true, xpGained }
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao atualizar progresso quiz:", error)
+    return { success: false, message: "Erro ao atualizar progresso" }
+  }
+}
+
+/**
+ * Atualiza ranking do usuário
+ */
+export async function updateUserRanking(userId: string) {
+  console.log("🏆 [Server Action] Atualizando ranking para usuário:", userId)
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Buscar estatísticas do usuário
+    const { data: stats } = await supabase
+      .from("user_gamification_stats")
+      .select("total_xp, correct_answers, total_answers")
+      .eq("user_uuid", userId)
+      .single()
+    
+    if (!stats) {
+      console.log("⚠️ [Server Action] Estatísticas não encontradas para usuário:", userId)
+      return
+    }
+    
+    // Calcular pontuação total (XP + taxa de acerto)
+    const accuracyRate = stats.total_answers > 0 ? (stats.correct_answers / stats.total_answers) * 100 : 0
+    const totalScore = stats.total_xp + (accuracyRate * 10) // Bonus por precisão
+    
+    // Atualizar ranking
+    const { error: rankingError } = await supabase
+      .from("user_rankings")
+      .upsert({
+        user_id: userId,
+        total_score: totalScore,
+        last_updated: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+    
+    if (rankingError) {
+      console.error("❌ [Server Action] Erro ao atualizar ranking:", rankingError)
+    }
+    
+    // Recalcular posições de todos os usuários
+    await recalculateAllRankings()
+    
+    console.log("✅ [Server Action] Ranking atualizado para usuário:", userId)
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao atualizar ranking:", error)
+  }
+}
+
+/**
+ * Recalcula posições de todos os usuários no ranking
+ */
+export async function recalculateAllRankings() {
+  console.log("🔄 [Server Action] Recalculando posições do ranking...")
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Buscar todos os usuários ordenados por pontuação
+    const { data: rankings } = await supabase
+      .from("user_rankings")
+      .select("user_id, total_score")
+      .order("total_score", { ascending: false })
+    
+    if (!rankings) return
+    
+    // Atualizar posições
+    for (let i = 0; i < rankings.length; i++) {
+      const { error } = await supabase
+        .from("user_rankings")
+        .update({ rank_position: i + 1 })
+        .eq("user_id", rankings[i].user_id)
+      
+      if (error) {
+        console.error("❌ [Server Action] Erro ao atualizar posição:", error)
+      }
+    }
+    
+    console.log("✅ [Server Action] Posições do ranking recalculadas")
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao recalcular rankings:", error)
+  }
+}
+
+/**
+ * Busca progresso do usuário
+ */
+export async function getUserProgress(userId: string) {
+  console.log("📊 [Server Action] Buscando progresso para usuário:", userId)
+  
+  try {
+    const supabase = await getSupabase()
+    
+    // Buscar estatísticas de gamificação
+    const { data: stats } = await supabase
+      .from("user_gamification_stats")
+      .select("*")
+      .eq("user_uuid", userId)
+      .single()
+    
+    // Buscar ranking
+    const { data: ranking } = await supabase
+      .from("user_rankings")
+      .select("*")
+      .eq("user_id", userId)
+      .single()
+    
+    // Buscar progresso por tópico
+    const { data: topicProgress } = await supabase
+      .from("user_topic_progress")
+      .select("*")
+      .eq("user_id", userId)
+      .order("last_studied", { ascending: false })
+    
+    return {
+      success: true,
+      stats: stats || {
+        total_xp: 0,
+        level: 1,
+        streak_days: 0,
+        total_study_time: 0,
+        flashcards_studied: 0,
+        quizzes_completed: 0,
+        correct_answers: 0,
+        total_answers: 0
+      },
+      ranking: ranking || {
+        total_score: 0,
+        rank_position: 999999
+      },
+      topicProgress: topicProgress || []
+    }
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao buscar progresso:", error)
+    return { success: false, message: "Erro ao buscar progresso" }
+  }
+}
+
+/**
+ * Busca ranking geral
+ */
+export async function getGlobalRanking(limit: number = 10) {
+  console.log("🏆 [Server Action] Buscando ranking global (limite:", limit, ")")
+  
+  try {
+    const supabase = await getSupabase()
+    
+    const { data: rankings } = await supabase
+      .from("user_rankings")
+      .select(`
+        user_id,
+        total_score,
+        rank_position,
+        user_profiles!inner(display_name, role)
+      `)
+      .order("rank_position", { ascending: true })
+      .limit(limit)
+    
+    return {
+      success: true,
+      rankings: rankings || []
+    }
+    
+  } catch (error) {
+    console.error("❌ [Server Action] Erro ao buscar ranking global:", error)
+    return { success: false, message: "Erro ao buscar ranking" }
+  }
 }

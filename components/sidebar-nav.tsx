@@ -38,7 +38,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useAuth } from '@/components/page-auth-wrapper'
+// Sistema de autenticação removido - será implementado do zero
 
 interface SidebarNavItem {
   href: string
@@ -54,7 +54,8 @@ interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 export function SidebarNav({ className, items: propItems, collapsed: propCollapsed, ...props }: SidebarNavProps) {
-  const authResult = useAuth()
+  // Sistema de autenticação removido - será implementado do zero
+  const authResult = { user: null, isLoading: false }
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   
@@ -62,9 +63,9 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed
   
   // Garantir que todos os valores tenham valores padrão seguros
-  const userRole = authResult?.user?.role || 'student'
-  const isUserAuthenticated = authResult?.isAuthenticated || false
-  const currentUser = authResult?.user || null
+  const userRole = 'student'
+  const isUserAuthenticated = false
+  const currentUser = null
   
   // Garantir que className tenha um valor padrão
   const safeClassName = className || ""
@@ -76,13 +77,8 @@ export function SidebarNav({ className, items: propItems, collapsed: propCollaps
   
   // Menu baseado no role do usuário
   let menuItems: SidebarNavItem[]
-  if (userRole === 'admin' || userRole === 'teacher') {
-    console.log('🔍 [SIDEBAR] Usando menu completo para admin/professor')
-    menuItems = adminSidebarNavItems
-  } else {
-    console.log('🔍 [SIDEBAR] Usando menu limitado para aluno')
-    menuItems = sidebarNavItems
-  }
+  // Sistema de autenticação removido - usando menu padrão
+  menuItems = sidebarNavItems
 
   const pathname = usePathname()
   

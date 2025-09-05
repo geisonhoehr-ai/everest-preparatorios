@@ -3,7 +3,8 @@ import "./globals.css"
 import { Inter } from "next/font/google"
 import { PerformanceOptimizer } from "@/components/performance-optimizer"
 import { ThemeProvider } from "@/components/theme-provider"
-// import { SafeAuthProvider } from "@/components/safe-auth-provider"
+import { AuthProvider } from "@/context/auth-context"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -25,12 +26,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <PerformanceOptimizer>
-            {/* <SafeAuthProvider> */}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          <AuthProvider>
+            <PerformanceOptimizer>
               {children}
-            {/* </SafeAuthProvider> */}
-          </PerformanceOptimizer>
+            </PerformanceOptimizer>
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -17,10 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { useAuth } from '@/components/page-auth-wrapper'
+// Sistema de autenticação removido - será implementado do zero
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth()
+  // Sistema de autenticação removido - será implementado do zero
+  const user = null
+  const isLoading = false
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
@@ -105,12 +107,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {getInitials(user.email)}
+                    {getInitials('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
+                  <p className="text-sm font-medium truncate">Usuário</p>
+                  <p className="text-xs text-muted-foreground">{getRoleDisplay('student')}</p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -193,13 +195,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {getInitials(user.email)}
+                    {getInitials('')}
                   </AvatarFallback>
                 </Avatar>
                 {!collapsed && (
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">{getRoleDisplay(user.role)}</p>
+                    <p className="text-sm font-medium truncate">Usuário</p>
+                    <p className="text-xs text-muted-foreground">{getRoleDisplay('student')}</p>
                   </div>
                 )}
                 <DropdownMenu>
