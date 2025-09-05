@@ -2359,11 +2359,11 @@ export async function updateFlashcardProgress(
     const { error: statsError } = await supabase
       .from("user_gamification_stats")
       .update({
-        total_xp: supabase.raw('total_xp + ?', [xpGained]),
-        total_score: supabase.raw('total_score + ?', [xpGained]),
-        flashcards_completed: supabase.raw('flashcards_completed + 1'),
-        current_streak: supabase.raw('current_streak + 1'),
-        total_study_time: supabase.raw('total_study_time + ?', [timeSpent]),
+        total_xp: `total_xp + ${xpGained}`,
+        total_score: `total_score + ${xpGained}`,
+        flashcards_completed: `flashcards_completed + 1`,
+        current_streak: `current_streak + 1`,
+        total_study_time: `total_study_time + ${timeSpent}`,
         last_study_date: new Date().toISOString().split('T')[0],
         updated_at: new Date().toISOString()
       })
@@ -2423,11 +2423,11 @@ export async function updateQuizProgress(
     const { error: statsError } = await supabase
       .from("user_gamification_stats")
       .update({
-        total_xp: supabase.raw('total_xp + ?', [xpGained]),
-        total_score: supabase.raw('total_score + ?', [xpGained]),
-        quizzes_completed: supabase.raw('quizzes_completed + 1'),
-        current_streak: supabase.raw('current_streak + 1'),
-        total_study_time: supabase.raw('total_study_time + ?', [timeSpent]),
+        total_xp: `total_xp + ${xpGained}`,
+        total_score: `total_score + ${xpGained}`,
+        quizzes_completed: `quizzes_completed + 1`,
+        current_streak: `current_streak + 1`,
+        total_study_time: `total_study_time + ${timeSpent}`,
         last_study_date: new Date().toISOString().split('T')[0],
         updated_at: new Date().toISOString()
       })
