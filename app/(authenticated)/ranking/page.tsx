@@ -45,7 +45,7 @@ export default function RankingPage() {
 
       // Carregar ranking global
       const rankingResult = await getGlobalRanking(20)
-      if (rankingResult.success) {
+      if (rankingResult.success && rankingResult.rankings) {
         setRankings(rankingResult.rankings)
       } else {
         setError("Erro ao carregar ranking")
@@ -54,7 +54,7 @@ export default function RankingPage() {
       // Carregar estatísticas do usuário atual
       if (user) {
         const progressResult = await getUserProgress(user.id)
-        if (progressResult.success) {
+        if (progressResult.success && progressResult.stats) {
           setUserStats(progressResult.stats)
         }
       }
