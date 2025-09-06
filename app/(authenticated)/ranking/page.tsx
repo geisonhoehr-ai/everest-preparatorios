@@ -15,7 +15,7 @@ interface RankingUser {
   user_profiles: {
     display_name: string
     role: string
-  }
+  }[]
 }
 
 interface UserStats {
@@ -200,7 +200,7 @@ export default function RankingPage() {
                     </div>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900 dark:text-white">
-                        {user.user_profiles?.display_name || 'Usuário'}
+                        {user.user_profiles?.[0]?.display_name || 'Usuário'}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         {user.total_score} pontos
@@ -229,7 +229,7 @@ export default function RankingPage() {
               <div className="space-y-3">
                 {rankings.length > 0 ? rankings.map((user, index) => {
                   const level = getLevelFromXP(user.total_score)
-                  const initials = getInitials(user.user_profiles?.display_name || 'Usuário')
+                  const initials = getInitials(user.user_profiles?.[0]?.display_name || 'Usuário')
                   return (
                     <div key={user.user_id} className={`flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                       index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10' : ''
@@ -244,7 +244,7 @@ export default function RankingPage() {
                       
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 dark:text-white">
-                          {user.user_profiles?.display_name || 'Usuário'}
+                          {user.user_profiles?.[0]?.display_name || 'Usuário'}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           {user.total_score} pontos
