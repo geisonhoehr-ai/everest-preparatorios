@@ -25,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/placeholder-logo.svg" type="image/svg+xml" />
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9626674092433076"
      crossOrigin="anonymous"></script>
         <style dangerouslySetInnerHTML={{
