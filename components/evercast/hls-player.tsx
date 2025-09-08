@@ -101,13 +101,7 @@ export function HLSPlayer({
           livePlaybackRate: 1,
           livePlaybackRateOffset: 0.1,
           maxLiveSyncPlaybackRateOffset: 0.2,
-          liveDurationInfinity: true,
-          liveBackBufferLength: 0,
-          maxLiveSyncPlaybackRate: 1.5,
-          liveSyncDuration: 3,
-          livePlaybackRate: 1,
-          livePlaybackRateOffset: 0.1,
-          maxLiveSyncPlaybackRateOffset: 0.2
+          liveDurationInfinity: true
         })
 
         hls.loadSource(hlsUrl)
