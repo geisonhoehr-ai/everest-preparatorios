@@ -1,6 +1,6 @@
 import type React from "react"
-import "./globals.css"
 import { Inter } from "next/font/google"
+import "../app/globals.css"
 import { PerformanceOptimizer } from "@/components/performance-optimizer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/auth-context"
