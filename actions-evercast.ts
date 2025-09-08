@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-server'
 
 // Tipos para o sistema EverCast
 export interface AudioCourse {
@@ -58,7 +58,7 @@ export interface AudioProgress {
 
 // Verificar se o usuário é professor ou admin
 export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boolean> {
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   console.log(`🔍 [EverCast] Verificando acesso de professor/admin para: ${userUuid}`)
   
   try {
@@ -91,7 +91,7 @@ export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boole
 // ===== CURSOS DE ÁUDIO =====
 
 export async function getAllAudioCourses(): Promise<AudioCourse[]> {
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -119,7 +119,7 @@ export async function getAllAudioCourses(): Promise<AudioCourse[]> {
 }
 
 export async function getAudioCourseById(courseId: string): Promise<AudioCourse | null> {
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -153,7 +153,7 @@ export async function createAudioCourse(userUuid: string, courseData: Partial<Au
     throw new Error('Acesso negado. Apenas professores e administradores podem criar cursos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -188,7 +188,7 @@ export async function updateAudioCourse(userUuid: string, courseId: string, cour
     throw new Error('Acesso negado. Apenas professores e administradores podem editar cursos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -223,7 +223,7 @@ export async function deleteAudioCourse(userUuid: string, courseId: string): Pro
     throw new Error('Acesso negado. Apenas professores e administradores podem excluir cursos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { error } = await supabase
@@ -252,7 +252,7 @@ export async function createAudioModule(userUuid: string, moduleData: Partial<Au
     throw new Error('Acesso negado. Apenas professores e administradores podem criar módulos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -287,7 +287,7 @@ export async function updateAudioModule(userUuid: string, moduleId: string, modu
     throw new Error('Acesso negado. Apenas professores e administradores podem editar módulos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -322,7 +322,7 @@ export async function deleteAudioModule(userUuid: string, moduleId: string): Pro
     throw new Error('Acesso negado. Apenas professores e administradores podem excluir módulos.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { error } = await supabase
@@ -351,7 +351,7 @@ export async function createAudioLesson(userUuid: string, lessonData: Partial<Au
     throw new Error('Acesso negado. Apenas professores e administradores podem criar aulas.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -391,7 +391,7 @@ export async function updateAudioLesson(userUuid: string, lessonId: string, less
     throw new Error('Acesso negado. Apenas professores e administradores podem editar aulas.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -431,7 +431,7 @@ export async function deleteAudioLesson(userUuid: string, lessonId: string): Pro
     throw new Error('Acesso negado. Apenas professores e administradores podem excluir aulas.')
   }
 
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { error } = await supabase
@@ -455,7 +455,7 @@ export async function deleteAudioLesson(userUuid: string, lessonId: string): Pro
 // ===== PROGRESSO DO USUÁRIO =====
 
 export async function updateAudioProgress(userUuid: string, lessonId: string, progress: Partial<AudioProgress>): Promise<AudioProgress | null> {
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
@@ -484,7 +484,7 @@ export async function updateAudioProgress(userUuid: string, lessonId: string, pr
 }
 
 export async function getUserAudioProgress(userUuid: string): Promise<AudioProgress[]> {
-  const supabase = await getSupabase()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase
