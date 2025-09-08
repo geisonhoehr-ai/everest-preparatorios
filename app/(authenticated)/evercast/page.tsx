@@ -403,9 +403,11 @@ export default function EverCastPage() {
                     }`}
                     onClick={() => {
                       setCurrentCourse(course)
-                      setCurrentModule(course.modules[0])
-                      setPlaylist(course.modules[0].lessons)
-                      setCurrentIndex(0)
+                      if (course.modules && course.modules.length > 0) {
+                        setCurrentModule(course.modules[0])
+                        setPlaylist(course.modules[0].lessons || [])
+                        setCurrentIndex(0)
+                      }
                     }}
                   >
                     <h3 className="font-semibold text-white mb-2">{course.name}</h3>
