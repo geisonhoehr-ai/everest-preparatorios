@@ -308,7 +308,7 @@ export default function EditQuizPage() {
     if (!profile?.user_id) return
     
     try {
-      const result = await createQuiz({
+      const result = await createQuiz(profile.user_id, {
         title: editForm.title,
         description: editForm.description,
         topic_id: "1", // Será melhorado depois
