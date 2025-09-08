@@ -24,7 +24,8 @@ import {
   Brain,
   Trophy,
   MessageSquare,
-  Settings
+  Settings,
+  Headphones
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
@@ -38,6 +39,7 @@ export function MainSidebar() {
     { title: "Dashboard", href: "/dashboard", icon: BarChart3, access: "all" },
     { title: "Quiz", href: "/quiz", icon: Brain, access: "all" },
     { title: "Flashcards", href: "/flashcards", icon: BookOpen, access: "all" },
+    { title: "EverCast", href: "/evercast", icon: Headphones, access: "all" },
     { title: "Ranking", href: "/ranking", icon: Trophy, access: "all" },
     { title: "Calendário", href: "/calendario", icon: Calendar, access: "all" },
     { title: "Suporte", href: "/suporte", icon: Monitor, access: "all" },

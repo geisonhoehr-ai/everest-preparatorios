@@ -1,0 +1,3 @@
+[33m5ff66ab[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Remove frase 'Cancelamento a qualquer momento' da página home
+[33mc1ffcd0[m fix: corrige tipo RankingUser - user_profiles é array, não objeto
+[33md7f44e6[m fix: corrige erro de TypeScript no ranking - adiciona verificações para rankings e stats undefined

@@ -234,7 +234,7 @@ export default function QuizPage() {
     try {
       if (editingQuiz) {
         // Editar quiz existente
-        const result = await updateQuiz(editingQuiz.id.toString(), {
+        const result = await updateQuiz(profile.user_id, editingQuiz.id.toString(), {
           question_text: editForm.question,
           options: editForm.options,
           correct_answer: editForm.options[editForm.correct_answer],
@@ -262,7 +262,7 @@ export default function QuizPage() {
           return
         }
         
-        const result = await createQuiz({
+        const result = await createQuiz(profile.user_id, {
           topic_id: selectedTopic,
           question_text: editForm.question,
           options: editForm.options,
@@ -300,7 +300,7 @@ export default function QuizPage() {
     
     if (confirm("Tem certeza que deseja excluir este quiz?")) {
       try {
-        const result = await deleteQuiz(quizId.toString())
+        const result = await deleteQuiz(profile.user_id, quizId.toString())
         if (result.success) {
           setQuestions(prev => prev.filter(q => q.id !== quizId))
         }

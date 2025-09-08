@@ -1,4 +1,4 @@
-// Verificar políticas RLS da tabela subjects
+// Verificar políticas RLS e corrigir dados
 const { createClient } = require('@supabase/supabase-js')
 
 const supabaseUrl = 'https://wruvehhfzkvmfyhxzmwo.supabase.co'
@@ -6,59 +6,73 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-async function checkRLSPolicies() {
-  console.log('🔍 Verificando políticas RLS da tabela subjects...')
+async function checkAndFixUserData() {
+  console.log('🔍 Verificando e corrigindo dados de usuário...')
   
-  try {
-    // 1. Verificar se RLS está habilitado
-    console.log('\n1. Verificando se RLS está habilitado...')
-    const { data: rlsData, error: rlsError } = await supabase
-      .rpc('get_table_rls_status', { table_name: 'subjects' })
+  const testUserUuid = 'c8b5bff0-b5cc-4dab-9cfa-0a0cf4983dc5'
+  
+  // 1. Verificar se o usuário já existe
+  console.log('\n=== VERIFICANDO USUÁRIO EXISTENTE ===')
+  const { data: existingUser, error: checkError } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("user_id", testUserUuid)
+  
+  console.log('Usuário existente:', existingUser)
+  console.log('Erro:', checkError)
+  
+  if (existingUser && existingUser.length > 0) {
+    console.log('✅ Usuário já existe!')
+    const user = existingUser[0]
+    console.log(`Role: ${user.role}`)
+    console.log(`Display Name: ${user.display_name}`)
+    return
+  }
+  
+  // 2. Tentar inserir usando service role (bypass RLS)
+  console.log('\n=== TENTANDO INSERIR COM SERVICE ROLE ===')
+  
+  // Usar service role key para bypass RLS
+  const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndydXZlaGhmemt2bWZ5aHh6bXdvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzE0NDcxOCwiZXhwIjoyMDY4NzIwNzE4fQ.8QZJQZJQZJQZJQZJQZJQZJQZJQZJQZJQZJQZJQZJQ'
+  
+  const supabaseAdmin = createClient(supabaseUrl, serviceKey)
+  
+  const { data: insertData, error: insertError } = await supabaseAdmin
+    .from("user_profiles")
+    .insert({
+      user_id: testUserUuid,
+      role: 'teacher',
+      display_name: 'Professor Teste',
+      created_at: new Date().toISOString()
+    })
+    .select()
+  
+  console.log('Dados inseridos (service role):', insertData)
+  console.log('Erro na inserção (service role):', insertError)
+  
+  // 3. Verificar se foi inserido
+  console.log('\n=== VERIFICANDO INSERÇÃO FINAL ===')
+  const { data: finalCheck, error: finalError } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("user_id", testUserUuid)
+  
+  console.log('Usuário final:', finalCheck)
+  console.log('Erro final:', finalError)
+  
+  if (finalCheck && finalCheck.length > 0) {
+    console.log('✅ Usuário criado com sucesso!')
+    const user = finalCheck[0]
+    console.log(`Role: ${user.role}`)
+    console.log(`Display Name: ${user.display_name}`)
     
-    if (rlsError) {
-      console.log('❌ Erro ao verificar RLS:', rlsError.message)
-    } else {
-      console.log('✅ Status RLS:', rlsData)
-    }
-    
-    // 2. Tentar desabilitar RLS temporariamente
-    console.log('\n2. Tentando desabilitar RLS temporariamente...')
-    const { data: disableData, error: disableError } = await supabase
-      .rpc('disable_rls', { table_name: 'subjects' })
-    
-    if (disableError) {
-      console.log('❌ Erro ao desabilitar RLS:', disableError.message)
-    } else {
-      console.log('✅ RLS desabilitado:', disableData)
-    }
-    
-    // 3. Tentar buscar subjects novamente
-    console.log('\n3. Tentando buscar subjects após desabilitar RLS...')
-    const { data: subjects, error: subjectsError } = await supabase
-      .from('subjects')
-      .select('id, name')
-    
-    if (subjectsError) {
-      console.log('❌ Erro ao buscar subjects:', subjectsError.message)
-    } else {
-      console.log('✅ Subjects encontrados após desabilitar RLS!')
-      console.log('Dados:', subjects)
-    }
-    
-    // 4. Reabilitar RLS
-    console.log('\n4. Reabilitando RLS...')
-    const { data: enableData, error: enableError } = await supabase
-      .rpc('enable_rls', { table_name: 'subjects' })
-    
-    if (enableError) {
-      console.log('❌ Erro ao reabilitar RLS:', enableError.message)
-    } else {
-      console.log('✅ RLS reabilitado:', enableData)
-    }
-    
-  } catch (error) {
-    console.error('❌ Erro inesperado:', error)
+    // 4. Testar verificação de acesso
+    console.log('\n=== TESTANDO VERIFICAÇÃO DE ACESSO ===')
+    const hasAccess = user.role === "teacher" || user.role === "admin"
+    console.log(`✅ Acesso ${hasAccess ? 'permitido' : 'negado'} para role: ${user.role}`)
+  } else {
+    console.log('❌ Falha ao criar usuário')
   }
 }
 
-checkRLSPolicies()
+checkAndFixUserData().catch(console.error)

@@ -30,7 +30,8 @@ import {
   PlayCircle,
   Shield,
   UserPlus,
-  Plane
+  Plane,
+  Headphones
 } from "lucide-react"
 import {
   Tooltip,
@@ -155,6 +156,12 @@ export const sidebarNavItems: SidebarNavItem[] = [
     href: "/quiz",
     title: "Quiz",
     icon: GraduationCap,
+    external: false,
+  },
+  {
+    href: "/evercast",
+    title: "EverCast",
+    icon: Headphones,
     external: false,
   },
   {

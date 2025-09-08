@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste HLS - Pandavideo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .test-container { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .success { border-color: #4CAF50; background: rgba(76, 175, 80, 0.1); }
+        .error { border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+        audio, video { width: 100%; margin: 10px 0; }
+        .info { font-size: 12px; color: #888; margin: 5px 0; }
+        .stream-info { background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 4px; margin: 10px 0; }
+        pre { background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <h1>🎧 Teste HLS - Pandavideo</h1>
+    <p>Teste da URL HLS da Pandavideo para reprodução de áudio:</p>
+    
+    <div class="test-container success">
+        <h3>URL HLS: https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8</h3>
+        <div class="info">
+            Status: 200<br>
+            Content-Type: application/vnd.apple.mpegurl<br>
+            
+        </div>
+        
+        
+        <div class="stream-info">
+            <h4>Análise do M3U8:</h4>
+            <pre>#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360
+640x360/video.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=842x480
+842x480/video.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720
+1280x720/video.m3u8
+</pre>
+        </div>
+        
+        <h4>Teste de Reprodução:</h4>
+        
+        <div class="stream-info">
+            <h5>🎵 Teste de Áudio (HLS.js)</h5>
+            <audio id="audioPlayer" controls preload="metadata">
+                Seu navegador não suporta o elemento de áudio.
+            </audio>
+            <div id="audioStatus" class="info"></div>
+        </div>
+        
+        <div class="stream-info">
+            <h5>🎥 Teste de Vídeo (HLS.js)</h5>
+            <video id="videoPlayer" controls preload="metadata" style="max-width: 100%; height: auto;">
+                Seu navegador não suporta o elemento de vídeo.
+            </video>
+            <div id="videoStatus" class="info"></div>
+        </div>
+        
+        <div class="stream-info">
+            <h5>🔧 Teste de Áudio (Nativo)</h5>
+            <audio id="nativeAudio" controls preload="metadata">
+                <source src="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8" type="application/vnd.apple.mpegurl">
+                Seu navegador não suporta HLS nativo.
+            </audio>
+            <div id="nativeStatus" class="info"></div>
+        </div>
+        
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hlsUrl = 'https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8';
+            
+            // Teste com HLS.js
+            if (Hls.isSupported()) {
+                console.log('✅ HLS.js suportado');
+                
+                // Teste de áudio
+                const audioPlayer = document.getElementById('audioPlayer');
+                const audioStatus = document.getElementById('audioStatus');
+                
+                if (audioPlayer) {
+                    const audioHls = new Hls();
+                    audioHls.loadSource(hlsUrl);
+                    audioHls.attachMedia(audioPlayer);
+                    
+                    audioHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        audioStatus.innerHTML = '✅ Manifest carregado com sucesso!';
+                        console.log('✅ Audio HLS manifest carregado');
+                    });
+                    
+                    audioHls.on(Hls.Events.ERROR, function(event, data) {
+                        audioStatus.innerHTML = '❌ Erro: ' + data.details;
+                        console.error('❌ Audio HLS error:', data);
+                    });
+                }
+                
+                // Teste de vídeo
+                const videoPlayer = document.getElementById('videoPlayer');
+                const videoStatus = document.getElementById('videoStatus');
+                
+                if (videoPlayer) {
+                    const videoHls = new Hls();
+                    videoHls.loadSource(hlsUrl);
+                    videoHls.attachMedia(videoPlayer);
+                    
+                    videoHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        videoStatus.innerHTML = '✅ Manifest carregado com sucesso!';
+                        console.log('✅ Video HLS manifest carregado');
+                    });
+                    
+                    videoHls.on(Hls.Events.ERROR, function(event, data) {
+                        videoStatus.innerHTML = '❌ Erro: ' + data.details;
+                        console.error('❌ Video HLS error:', data);
+                    });
+                }
+                
+            } else if (audioPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                console.log('✅ HLS nativo suportado (Safari)');
+                document.getElementById('nativeStatus').innerHTML = '✅ HLS nativo suportado!';
+            } else {
+                console.log('❌ HLS não suportado');
+                document.getElementById('audioStatus').innerHTML = '❌ HLS não suportado neste navegador';
+                document.getElementById('videoStatus').innerHTML = '❌ HLS não suportado neste navegador';
+            }
+        });
+    </script>
+</body>
+</html>
+  

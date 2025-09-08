@@ -14,6 +14,7 @@ export default function LandingPage() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -193,8 +194,8 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              {/* Botão Telegram */}
-              <div className="relative group overflow-hidden">
+              {/* Botão Telegram - Modal Informativo */}
+              <div className="relative group overflow-hidden cursor-pointer" onClick={() => setIsTelegramModalOpen(true)}>
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 opacity-30 blur-sm"></div>
                 <div className="relative bg-gradient-to-br from-[#1e293b] to-[#334155] border-2 border-blue-500/40 rounded-2xl p-6 sm:p-8 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-blue-500/25 h-full m-1">
                   <div className="text-center">
@@ -212,7 +213,7 @@ export default function LandingPage() {
                     <h3 className="text-2xl font-bold mb-3 text-blue-400">Grupo Telegram</h3>
                     <p className="text-gray-300 mb-4">
                       📱 Extensivo EAOF 2026<br/>
-                      <span className="text-sm text-gray-400">67 membros ativos</span>
+                      <span className="text-sm text-gray-400">Somente para Alunos</span>
                     </p>
                     
                     <div className="space-y-2 text-sm text-gray-300 mb-6">
@@ -230,17 +231,10 @@ export default function LandingPage() {
                       </div>
                     </div>
                     
-                    <a 
-                      href="https://t.me/+YRzYp-358tI2MDQx" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-block"
-                    >
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-full font-semibold group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-300 inline-flex items-center">
-                        <MessageCircle className="w-5 h-5 mr-2" />
-                        Entrar no Grupo
-                      </div>
-                    </a>
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-full font-semibold group-hover:from-blue-600 group-hover:to-blue-700 transition-all duration-300 inline-flex items-center">
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Somente para Alunos
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1664,6 +1658,75 @@ export default function LandingPage() {
           isOpen={isTermsModalOpen}
           onClose={() => setIsTermsModalOpen(false)}
         />
+
+        {/* Modal do Telegram */}
+        {isTelegramModalOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-blue-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 relative">
+              {/* Botão fechar */}
+              <button
+                onClick={() => setIsTelegramModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Conteúdo do modal */}
+              <div className="text-center">
+                {/* Ícone Telegram */}
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 0C5.374 0 0 5.373 0 12s5.374 12 12 12 12-5.373 12-12S18.626 0 12 0zm5.568 8.16c-.188 1.877-.85 6.515-1.202 8.632-.148.896-.44 1.195-.723 1.224-.613.057-1.08-.404-1.678-.793-0.93-.608-1.455-.985-2.357-1.578-1.043-.686-.367-1.063.228-1.68.155-.162 2.857-2.618 2.911-2.84.007-.028.013-.132-.05-.187-.063-.054-.157-.036-.224-.021-.095.021-1.608 1.022-4.542 3.003-.43.297-.819.441-1.168.432-.384-.009-1.123-.216-1.672-.395-.67-.219-1.202-.335-1.155-.707.025-.194.297-.392.816-.594 3.197-1.375 5.328-2.281 6.393-2.718 3.047-1.281 3.682-1.504 4.099-1.504.091 0 .295.021.427.128.111.09.141.212.156.297.015.085.034.279.019.431z"/>
+                  </svg>
+                </div>
+
+                <h3 className="text-xl font-bold text-blue-400 mb-3">
+                  Grupo Telegram Exclusivo
+                </h3>
+                
+                <p className="text-gray-300 mb-4 text-sm leading-relaxed">
+                  O grupo do Telegram é exclusivo para alunos que adquiriram o 
+                  <span className="text-orange-400 font-semibold"> EAOF 2026 Completo</span>.
+                </p>
+
+                <div className="bg-slate-800/50 rounded-lg p-4 mb-6">
+                  <h4 className="text-orange-400 font-semibold mb-2">Benefícios exclusivos:</h4>
+                  <ul className="text-sm text-gray-300 space-y-1">
+                    <li>• Mentorias ao vivo com professores</li>
+                    <li>• Simulados e resoluções detalhadas</li>
+                    <li>• Conteúdo atualizado para 2026</li>
+                    <li>• Suporte direto da equipe</li>
+                  </ul>
+                </div>
+
+                <p className="text-gray-400 text-sm mb-6">
+                  Quer ter acesso ao grupo exclusivo?
+                </p>
+
+                {/* Botão de compra */}
+                <a 
+                  href="https://pay.kiwify.com.br/vNzKPkd" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full"
+                >
+                  <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg transition-all duration-300">
+                    <Gift className="w-5 h-5 mr-2" />
+                    Adquirir EAOF 2026 Completo
+                  </Button>
+                </a>
+
+                <p className="text-xs text-gray-500 mt-3">
+                  Após a compra, você receberá o link de acesso ao grupo
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
