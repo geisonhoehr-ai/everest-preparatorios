@@ -82,6 +82,9 @@ export function HLSPlayer({
 
     const setupHLS = () => {
       if (window.Hls && window.Hls.isSupported()) {
+        // Limpar URL se tiver @ no início
+        const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
+        
         hls = new window.Hls({
           enableWorker: true,
           lowLatencyMode: true,
@@ -100,10 +103,17 @@ export function HLSPlayer({
           liveSyncDuration: 3,
           livePlaybackRate: 1,
           livePlaybackRateOffset: 0.1,
-          maxLiveSyncPlaybackRateOffset: 0.2
+          maxLiveSyncPlaybackRateOffset: 0.2,
+          // Configurações específicas para Pandavideo
+          xhrSetup: (xhr: XMLHttpRequest, url: string) => {
+            xhr.withCredentials = false
+            xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
+            xhr.setRequestHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            xhr.setRequestHeader('Access-Control-Allow-Headers', 'Content-Type')
+          }
         })
 
-        hls.loadSource(hlsUrl)
+        hls.loadSource(cleanUrl)
         hls.attachMedia(audio)
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
@@ -139,7 +149,8 @@ export function HLSPlayer({
 
       } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari nativo
-        audio.src = hlsUrl
+        const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
+        audio.src = cleanUrl
         setIsLoading(false)
       } else {
         setError('HLS não suportado neste navegador')
