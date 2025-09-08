@@ -135,18 +135,18 @@ export default function EverCastPage() {
   }
 
   const handleCreateModule = async () => {
-    if (!user?.id || !selectedCourse) return
+    if (!user?.id || !currentCourse) return
 
     try {
       const newModule = await createAudioModule(user.id, {
         ...moduleForm,
-        course_id: selectedCourse.id
+        course_id: currentCourse.id
       })
       if (newModule) {
-        const updatedCourse = { ...selectedCourse }
+        const updatedCourse = { ...currentCourse }
         updatedCourse.modules = [...(updatedCourse.modules || []), newModule]
-        setSelectedCourse(updatedCourse)
-        setCourses(courses.map(c => c.id === selectedCourse.id ? updatedCourse : c))
+        setCurrentCourse(updatedCourse)
+        setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
         setModuleForm({ name: '', description: '', order_index: 0, total_duration: '' })
         setIsEditing(false)
         setEditingType(null)
@@ -157,24 +157,24 @@ export default function EverCastPage() {
   }
 
   const handleCreateLesson = async () => {
-    if (!user?.id || !selectedModule) return
+    if (!user?.id || !currentModule) return
 
     try {
       const newLesson = await createAudioLesson(user.id, {
         ...lessonForm,
-        module_id: selectedModule.id
+        module_id: currentModule.id
       })
       if (newLesson) {
-        const updatedModule = { ...selectedModule }
+        const updatedModule = { ...currentModule }
         updatedModule.lessons = [...(updatedModule.lessons || []), newLesson]
-        setSelectedModule(updatedModule)
+        setCurrentModule(updatedModule)
         
-        const updatedCourse = { ...selectedCourse! }
+        const updatedCourse = { ...currentCourse! }
         updatedCourse.modules = updatedCourse.modules?.map(m => 
-          m.id === selectedModule.id ? updatedModule : m
+          m.id === currentModule.id ? updatedModule : m
         )
-        setSelectedCourse(updatedCourse)
-        setCourses(courses.map(c => c.id === selectedCourse!.id ? updatedCourse : c))
+        setCurrentCourse(updatedCourse)
+        setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
         
         setLessonForm({
           title: '',
