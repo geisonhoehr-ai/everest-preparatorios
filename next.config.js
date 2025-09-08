@@ -30,6 +30,10 @@ const nextConfig = {
         source: '/globals.css',
         headers: [
           {
+            key: 'Content-Type',
+            value: 'text/css',
+          },
+          {
             key: 'Cache-Control',
             value: 'public, max-age=0, must-revalidate',
           },
@@ -39,8 +43,21 @@ const nextConfig = {
         source: '/_next/static/css/(.*)',
         headers: [
           {
+            key: 'Content-Type',
+            value: 'text/css',
+          },
+          {
             key: 'Cache-Control',
             value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/(.*)\\.css',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css',
           },
         ],
       },
