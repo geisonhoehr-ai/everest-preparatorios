@@ -471,7 +471,7 @@ export default function EverCastPage() {
                       }`}
                       onClick={() => {
                         setCurrentModule(module)
-                        setPlaylist(module.lessons)
+                        setPlaylist(module.lessons || [])
                         setCurrentIndex(0)
                       }}
                     >
