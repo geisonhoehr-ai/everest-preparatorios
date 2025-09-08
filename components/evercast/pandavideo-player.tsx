@@ -50,7 +50,7 @@ export function PandavideoPlayer({
   // Gerar URLs alternativas para tentar extrair áudio
   const generateAudioUrls = (videoId: string) => {
     const baseUrl = `https://player-vz-e9d62059-4a4.tv.pandavideo.com.br`
-    const urls = []
+    const urls: string[] = []
     
     // Estratégias para extrair áudio
     const strategies = [
