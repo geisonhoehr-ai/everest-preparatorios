@@ -795,7 +795,7 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-sm text-gray-300">
                       <li className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Correção em até 48 horas
+                        Correção em 10 dias
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -1111,7 +1111,7 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-sm text-gray-300">
                       <li className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                        Correção em 48h
+                        Correção em 10 dias
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
