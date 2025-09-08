@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 
 // Tipos para o sistema EverCast
 export interface AudioCourse {
@@ -58,9 +58,7 @@ export interface AudioProgress {
 
 // Criar cliente Supabase para uso no cliente
 function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  return createClient(supabaseUrl, supabaseKey)
+  return createClient()
 }
 
 // Verificar se o usuário é professor ou admin

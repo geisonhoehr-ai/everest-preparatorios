@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,6 +49,7 @@ export default function LoginPage() {
   }, [])
 
   const checkUser = async () => {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       router.push("/dashboard")
@@ -62,6 +63,7 @@ export default function LoginPage() {
 
     try {
       // LOGIN REAL APENAS COM SUPABASE (SEM BYPASS)
+      const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
