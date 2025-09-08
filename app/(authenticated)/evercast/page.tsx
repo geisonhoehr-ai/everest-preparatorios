@@ -461,7 +461,7 @@ export default function EverCastPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {currentCourse.modules.map((module, moduleIndex) => (
+                  {currentCourse.modules?.map((module, moduleIndex) => (
                     <div
                       key={module.id}
                       className={`p-3 rounded-lg cursor-pointer transition-all ${
