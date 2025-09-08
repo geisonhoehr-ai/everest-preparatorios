@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useTransition } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,89 +40,21 @@ import {
   Users,
   Shield
 } from "lucide-react"
-import { StudentOnly } from "@/components/role-guard"
+import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateQuizProgress } from "@/actions"
+import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "@/actions"
+import Link from "next/link"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
-// Dados mock das matérias
-const MOCK_SUBJECTS = [
-  { id: 1, name: "Português", description: "Gramática, Literatura e Redação" },
-  { id: 2, name: "Regulamentos", description: "Normas e Regulamentos Aeronáuticos" },
-  { id: 3, name: "Matemática", description: "Álgebra, Geometria e Cálculo" },
-  { id: 4, name: "Física", description: "Mecânica, Termodinâmica e Eletromagnetismo" },
-  { id: 5, name: "Química", description: "Química Orgânica, Inorgânica e Físico-química" },
-  { id: 6, name: "Biologia", description: "Biologia Celular, Genética e Ecologia" }
-]
-
-// Dados mock dos tópicos
-const MOCK_TOPICS = {
-  1: [ // Português
-    { id: "fonetica-fonologia", name: "Fonetica e Fonologia", description: "Estudo dos sons da língua" },
-    { id: "ortografia", name: "Ortografia", description: "Escrita correta das palavras" },
-    { id: "acentuacao-grafica", name: "Acentuação Gráfica", description: "Regras de acentuação" },
-    { id: "morfologia-classes", name: "Morfologia: Classes de Palavras", description: "Classificação das palavras" },
-    { id: "morfologia-flexao", name: "Morfologia: Flexão", description: "Variação das palavras" },
-    { id: "sintaxe-termos-essenciais", name: "Sintaxe: Termos Essenciais", description: "Sujeito e predicado" },
-    { id: "sintaxe-termos-integrantes", name: "Sintaxe: Termos Integrantes", description: "Complementos verbais e nominais" },
-    { id: "sintaxe-termos-acessorios", name: "Sintaxe: Termos Acessórios", description: "Adjuntos e apostos" },
-    { id: "sintaxe-periodo-composto", name: "Sintaxe: Período Composto", description: "Orações coordenadas e subordinadas" },
-    { id: "concordancia", name: "Concordância Verbal e Nominal", description: "Regras de concordância" },
-    { id: "regencia", name: "Regência Verbal e Nominal", description: "Regência dos verbos e nomes" },
-    { id: "crase", name: "Crase", description: "Uso do acento grave" },
-    { id: "colocacao-pronominal", name: "Colocação Pronominal", description: "Posição dos pronomes" },
-    { id: "semantica-estilistica", name: "Semântica e Estilística", description: "Significado e estilo" }
-  ],
-  2: [ // Regulamentos
-    { id: "regulamento-aeronautico", name: "Regulamento Aeronáutico", description: "Normas da aviação civil" },
-    { id: "codigo-brasileiro-aeronautico", name: "Código Brasileiro Aeronáutico", description: "Lei 7.565/86" },
-    { id: "regulamento-habilitacao", name: "Regulamento de Habilitação", description: "RBHA 61" },
-    { id: "regulamento-operacoes", name: "Regulamento de Operações", description: "RBAC 121" }
-  ]
+// Interface para subjects
+interface Subject {
+  id: number
+  name: string
+  description?: string
 }
 
-// Dados mock das questões
-const MOCK_QUESTIONS = {
-  "fonetica-fonologia": [
-    {
-      id: 1,
-      question: "O que é um fonema?",
-      options: [
-        "A menor unidade sonora distintiva de uma língua",
-        "Uma letra do alfabeto",
-        "Um som qualquer",
-        "Uma sílaba"
-      ],
-      correct_answer: 0,
-      explanation: "Fonema é a menor unidade sonora distintiva de uma língua, capaz de diferenciar significados entre palavras."
-    },
-    {
-      id: 2,
-      question: "Qual a diferença entre vogal e consoante?",
-      options: [
-        "Não há diferença",
-        "Vogal é mais alta que consoante",
-        "Vogal não tem obstáculo na passagem do ar, consoante tem",
-        "Consoante é mais baixa que vogal"
-      ],
-      correct_answer: 2,
-      explanation: "Vogal é produzida sem obstáculo na passagem do ar, enquanto consoante tem obstáculo total ou parcial."
-    }
-  ],
-  "ortografia": [
-    {
-      id: 1,
-      question: "Qual a grafia correta?",
-      options: [
-        "Exceção",
-        "Excessão",
-        "Excecão",
-        "Excesssão"
-      ],
-      correct_answer: 0,
-      explanation: "A grafia correta é 'exceção' com 'ç' e 'ão'."
-    }
-  ]
-}
+
 
 interface Topic {
   id: string
@@ -139,8 +71,13 @@ interface Question {
 }
 
 export default function QuizPage() {
-  const { user } = useAuth()
-  const [subjects, setSubjects] = useState(MOCK_SUBJECTS)
+  const { user, profile } = useAuth()
+  
+  // Debug: verificar dados do usuário
+  console.log('🔍 Debug Quiz - User:', user)
+  console.log('🔍 Debug Quiz - Profile:', profile)
+  console.log('🔍 Debug Quiz - Profile Role:', profile?.role)
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
@@ -154,6 +91,33 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [quizTime, setQuizTime] = useState(0)
   const [xpGained, setXpGained] = useState(0)
+  
+  // Estados para CRUD de quizzes
+  const [editingQuiz, setEditingQuiz] = useState<Question | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    question: '',
+    options: ['', '', '', ''],
+    correct_answer: 0,
+    explanation: ''
+  })
+  
+  // Estados para CRUD de tópicos
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null)
+  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false)
+  const [isTopicLoading, setIsTopicLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [topicForm, setTopicForm] = useState({
+    name: '',
+    description: ''
+  })
+
+  // Carregar subjects quando o componente for montado
+  useEffect(() => {
+    if (user?.id) {
+      loadSubjects()
+    }
+  }, [user?.id])
 
   // Garantir que sempre sejam arrays válidos
   const safeSubjects = Array.isArray(subjects) ? subjects : []
@@ -163,11 +127,22 @@ export default function QuizPage() {
   const loadSubjects = async () => {
     try {
       setIsLoading(true)
-      console.log("📚 Carregando matérias...")
+      console.log("📚 Carregando matérias do Supabase...")
       
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setSubjects(MOCK_SUBJECTS)
-      console.log("✅ Matérias carregadas:", MOCK_SUBJECTS.length)
+      const subjectsData = await getAllSubjects()
+      console.log("✅ Matérias carregadas:", subjectsData.length)
+      
+      // Adicionar descrições padrão baseadas no nome
+      const subjectsWithDescription = subjectsData.map((subject: any) => ({
+        ...subject,
+        description: subject.name === "Português" 
+          ? "Gramática, Literatura e Redação"
+          : subject.name === "Regulamentos"
+          ? "Normas e Regulamentos Aeronáuticos"
+          : `Estude e pratique seus conhecimentos em ${subject.name}`
+      }))
+      
+      setSubjects(subjectsWithDescription)
       
     } catch (error) {
       console.error("❌ Erro ao carregar matérias:", error)
@@ -180,12 +155,19 @@ export default function QuizPage() {
   const loadTopics = async (subjectId: number) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando tópicos para matéria ${subjectId}...`)
+      console.log(`📚 Carregando tópicos do Supabase para matéria ${subjectId}...`)
       
-      await new Promise(resolve => setTimeout(resolve, 300))
-      const subjectTopics = MOCK_TOPICS[subjectId as keyof typeof MOCK_TOPICS] || []
-      setTopics(subjectTopics)
-      console.log("✅ Tópicos carregados:", subjectTopics.length)
+      const topicsData = await getTopicsBySubject(subjectId)
+      console.log("✅ Tópicos carregados:", topicsData.length)
+      
+      // Converter para o formato esperado
+      const formattedTopics = topicsData.map(topic => ({
+        id: topic.id.toString(),
+        name: topic.name,
+        description: `Estude e pratique ${topic.name.toLowerCase()}`
+      }))
+      
+      setTopics(formattedTopics)
       
     } catch (error) {
       console.error("❌ Erro ao carregar tópicos:", error)
@@ -198,18 +180,228 @@ export default function QuizPage() {
   const loadQuestions = async (topicId: string) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando questões para tópico ${topicId}...`)
+      console.log(`📚 Carregando questões do Supabase para tópico ${topicId}...`)
       
-      await new Promise(resolve => setTimeout(resolve, 300))
-      const topicQuestions = MOCK_QUESTIONS[topicId as keyof typeof MOCK_QUESTIONS] || []
-      setQuestions(topicQuestions)
-      console.log("✅ Questões carregadas:", topicQuestions.length)
+      if (!profile?.user_id) {
+        console.error("❌ Usuário não autenticado")
+        return
+      }
+      
+      const result = await getAllQuizzesByTopic(topicId)
+      
+      if (result && result.length > 0) {
+        // Converter quizzes para o formato de questões esperado
+        const formattedQuestions = result.map((quiz: any) => ({
+          id: quiz.id,
+          question: quiz.question_text,
+          options: quiz.options || [],
+          correct_answer: quiz.options?.indexOf(quiz.correct_answer) || 0,
+          explanation: quiz.explanation || "Explicação não disponível"
+        }))
+        
+        setQuestions(formattedQuestions)
+        console.log("✅ Questões carregadas:", formattedQuestions.length)
+      } else {
+        console.log("ℹ️ Nenhuma questão encontrada para este tópico")
+        setQuestions([])
+      }
       
     } catch (error) {
       console.error("❌ Erro ao carregar questões:", error)
       setQuestions([])
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Funções para CRUD de quizzes
+  const handleEditQuiz = (quiz: Question) => {
+    console.log("🔧 [Debug] handleEditQuiz chamado com:", quiz)
+    setEditingQuiz(quiz)
+    setEditForm({
+      question: quiz.question,
+      options: quiz.options,
+      correct_answer: quiz.correct_answer,
+      explanation: quiz.explanation
+    })
+    setIsEditDialogOpen(true)
+    console.log("🔧 [Debug] Modal de quiz deve estar aberto agora")
+  }
+
+  const handleSaveEdit = async () => {
+    if (!profile?.user_id) return
+    
+    try {
+      if (editingQuiz) {
+        // Editar quiz existente
+        const result = await updateQuiz(editingQuiz.id.toString(), {
+          question_text: editForm.question,
+          options: editForm.options,
+          correct_answer: editForm.options[editForm.correct_answer],
+          explanation: editForm.explanation
+        })
+        
+        if (result.success) {
+          setQuestions(prev => 
+            prev.map(q => q.id === editingQuiz.id 
+              ? { 
+                  ...q, 
+                  question: editForm.question,
+                  options: editForm.options,
+                  correct_answer: editForm.correct_answer,
+                  explanation: editForm.explanation
+                }
+              : q
+            )
+          )
+        }
+      } else {
+        // Criar novo quiz
+        if (!selectedTopic) {
+          alert("Selecione um tópico primeiro")
+          return
+        }
+        
+        const result = await createQuiz({
+          topic_id: selectedTopic,
+          question_text: editForm.question,
+          options: editForm.options,
+          correct_answer: editForm.options[editForm.correct_answer],
+          explanation: editForm.explanation
+        })
+        
+        if (result.success && result.data) {
+          const newQuestion = {
+            id: result.data.id,
+            question: editForm.question,
+            options: editForm.options,
+            correct_answer: editForm.correct_answer,
+            explanation: editForm.explanation
+          }
+          setQuestions(prev => [newQuestion, ...prev])
+        }
+      }
+      
+      setIsEditDialogOpen(false)
+      setEditingQuiz(null)
+      setEditForm({
+        question: '',
+        options: ['', '', '', ''],
+        correct_answer: 0,
+        explanation: ''
+      })
+    } catch (error) {
+      console.error("Erro ao salvar quiz:", error)
+    }
+  }
+
+  const handleDeleteQuiz = async (quizId: number) => {
+    if (!profile?.user_id) return
+    
+    if (confirm("Tem certeza que deseja excluir este quiz?")) {
+      try {
+        const result = await deleteQuiz(quizId.toString())
+        if (result.success) {
+          setQuestions(prev => prev.filter(q => q.id !== quizId))
+        }
+      } catch (error) {
+        console.error("Erro ao excluir quiz:", error)
+      }
+    }
+  }
+
+  // Funções para CRUD de tópicos
+  const handleEditTopic = (topic: Topic) => {
+    console.log("🔧 [Debug] handleEditTopic chamado com:", topic)
+    console.log("🔧 [Debug] Profile disponível:", profile)
+    console.log("🔧 [Debug] User disponível:", user)
+    setEditingTopic(topic)
+    setTopicForm({
+      name: topic.name,
+      description: topic.description
+    })
+    setIsTopicDialogOpen(true)
+    console.log("🔧 [Debug] Modal de tópico deve estar aberto agora")
+  }
+
+  const handleSaveTopic = async () => {
+    console.log("🔧 [Debug] handleSaveTopic chamado")
+    console.log("🔧 [Debug] Profile user_id:", profile?.user_id)
+    console.log("🔧 [Debug] Selected subject:", selectedSubject)
+    console.log("🔧 [Debug] Editing topic:", editingTopic)
+    console.log("🔧 [Debug] Topic form:", topicForm)
+    
+    if (!profile?.user_id || !selectedSubject) {
+      console.log("❌ [Debug] Falta profile.user_id ou selectedSubject")
+      return
+    }
+    
+    setIsTopicLoading(true)
+    
+    startTransition(async () => {
+      try {
+      if (editingTopic) {
+        console.log("🔧 [Debug] Editando tópico existente")
+        // Editar tópico existente
+        const result = await updateTopic(profile.user_id, editingTopic.id, {
+          name: topicForm.name,
+          description: topicForm.description
+        })
+        
+        console.log("🔧 [Debug] Resultado da atualização:", result)
+        
+        if (result.success) {
+          setTopics(prev => 
+            prev.map(t => t.id === editingTopic.id 
+              ? { ...t, name: topicForm.name, description: topicForm.description }
+              : t
+            )
+          )
+        }
+      } else {
+        console.log("🔧 [Debug] Criando novo tópico")
+        // Criar novo tópico
+        const result = await createTopic(profile.user_id, {
+          subject_id: selectedSubject,
+          name: topicForm.name,
+          description: topicForm.description
+        })
+        
+        console.log("🔧 [Debug] Resultado da criação:", result)
+        
+        if (result.success && result.data) {
+          const newTopic = {
+            id: result.data.id.toString(),
+            name: result.data.name,
+            description: result.data.description || `Estude e pratique ${result.data.name.toLowerCase()}`
+          }
+          setTopics(prev => [...prev, newTopic])
+        }
+      }
+      
+      setIsTopicDialogOpen(false)
+      setEditingTopic(null)
+      setTopicForm({ name: '', description: '' })
+      } catch (error) {
+        console.error("❌ [Debug] Erro ao salvar tópico:", error)
+      } finally {
+        setIsTopicLoading(false)
+      }
+    })
+  }
+
+  const handleDeleteTopic = async (topicId: string) => {
+    if (!profile?.user_id) return
+    
+    if (confirm("Tem certeza que deseja excluir este tópico? Todos os quizzes associados também serão removidos.")) {
+      try {
+        const result = await deleteTopic(profile.user_id, topicId)
+        if (result.success) {
+          setTopics(prev => prev.filter(t => t.id !== topicId))
+        }
+      } catch (error) {
+        console.error("Erro ao excluir tópico:", error)
+      }
     }
   }
 
@@ -308,30 +500,44 @@ export default function QuizPage() {
 
   if (isLoading && quizMode === "select") {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
               </div>
             </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
   // Seleção de matéria
   if (!selectedSubject) {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-              <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Escolha a Matéria
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Selecione a matéria que deseja testar com quiz
-            </p>
-      </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Escolha a Matéria
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Selecione a matéria que deseja testar com quiz
+              </p>
+            </div>
+            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+              <Button 
+                onClick={() => {
+                  // TODO: Implementar criação de matéria
+                  alert("Funcionalidade de adicionar matéria será implementada em breve")
+                }}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Matéria
+              </Button>
+            )}
+          </div>
 
           <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {safeSubjects.map((subject, index) => (
@@ -362,7 +568,7 @@ export default function QuizPage() {
                         <span>Tópicos</span>
                       </span>
                       <span className="font-medium">
-                        {MOCK_TOPICS[subject.id as keyof typeof MOCK_TOPICS]?.length || 0}
+                        -
                       </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -398,33 +604,68 @@ export default function QuizPage() {
             </Card>
           )}
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
   // Seleção de tópico
   if (quizMode === "select") {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedSubject(null)}
-              className="flex items-center gap-2"
-            >
-              <ArrowRight className="h-4 w-4 rotate-180" />
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {safeSubjects.find(s => s.id === selectedSubject)?.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Escolha um tópico para fazer quiz
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedSubject(null)}
+                className="flex items-center gap-2"
+              >
+                <ArrowRight className="h-4 w-4 rotate-180" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {safeSubjects.find(s => s.id === selectedSubject)?.name}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Escolha um tópico para fazer quiz
+                </p>
               </div>
+            </div>
+            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    // Abrir modal de criação de tópico
+                    setTopicForm({ name: '', description: '' })
+                    setEditingTopic(null)
+                    setIsTopicDialogOpen(true)
+                  }}
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Tópico
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Abrir modal de criação de quiz
+                    setEditForm({
+                      question: '',
+                      options: ['', '', '', ''],
+                      correct_answer: 0,
+                      explanation: ''
+                    })
+                    setEditingQuiz(null)
+                    setIsEditDialogOpen(true)
+                  }}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Quiz
+                </Button>
               </div>
+            )}
+          </div>
               
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -438,8 +679,41 @@ export default function QuizPage() {
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
-                  className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500"
+                  className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500 relative"
                 >
+                  {/* Ícones de edição para admin/teacher */}
+                  {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🔧 [Debug] Botão de editar tópico clicado!")
+                          handleEditTopic(topic)
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                        type="button"
+                      >
+                        <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDeleteTopic(topic.id)
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900 cursor-pointer"
+                        type="button"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </Button>
+                    </div>
+                  )}
+                  
                   <CardHeader className="text-center pb-4">
                     <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
                       <Brain className="h-8 w-8 text-white" />
@@ -467,9 +741,30 @@ export default function QuizPage() {
                       >
                         <Clock className="mr-3 h-6 w-6" />
                         Quiz 5 min
-                </Button>
-              </div>
-            </CardContent>
+                      </Button>
+                      {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                        <Button 
+                          onClick={() => {
+                            // Abrir modal de gerenciamento de quizzes do tópico
+                            setSelectedTopic(topic.id)
+                            setEditForm({
+                              question: '',
+                              options: ['', '', '', ''],
+                              correct_answer: 0,
+                              explanation: ''
+                            })
+                            setEditingQuiz(null)
+                            setIsEditDialogOpen(true)
+                          }}
+                          variant="outline"
+                          className="w-full border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
+                        >
+                          <Settings className="mr-3 h-6 w-6" />
+                          Gerenciar Quizzes
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
           </Card>
         ))}
       </div>
@@ -491,7 +786,7 @@ export default function QuizPage() {
             </Card>
           )}
     </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
@@ -501,7 +796,7 @@ export default function QuizPage() {
     const progress = ((currentQuestionIndex + 1) / safeQuestions.length) * 100
 
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
             <Button 
@@ -543,7 +838,40 @@ export default function QuizPage() {
       </div>
 
           <div className="max-w-4xl mx-auto">
-            <Card className="min-h-[500px] flex flex-col justify-center">
+            <Card className="min-h-[500px] flex flex-col justify-center relative">
+              {/* Ícones de edição para admin/teacher */}
+              {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log("🔧 [Debug] Botão de editar quiz clicado!")
+                      handleEditQuiz(currentQuestion)
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                    type="button"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleDeleteQuiz(currentQuestion.id)
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900 cursor-pointer"
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  </Button>
+                </div>
+              )}
+              
               <CardContent className="p-8">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -635,7 +963,7 @@ export default function QuizPage() {
             </div>
           </div>
     </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
@@ -645,7 +973,7 @@ export default function QuizPage() {
     const accuracy = totalQuestions > 0 ? (quizStats.correct / totalQuestions) * 100 : 0
 
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
           <div className="text-center">
             <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
@@ -705,9 +1033,188 @@ export default function QuizPage() {
             </div>
           </div>
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
-  return null
+  // Debug: verificar estado do modal
+  console.log("🔧 [Debug] Estado do modal de quiz:", { isEditDialogOpen, editingQuiz })
+  console.log("🔧 [Debug] Estado do modal de tópico:", { isTopicDialogOpen, editingTopic })
+
+  return (
+    <>
+      {/* Modal de Edição de Tópico */}
+      {isTopicDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">
+              {editingTopic ? 'Editar Tópico' : 'Novo Tópico'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {editingTopic 
+                ? 'Atualize as informações do tópico'
+                : 'Crie um novo tópico para a matéria'
+              }
+            </p>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="topic-name" className="text-sm font-medium">
+                  Nome do Tópico
+                </label>
+                <Input
+                  id="topic-name"
+                  placeholder="Digite o nome do tópico..."
+                  value={topicForm.name}
+                  onChange={(e) => setTopicForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="topic-description" className="text-sm font-medium">
+                  Descrição
+                </label>
+                <Textarea
+                  id="topic-description"
+                  placeholder="Digite a descrição do tópico..."
+                  value={topicForm.description}
+                  onChange={(e) => setTopicForm(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsTopicDialogOpen(false)
+                    setEditingTopic(null)
+                    setTopicForm({ name: '', description: '' })
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveTopic} disabled={isTopicLoading}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isTopicLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Quiz - Versão Simplificada */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {editingQuiz ? 'Editar Quiz' : 'Novo Quiz'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {editingQuiz 
+                ? 'Atualize as informações do quiz'
+                : 'Crie um novo quiz para a plataforma'
+              }
+            </p>
+            
+            <div className="space-y-4">
+              {!editingQuiz && (
+                <div className="space-y-2">
+                  <label htmlFor="edit-topic" className="text-sm font-medium">
+                    Tópico
+                  </label>
+                  <select
+                    id="edit-topic"
+                    value={selectedTopic || ''}
+                    onChange={(e) => setSelectedTopic(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Selecione um tópico</option>
+                    {safeTopics.map(topic => (
+                      <option key={topic.id} value={topic.id}>
+                        {topic.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-question" className="text-sm font-medium">
+                  Pergunta
+                </label>
+                <Textarea
+                  id="edit-question"
+                  placeholder="Digite a pergunta..."
+                  value={editForm.question}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, question: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Opções de Resposta</label>
+                {editForm.options.map((option, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="correct_answer"
+                      checked={editForm.correct_answer === index}
+                      onChange={() => setEditForm(prev => ({ ...prev, correct_answer: index }))}
+                      className="w-4 h-4"
+                    />
+                    <Input
+                      placeholder={`Opção ${index + 1}`}
+                      value={option}
+                      onChange={(e) => {
+                        const newOptions = [...editForm.options]
+                        newOptions[index] = e.target.value
+                        setEditForm(prev => ({ ...prev, options: newOptions }))
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-explanation" className="text-sm font-medium">
+                  Explicação
+                </label>
+                <Textarea
+                  id="edit-explanation"
+                  placeholder="Digite a explicação da resposta..."
+                  value={editForm.explanation}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, explanation: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false)
+                    setEditingQuiz(null)
+                    setEditForm({
+                      question: '',
+                      options: ['', '', '', ''],
+                      correct_answer: 0,
+                      explanation: ''
+                    })
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveEdit}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }

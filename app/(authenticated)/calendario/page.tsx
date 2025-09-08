@@ -1,10 +1,20 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Clock, MapPin, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar, Clock, MapPin, Users, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { useAuth } from "@/context/auth-context"
 
 export default function CalendarioPage() {
+  const { user, profile } = useAuth()
+  
+  // Debug: verificar dados do usuário
+  console.log('🔍 Debug Calendário - User:', user)
+  console.log('🔍 Debug Calendário - Profile:', profile)
+  console.log('🔍 Debug Calendário - Profile Role:', profile?.role)
+  
   const events = [
     {
       id: 1,
@@ -82,18 +92,28 @@ export default function CalendarioPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-          <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+            <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Calendário
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Acompanhe os eventos e atividades programadas
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Calendário
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Acompanhe os eventos e atividades programadas
-          </p>
-        </div>
+        {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+          <Link href="/calendario/edit">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Editar Calendário
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

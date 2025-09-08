@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useTransition } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -41,45 +41,21 @@ import {
   Users,
   Shield
 } from "lucide-react"
-import { StudentOnly } from "@/components/role-guard"
+import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress } from "@/actions"
+import { updateFlashcardProgress, getAllFlashcards, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard } from "@/actions"
+import Link from "next/link"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-// Dados mock das matérias (baseado no backup)
-const MOCK_SUBJECTS = [
-  { id: 1, name: "Português", description: "Gramática, Literatura e Redação" },
-  { id: 2, name: "Regulamentos", description: "Normas e Regulamentos Aeronáuticos" },
-  { id: 3, name: "Matemática", description: "Álgebra, Geometria e Cálculo" },
-  { id: 4, name: "Física", description: "Mecânica, Termodinâmica e Eletromagnetismo" },
-  { id: 5, name: "Química", description: "Química Orgânica, Inorgânica e Físico-química" },
-  { id: 6, name: "Biologia", description: "Biologia Celular, Genética e Ecologia" }
-]
-
-// Dados mock dos tópicos (baseado no backup)
-const MOCK_TOPICS = {
-  1: [ // Português
-    { id: "fonetica-fonologia", name: "Fonetica e Fonologia", description: "Estudo dos sons da língua" },
-    { id: "ortografia", name: "Ortografia", description: "Escrita correta das palavras" },
-    { id: "acentuacao-grafica", name: "Acentuação Gráfica", description: "Regras de acentuação" },
-    { id: "morfologia-classes", name: "Morfologia: Classes de Palavras", description: "Classificação das palavras" },
-    { id: "morfologia-flexao", name: "Morfologia: Flexão", description: "Variação das palavras" },
-    { id: "sintaxe-termos-essenciais", name: "Sintaxe: Termos Essenciais", description: "Sujeito e predicado" },
-    { id: "sintaxe-termos-integrantes", name: "Sintaxe: Termos Integrantes", description: "Complementos verbais e nominais" },
-    { id: "sintaxe-termos-acessorios", name: "Sintaxe: Termos Acessórios", description: "Adjuntos e apostos" },
-    { id: "sintaxe-periodo-composto", name: "Sintaxe: Período Composto", description: "Orações coordenadas e subordinadas" },
-    { id: "concordancia", name: "Concordância Verbal e Nominal", description: "Regras de concordância" },
-    { id: "regencia", name: "Regência Verbal e Nominal", description: "Regência dos verbos e nomes" },
-    { id: "crase", name: "Crase", description: "Uso do acento grave" },
-    { id: "colocacao-pronominal", name: "Colocação Pronominal", description: "Posição dos pronomes" },
-    { id: "semantica-estilistica", name: "Semântica e Estilística", description: "Significado e estilo" }
-  ],
-  2: [ // Regulamentos
-    { id: "regulamento-aeronautico", name: "Regulamento Aeronáutico", description: "Normas da aviação civil" },
-    { id: "codigo-brasileiro-aeronautico", name: "Código Brasileiro Aeronáutico", description: "Lei 7.565/86" },
-    { id: "regulamento-habilitacao", name: "Regulamento de Habilitação", description: "RBHA 61" },
-    { id: "regulamento-operacoes", name: "Regulamento de Operações", description: "RBAC 121" }
-  ]
+// Interface para subjects
+interface Subject {
+  id: number
+  name: string
+  description?: string
 }
+
 
 interface Topic {
   id: string
@@ -95,8 +71,13 @@ interface Flashcard {
 }
 
 export default function FlashcardsPage() {
-  const { user } = useAuth()
-  const [subjects, setSubjects] = useState(MOCK_SUBJECTS)
+  const { user, profile } = useAuth()
+  
+  // Debug: verificar dados do usuário
+  console.log('🔍 Debug Flashcards - User:', user)
+  console.log('🔍 Debug Flashcards - Profile:', profile)
+  console.log('🔍 Debug Flashcards - Profile Role:', profile?.role)
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
@@ -107,6 +88,24 @@ export default function FlashcardsPage() {
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 })
   const [isLoading, setIsLoading] = useState(false)
   const [xpGained, setXpGained] = useState(0)
+  
+  // Estados para edição inline (admin/teacher)
+  const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isFlashcardLoading, setIsFlashcardLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [editForm, setEditForm] = useState({
+    question: '',
+    answer: ''
+  })
+  const [isAdminMode, setIsAdminMode] = useState(false)
+
+  // Carregar subjects quando o componente for montado
+  useEffect(() => {
+    if (user?.id) {
+      loadSubjects()
+    }
+  }, [user?.id])
 
   // Garantir que subjects sempre seja um array válido
   const safeSubjects = Array.isArray(subjects) ? subjects : []
@@ -116,13 +115,22 @@ export default function FlashcardsPage() {
   const loadSubjects = async () => {
     try {
       setIsLoading(true)
-      console.log("📚 Carregando matérias...")
+      console.log("📚 Carregando matérias do Supabase...")
       
-      // Simular delay de carregamento
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const subjectsData = await getAllSubjects()
+      console.log("✅ Matérias carregadas:", subjectsData.length)
       
-      setSubjects(MOCK_SUBJECTS)
-      console.log("✅ Matérias carregadas:", MOCK_SUBJECTS.length)
+      // Adicionar descrições padrão baseadas no nome
+      const subjectsWithDescription = subjectsData.map((subject: any) => ({
+        ...subject,
+        description: subject.name === "Português" 
+          ? "Gramática, Literatura e Redação"
+          : subject.name === "Regulamentos"
+          ? "Normas e Regulamentos Aeronáuticos"
+          : `Estude e pratique seus conhecimentos em ${subject.name}`
+      }))
+      
+      setSubjects(subjectsWithDescription)
       
     } catch (error) {
       console.error("❌ Erro ao carregar matérias:", error)
@@ -135,14 +143,19 @@ export default function FlashcardsPage() {
   const loadTopics = async (subjectId: number) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando tópicos para matéria ${subjectId}...`)
+      console.log(`📚 Carregando tópicos do Supabase para matéria ${subjectId}...`)
       
-      // Simular delay de carregamento
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const topicsData = await getTopicsBySubject(subjectId)
+      console.log("✅ Tópicos carregados:", topicsData.length)
       
-      const subjectTopics = MOCK_TOPICS[subjectId as keyof typeof MOCK_TOPICS] || []
-      setTopics(subjectTopics)
-      console.log("✅ Tópicos carregados:", subjectTopics.length)
+      // Converter para o formato esperado
+      const formattedTopics = topicsData.map(topic => ({
+        id: topic.id.toString(),
+        name: topic.name,
+        description: `Estude e pratique ${topic.name.toLowerCase()}`
+      }))
+      
+      setTopics(formattedTopics)
       
     } catch (error) {
       console.error("❌ Erro ao carregar tópicos:", error)
@@ -152,38 +165,112 @@ export default function FlashcardsPage() {
     }
   }
 
+  // Funções para edição inline (admin/teacher)
+  const handleEditFlashcard = (flashcard: Flashcard) => {
+    console.log("🔧 [Debug] handleEditFlashcard chamado com:", flashcard)
+    console.log("🔧 [Debug] Profile disponível:", profile)
+    console.log("🔧 [Debug] User disponível:", user)
+    setEditingFlashcard(flashcard)
+    setEditForm({
+      question: flashcard.question,
+      answer: flashcard.answer
+    })
+    setIsEditDialogOpen(true)
+    console.log("🔧 [Debug] Modal deve estar aberto agora")
+  }
+
+  const handleSaveEdit = async () => {
+    console.log("🔧 [Debug] handleSaveEdit chamado")
+    console.log("🔧 [Debug] Profile user_id:", profile?.user_id)
+    console.log("🔧 [Debug] Selected topic:", selectedTopic)
+    console.log("🔧 [Debug] Editing flashcard:", editingFlashcard)
+    console.log("🔧 [Debug] Edit form:", editForm)
+    
+    if (!profile?.user_id) {
+      console.log("❌ [Debug] Falta profile.user_id")
+      return
+    }
+    
+    setIsFlashcardLoading(true)
+    
+    startTransition(async () => {
+      try {
+      if (editingFlashcard) {
+        console.log("🔧 [Debug] Editando flashcard existente")
+        // Editar flashcard existente
+        const result = await updateFlashcard(
+          profile.user_id, 
+          editingFlashcard.id, 
+          editForm.question, 
+          editForm.answer
+        )
+        
+        console.log("🔧 [Debug] Resultado da atualização:", result)
+        
+        if (result.success) {
+          setFlashcards(prev => 
+            prev.map(f => f.id === editingFlashcard.id 
+              ? { ...f, question: editForm.question, answer: editForm.answer }
+              : f
+            )
+          )
+        }
+      } else {
+        console.log("🔧 [Debug] Criando novo flashcard")
+        // Criar novo flashcard
+        if (!selectedTopic) {
+          alert("Selecione um tópico primeiro")
+          return
+        }
+        
+        const result = await createFlashcard(profile.user_id, {
+          topic_id: selectedTopic,
+          question: editForm.question,
+          answer: editForm.answer
+        })
+        
+        console.log("🔧 [Debug] Resultado da criação:", result)
+        
+        if (result.success && result.data) {
+          setFlashcards(prev => [result.data, ...prev])
+        }
+      }
+      
+      setIsEditDialogOpen(false)
+      setEditingFlashcard(null)
+      setEditForm({ question: '', answer: '' })
+      } catch (error) {
+        console.error("❌ [Debug] Erro ao salvar flashcard:", error)
+      } finally {
+        setIsFlashcardLoading(false)
+      }
+    })
+  }
+
+  const handleDeleteFlashcard = async (flashcardId: number) => {
+    if (!profile?.user_id) return
+    
+    if (confirm("Tem certeza que deseja excluir este flashcard?")) {
+      try {
+        const result = await deleteFlashcard(profile.user_id, flashcardId)
+        if (result.success) {
+          setFlashcards(prev => prev.filter(f => f.id !== flashcardId))
+        }
+      } catch (error) {
+        console.error("Erro ao excluir flashcard:", error)
+      }
+    }
+  }
+
   const loadFlashcards = async (topicId: string) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando flashcards para tópico ${topicId}...`)
+      console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}...`)
       
-      // Simular delay de carregamento
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const flashcardsData = await getFlashcardsForReview(topicId, 50) // Buscar até 50 flashcards
+      console.log("✅ Flashcards carregados:", flashcardsData.length)
       
-      // Mock flashcards para demonstração
-      const mockFlashcards: Flashcard[] = [
-        {
-          id: 1,
-          topic_id: topicId,
-          question: "O que é um fonema?",
-          answer: "Fonema é a menor unidade sonora distintiva de uma língua, capaz de diferenciar significados entre palavras."
-        },
-        {
-          id: 2,
-          topic_id: topicId,
-          question: "Qual a diferença entre 'mas' e 'mais'?",
-          answer: "'Mas' é uma conjunção adversativa (ex: 'Estudou, mas não passou'). 'Mais' é um advérbio de intensidade ou numeral (ex: 'Ele tem mais livros')."
-        },
-        {
-          id: 3,
-          topic_id: topicId,
-          question: "O que é um ditongo?",
-          answer: "Ditongo é o encontro de uma vogal com uma semivogal na mesma sílaba. Exemplos: 'cau-sa', 'rei-no', 'pai-xão'."
-        }
-      ]
-      
-      setFlashcards(mockFlashcards)
-      console.log("✅ Flashcards carregados:", mockFlashcards.length)
+      setFlashcards(flashcardsData)
       
     } catch (error) {
       console.error("❌ Erro ao carregar flashcards:", error)
@@ -271,29 +358,53 @@ export default function FlashcardsPage() {
 
   if (isLoading && studyMode === "select") {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
           </div>
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
   // Seleção de matéria
   if (!selectedSubject) {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Escolha a Matéria
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Selecione a matéria que deseja estudar com flashcards
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Escolha a Matéria
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Selecione a matéria que deseja estudar com flashcards
+              </p>
+            </div>
+            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+              <div className="flex gap-2">
+                <Button 
+                  variant={isAdminMode ? "default" : "outline"}
+                  onClick={() => setIsAdminMode(!isAdminMode)}
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  {isAdminMode ? "Modo Admin" : "Modo Normal"}
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // TODO: Implementar criação de matéria
+                    alert("Funcionalidade de adicionar matéria será implementada em breve")
+                  }}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Matéria
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -325,7 +436,7 @@ export default function FlashcardsPage() {
                         <span>Tópicos</span>
                       </span>
                       <span className="font-medium">
-                        {MOCK_TOPICS[subject.id as keyof typeof MOCK_TOPICS]?.length || 0}
+                        -
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
@@ -361,32 +472,48 @@ export default function FlashcardsPage() {
             </Card>
           )}
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
   // Seleção de tópico
   if (studyMode === "select") {
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedSubject(null)}
-              className="flex items-center gap-2"
-            >
-              <ArrowRight className="h-4 w-4 rotate-180" />
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {safeSubjects.find(s => s.id === selectedSubject)?.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Escolha um tópico para estudar
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedSubject(null)}
+                className="flex items-center gap-2"
+              >
+                <ArrowRight className="h-4 w-4 rotate-180" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {safeSubjects.find(s => s.id === selectedSubject)?.name}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Escolha um tópico para estudar
+                </p>
+              </div>
             </div>
+            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+              <Button 
+                onClick={() => {
+                  // Abrir modal de criação de flashcard
+                  setEditForm({ question: '', answer: '' })
+                  setEditingFlashcard(null)
+                  setIsEditDialogOpen(true)
+                }}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="h-4 w-4" />
+                Novo Flashcard
+              </Button>
+            )}
           </div>
 
           {isLoading ? (
@@ -442,7 +569,7 @@ export default function FlashcardsPage() {
             </Card>
           )}
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
@@ -452,7 +579,7 @@ export default function FlashcardsPage() {
     const progress = ((currentCardIndex + 1) / safeFlashcards.length) * 100
 
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
           <div className="flex items-center justify-between">
             <Button 
@@ -484,7 +611,40 @@ export default function FlashcardsPage() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <Card className="min-h-[400px] flex flex-col justify-center">
+            <Card className="min-h-[400px] flex flex-col justify-center relative">
+              {/* Ícones de edição para admin/teacher */}
+              {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log("🔧 [Debug] Botão de editar clicado!")
+                      handleEditFlashcard(currentCard)
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                    type="button"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleDeleteFlashcard(currentCard.id)
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900 cursor-pointer"
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  </Button>
+                </div>
+              )}
+              
               <CardContent className="p-8 text-center">
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -563,7 +723,7 @@ export default function FlashcardsPage() {
             </div>
           </div>
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
@@ -573,7 +733,7 @@ export default function FlashcardsPage() {
     const accuracy = totalCards > 0 ? (sessionStats.correct / totalCards) * 100 : 0
 
     return (
-      <StudentOnly>
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
           <div className="text-center">
             <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
@@ -633,9 +793,97 @@ export default function FlashcardsPage() {
             </div>
           </div>
         </div>
-      </StudentOnly>
+      </RoleGuard>
     )
   }
 
-  return null
+  // Debug: verificar estado do modal
+  console.log("🔧 [Debug] Estado do modal:", { isEditDialogOpen, editingFlashcard })
+
+  return (
+    <>
+      {/* Modal de Edição de Flashcard - Versão Simplificada */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">
+              {editingFlashcard ? 'Editar Flashcard' : 'Novo Flashcard'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {editingFlashcard 
+                ? 'Atualize as informações do flashcard'
+                : 'Crie um novo flashcard para a plataforma'
+              }
+            </p>
+            
+            <div className="space-y-4">
+              {!editingFlashcard && (
+                <div className="space-y-2">
+                  <label htmlFor="edit-topic" className="text-sm font-medium">
+                    Tópico
+                  </label>
+                  <select
+                    id="edit-topic"
+                    value={selectedTopic || ''}
+                    onChange={(e) => setSelectedTopic(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="">Selecione um tópico</option>
+                    {safeTopics.map(topic => (
+                      <option key={topic.id} value={topic.id}>
+                        {topic.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-question" className="text-sm font-medium">
+                  Pergunta
+                </label>
+                <Textarea
+                  id="edit-question"
+                  placeholder="Digite a pergunta..."
+                  value={editForm.question}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, question: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="edit-answer" className="text-sm font-medium">
+                  Resposta
+                </label>
+                <Textarea
+                  id="edit-answer"
+                  placeholder="Digite a resposta..."
+                  value={editForm.answer}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, answer: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false)
+                    setEditingFlashcard(null)
+                    setEditForm({ question: '', answer: '' })
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={isFlashcardLoading}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isFlashcardLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }

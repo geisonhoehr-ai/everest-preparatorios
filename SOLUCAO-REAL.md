@@ -28,7 +28,7 @@ Você está **100% correto**! Os usuários **NÃO foram criados com sucesso**. O
 3. Clique em **"Confirm user"** para cada um
 4. Execute: `node create-working-users.js`
 
-### Opção 3: Usar Service Role Key
+### Opção 3: Usar Service Role Key'
 
 Se você tiver a Service Role Key do Supabase, posso criar um script que usa permissões administrativas para confirmar usuários automaticamente.
 

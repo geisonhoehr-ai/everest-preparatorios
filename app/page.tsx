@@ -110,10 +110,6 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 lg:space-x-8 text-sm text-gray-400 px-4">
                 <div className="flex items-center">
-                  <Shield className="w-5 h-5 text-blue-500 mr-2" />
-                  <span>Cancelamento a qualquer momento</span>
-                </div>
-                <div className="flex items-center">
                   <Users className="w-5 h-5 text-purple-500 mr-2" />
                   <span>+41 alunos aprovados EAOF 2025</span>
                 </div>
