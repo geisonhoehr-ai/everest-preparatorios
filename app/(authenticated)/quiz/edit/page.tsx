@@ -257,7 +257,7 @@ export default function EditQuizPage() {
     if (!profile?.user_id || !editingQuiz) return
     
     try {
-      const result = await updateQuiz(editingQuiz.id, {
+      const result = await updateQuiz(profile.user_id, editingQuiz.id, {
         title: editForm.title,
         description: editForm.description,
         // Adicionar outros campos conforme necessário
