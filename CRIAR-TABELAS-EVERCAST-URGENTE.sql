@@ -1,5 +1,8 @@
--- Script para criar tabelas do sistema EverCast
+-- =====================================================
+-- CRIAR TABELAS DO EVERCAST - EXECUTAR NO SUPABASE
+-- =====================================================
 -- Execute este script no SQL Editor do Supabase Dashboard
+-- Este script é URGENTE para resolver o problema de salvar aulas
 
 -- 1. Tabela de cursos de áudio
 CREATE TABLE IF NOT EXISTS audio_courses (
@@ -35,12 +38,12 @@ CREATE TABLE IF NOT EXISTS audio_lessons (
     description TEXT,
     duration VARCHAR(50),
     duration_seconds INTEGER,
-    hls_url VARCHAR(500), -- URL HLS da Pandavideo
-    embed_url VARCHAR(500), -- URL embed da Pandavideo
-    audio_url VARCHAR(500), -- URL de áudio direto (se disponível)
+    hls_url VARCHAR(500),
+    embed_url VARCHAR(500),
+    audio_url VARCHAR(500),
     order_index INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
-    is_preview BOOLEAN DEFAULT false, -- Aula gratuita
+    is_preview BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -51,7 +54,7 @@ CREATE TABLE IF NOT EXISTS audio_progress (
     user_id UUID REFERENCES auth.users(id),
     lesson_id UUID REFERENCES audio_lessons(id) ON DELETE CASCADE,
     progress_percentage INTEGER DEFAULT 0,
-    current_time_seconds INTEGER DEFAULT 0, -- Tempo atual em segundos
+    current_time_seconds INTEGER DEFAULT 0,
     is_completed BOOLEAN DEFAULT false,
     completed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -223,7 +226,7 @@ INSERT INTO audio_courses (name, description, created_by) VALUES
  'c8b5bff0-b5cc-4dab-9cfa-0a0cf4983dc5');
 
 -- 14. Verificar se as tabelas foram criadas
-SELECT 'Tabelas criadas com sucesso!' as status;
+SELECT 'Tabelas do EverCast criadas com sucesso!' as status;
 SELECT table_name FROM information_schema.tables 
 WHERE table_schema = 'public' 
 AND table_name LIKE 'audio_%'

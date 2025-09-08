@@ -49,7 +49,7 @@ export interface AudioProgress {
   user_id: string
   lesson_id: string
   progress_percentage: number
-  current_time: number
+  current_time_seconds: number
   is_completed: boolean
   completed_at?: string
   created_at: string
@@ -471,7 +471,7 @@ export async function updateAudioProgress(userUuid: string, lessonId: string, pr
         user_id: userUuid,
         lesson_id: lessonId,
         progress_percentage: progress.progress_percentage || 0,
-        current_time: progress.current_time || 0,
+        current_time_seconds: progress.current_time_seconds || 0,
         is_completed: progress.is_completed || false,
         completed_at: progress.is_completed ? new Date().toISOString() : null
       })
