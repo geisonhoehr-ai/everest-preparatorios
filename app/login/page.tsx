@@ -31,8 +31,8 @@ export default function LoginPage() {
     }
   }, [])
   
-  const [email, setEmail] = useState("aluno@teste.com")
-  const [password, setPassword] = useState("123456")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -68,7 +68,7 @@ export default function LoginPage() {
       })
 
       if (error) {
-        setError("Credenciais inválidas. Use: aluno@teste.com, admin@teste.com ou professor@teste.com com senha 123456")
+        setError("Credenciais inválidas. Verifique seu email e senha.")
         return
       }
 
