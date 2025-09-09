@@ -34,11 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = createClient()
 
   useEffect(() => {
-    // Timeout de segurança para evitar travamento
-    const safetyTimeout = setTimeout(() => {
-      console.warn('⚠️ Timeout de segurança ativado - forçando fim do loading')
-      setIsLoading(false)
-    }, 30000) // 30 segundos
+    let safetyTimeout: NodeJS.Timeout | null = null
+    let isInitialized = false
+
+    // Timeout de segurança reduzido para evitar travamento
+    safetyTimeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.warn('⚠️ Timeout de segurança ativado - forçando fim do loading')
+        setIsLoading(false)
+        isInitialized = true
+      }
+    }, 10000) // Reduzido para 10 segundos
 
     // Verificar sessão atual
     const getSession = async () => {
@@ -49,7 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error('❌ Erro ao buscar sessão:', error)
           setIsLoading(false)
-          clearTimeout(safetyTimeout)
+          isInitialized = true
+          if (safetyTimeout) clearTimeout(safetyTimeout)
           return
         }
 
@@ -65,11 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         setIsLoading(false)
-        clearTimeout(safetyTimeout)
+        isInitialized = true
+        if (safetyTimeout) clearTimeout(safetyTimeout)
       } catch (error) {
         console.error('❌ Erro inesperado ao verificar sessão:', error)
         setIsLoading(false)
-        clearTimeout(safetyTimeout)
+        isInitialized = true
+        if (safetyTimeout) clearTimeout(safetyTimeout)
       }
     }
 
@@ -89,13 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         setIsLoading(false)
-        clearTimeout(safetyTimeout)
+        isInitialized = true
+        if (safetyTimeout) clearTimeout(safetyTimeout)
       }
     )
 
     return () => {
       subscription.unsubscribe()
-      clearTimeout(safetyTimeout)
+      if (safetyTimeout) clearTimeout(safetyTimeout)
     }
   }, [])
 
@@ -103,6 +113,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔍 Buscando perfil para usuário:', userId)
       
+      // Verificar cache local primeiro
+      const cachedProfile = localStorage.getItem(`profile_${userId}`)
+      if (cachedProfile) {
+        try {
+          const parsedProfile = JSON.parse(cachedProfile)
+          console.log('📦 Perfil encontrado no cache:', parsedProfile)
+          setProfile(parsedProfile)
+          
+          // Buscar atualização em background
+          fetchProfileFromServer(userId)
+          return
+        } catch (e) {
+          console.warn('⚠️ Erro ao parsear cache, buscando do servidor')
+        }
+      }
+      
+      await fetchProfileFromServer(userId)
+    } catch (error) {
+      console.error('❌ Erro inesperado ao buscar perfil:', error)
+    }
+  }
+
+  const fetchProfileFromServer = async (userId: string) => {
+    try {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -122,11 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔄 Tentando criar perfil padrão...')
         await createDefaultProfile(userId)
       } else {
-        console.log('✅ Perfil encontrado:', data)
+        console.log('✅ Perfil encontrado no servidor:', data)
         setProfile(data)
+        
+        // Salvar no cache local
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(data))
       }
     } catch (error) {
-      console.error('❌ Erro inesperado ao buscar perfil:', error)
+      console.error('❌ Erro ao buscar perfil do servidor:', error)
     }
   }
 
@@ -202,7 +239,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshProfile = async () => {
-    if (user) {
+    if (user?.id) {
+      // Limpar cache antes de buscar novamente
+      localStorage.removeItem(`profile_${user.id}`)
       await fetchUserProfile(user.id)
     }
   }
@@ -210,6 +249,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('🚪 Iniciando logout...')
+      
+      // Limpar cache local
+      if (user?.id) {
+        localStorage.removeItem(`profile_${user.id}`)
+      }
       
       // Limpar estado local primeiro
       setUser(null)
