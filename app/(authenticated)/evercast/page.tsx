@@ -100,17 +100,31 @@ export default function EverCastPage() {
   useEffect(() => {
     const loadCourses = async () => {
       try {
+        console.log('🔍 [EverCast] Carregando cursos...')
         const data = await getAllAudioCourses()
+        console.log('📊 [EverCast] Cursos carregados:', data.length)
+        console.log('📋 [EverCast] Dados completos:', data)
+        
         setCourses(data)
         if (data.length > 0) {
+          console.log('📖 [EverCast] Primeiro curso:', data[0])
+          console.log('📂 [EverCast] Módulos do primeiro curso:', data[0].modules)
+          
           setCurrentCourse(data[0])
           if (data[0].modules && data[0].modules.length > 0) {
+            console.log('📁 [EverCast] Primeiro módulo:', data[0].modules[0])
+            console.log('🎵 [EverCast] Aulas do primeiro módulo:', data[0].modules[0].lessons)
+            
             setCurrentModule(data[0].modules[0])
             setPlaylist(data[0].modules[0].lessons || [])
+          } else {
+            console.log('❌ [EverCast] Nenhum módulo encontrado no primeiro curso')
           }
+        } else {
+          console.log('❌ [EverCast] Nenhum curso encontrado')
         }
       } catch (error) {
-        console.error('Erro ao carregar cursos:', error)
+        console.error('❌ [EverCast] Erro ao carregar cursos:', error)
       }
     }
 
@@ -461,44 +475,63 @@ export default function EverCastPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {currentCourse.modules?.map((module, moduleIndex) => (
-                    <div
-                      key={module.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-all ${
-                        currentModule?.id === module.id
-                          ? 'bg-purple-600/30 border border-purple-500'
-                          : 'bg-white/5 hover:bg-white/10'
-                      }`}
-                      onClick={() => {
-                        setCurrentModule(module)
-                        setPlaylist(module.lessons || [])
-                        setCurrentIndex(0)
-                      }}
-                    >
-                      <h4 className="font-medium text-white mb-1">{module.name}</h4>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">{module.total_duration}</span>
-                        <span className="text-purple-400">
-                          {module.lessons?.length || 0} aulas
-                        </span>
-                      </div>
-                      {canEdit && (
-                        <div className="flex justify-end space-x-1 mt-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              startEditing('module', module)
-                            }}
-                            className="text-gray-400 hover:text-white"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
+                  {(() => {
+                    console.log('🔍 [EverCast] Renderizando módulos...')
+                    console.log('📂 [EverCast] currentCourse:', currentCourse)
+                    console.log('📁 [EverCast] currentCourse.modules:', currentCourse.modules)
+                    console.log('📊 [EverCast] Módulos length:', currentCourse.modules?.length || 0)
+                    
+                    if (!currentCourse.modules || currentCourse.modules.length === 0) {
+                      console.log('❌ [EverCast] Nenhum módulo para renderizar')
+                      return (
+                        <div className="text-center text-gray-400 py-4">
+                          Nenhum módulo encontrado
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      )
+                    }
+                    
+                    return currentCourse.modules.map((module, moduleIndex) => {
+                      console.log(`📁 [EverCast] Renderizando módulo ${moduleIndex + 1}:`, module)
+                      return (
+                        <div
+                          key={module.id}
+                          className={`p-3 rounded-lg cursor-pointer transition-all ${
+                            currentModule?.id === module.id
+                              ? 'bg-purple-600/30 border border-purple-500'
+                              : 'bg-white/5 hover:bg-white/10'
+                          }`}
+                          onClick={() => {
+                            setCurrentModule(module)
+                            setPlaylist(module.lessons || [])
+                            setCurrentIndex(0)
+                          }}
+                        >
+                          <h4 className="font-medium text-white mb-1">{module.name}</h4>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">{module.total_duration}</span>
+                            <span className="text-purple-400">
+                              {module.lessons?.length || 0} aulas
+                            </span>
+                          </div>
+                          {canEdit && (
+                            <div className="flex justify-end space-x-1 mt-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditing('module', module)
+                                }}
+                                className="text-gray-400 hover:text-white"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  })()}
                 </CardContent>
               </Card>
             )}
