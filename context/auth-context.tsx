@@ -5,6 +5,7 @@ import { User, Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { initializeUserProgress } from "@/actions"
+import { debugSupabaseConfig } from "@/lib/supabase/debug"
 
 interface UserProfile {
   id: string
@@ -36,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let safetyTimeout: NodeJS.Timeout | null = null
     let isInitialized = false
+    let retryCount = 0
+    const maxRetries = 3
 
     // Timeout de segurança reduzido para evitar travamento
     safetyTimeout = setTimeout(() => {
@@ -44,16 +47,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false)
         isInitialized = true
       }
-    }, 10000) // Reduzido para 10 segundos
+    }, 8000) // Reduzido para 8 segundos
 
     // Verificar sessão atual
     const getSession = async () => {
       try {
-        console.log('🔐 Verificando sessão atual...')
+        console.log('🔐 Verificando sessão atual... (tentativa:', retryCount + 1, ')')
+        
+        // Debug da configuração do Supabase
+        if (retryCount === 0) {
+          debugSupabaseConfig()
+        }
+        
+        // Verificar se as variáveis de ambiente estão disponíveis
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error('❌ Variáveis de ambiente do Supabase não encontradas')
+          setIsLoading(false)
+          isInitialized = true
+          if (safetyTimeout) clearTimeout(safetyTimeout)
+          return
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
           console.error('❌ Erro ao buscar sessão:', error)
+          
+          // Se for erro de rede, tentar novamente
+          if (retryCount < maxRetries && (error.message.includes('network') || error.message.includes('fetch'))) {
+            retryCount++
+            console.log('🔄 Tentando novamente em 2 segundos...')
+            setTimeout(getSession, 2000)
+            return
+          }
+          
           setIsLoading(false)
           isInitialized = true
           if (safetyTimeout) clearTimeout(safetyTimeout)
@@ -76,6 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (safetyTimeout) clearTimeout(safetyTimeout)
       } catch (error) {
         console.error('❌ Erro inesperado ao verificar sessão:', error)
+        
+        // Se for erro de rede, tentar novamente
+        if (retryCount < maxRetries) {
+          retryCount++
+          console.log('🔄 Tentando novamente em 2 segundos...')
+          setTimeout(getSession, 2000)
+          return
+        }
+        
         setIsLoading(false)
         isInitialized = true
         if (safetyTimeout) clearTimeout(safetyTimeout)
@@ -88,6 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: Session | null) => {
         console.log('🔄 Evento de autenticação:', event, session?.user?.email)
+        
+        // Evitar loops em eventos de refresh
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.log('🔄 Token refresh sem sessão - ignorando')
+          return
+        }
+        
         setSession(session)
         setUser(session?.user ?? null)
         
