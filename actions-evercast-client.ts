@@ -523,10 +523,13 @@ export async function updateAudioLessonUrl(lessonId: string, audioUrl: string): 
   const supabase = getSupabaseClient()
   
   try {
+    // Corrigir URL se necessário
+    const correctedUrl = audioUrl.replace('storage.supabase.co', 'hnhzindsfuqnaxosujay.supabase.co')
+    
     const { error } = await supabase
       .from('audio_lessons')
       .update({ 
-        audio_url: audioUrl,
+        audio_url: correctedUrl,
         updated_at: new Date().toISOString()
       })
       .eq('id', lessonId)
@@ -536,10 +539,62 @@ export async function updateAudioLessonUrl(lessonId: string, audioUrl: string): 
       return false
     }
 
-    console.log('✅ [EverCast] URL do áudio atualizada com sucesso:', audioUrl)
+    console.log('✅ [EverCast] URL do áudio atualizada com sucesso:', correctedUrl)
     return true
   } catch (error) {
     console.error('❌ [EverCast] Erro ao atualizar URL do áudio:', error)
+    return false
+  }
+}
+
+export async function fixAllAudioUrls(): Promise<boolean> {
+  const supabase = getSupabaseClient()
+  
+  try {
+    console.log('🔧 [EverCast] Iniciando correção de URLs de áudio...')
+    
+    // Buscar todas as aulas com URLs incorretas
+    const { data: lessons, error: fetchError } = await supabase
+      .from('audio_lessons')
+      .select('id, audio_url')
+      .not('audio_url', 'is', null)
+      .like('audio_url', '%storage.supabase.co%')
+
+    if (fetchError) {
+      console.error('❌ [EverCast] Erro ao buscar aulas:', fetchError)
+      return false
+    }
+
+    if (!lessons || lessons.length === 0) {
+      console.log('✅ [EverCast] Nenhuma URL incorreta encontrada')
+      return true
+    }
+
+    console.log(`🔧 [EverCast] Encontradas ${lessons.length} URLs para corrigir`)
+
+    // Corrigir cada URL
+    for (const lesson of lessons) {
+      const correctedUrl = lesson.audio_url.replace('storage.supabase.co', 'hnhzindsfuqnaxosujay.supabase.co')
+      
+      const { error: updateError } = await supabase
+        .from('audio_lessons')
+        .update({ 
+          audio_url: correctedUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', lesson.id)
+
+      if (updateError) {
+        console.error(`❌ [EverCast] Erro ao corrigir aula ${lesson.id}:`, updateError)
+      } else {
+        console.log(`✅ [EverCast] Aula ${lesson.id} corrigida: ${correctedUrl}`)
+      }
+    }
+
+    console.log('✅ [EverCast] Correção de URLs concluída')
+    return true
+  } catch (error) {
+    console.error('❌ [EverCast] Erro na correção de URLs:', error)
     return false
   }
 }

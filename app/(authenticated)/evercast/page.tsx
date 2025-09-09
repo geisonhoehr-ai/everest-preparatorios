@@ -14,6 +14,7 @@ import {
   updateAudioLesson,
   deleteAudioLesson,
   updateAudioLessonUrl,
+  fixAllAudioUrls,
   type AudioCourse, 
   type AudioModule, 
   type AudioLesson 
@@ -105,6 +106,11 @@ export default function EverCastPage() {
     const loadCourses = async () => {
       try {
         console.log('🔍 [EverCast] Carregando cursos...')
+        
+        // Primeiro, corrigir URLs incorretas
+        console.log('🔧 [EverCast] Verificando URLs de áudio...')
+        await fixAllAudioUrls()
+        
         const data = await getAllAudioCourses()
         console.log('📊 [EverCast] Cursos carregados:', data.length)
         console.log('📋 [EverCast] Dados completos:', data)

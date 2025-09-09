@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { fixSupabaseStorageUrl, getCorrectPublicUrl } from '@/lib/supabase/storage'
 
 interface AudioUploadProps {
   lessonId: string
@@ -87,20 +88,16 @@ export function AudioUpload({
         throw new Error('Erro ao fazer upload do áudio')
       }
 
-      // Obter URL pública
-      const { data: urlData } = supabase.storage
-        .from('evercast-audio')
-        .getPublicUrl(filePath)
-
-      if (urlData?.publicUrl) {
-        setUploadProgress(100)
-        console.log('✅ Upload completo:', urlData.publicUrl)
-        
-        onUploadComplete(urlData.publicUrl)
-        toast.success('Áudio enviado com sucesso!')
-      } else {
-        throw new Error('Erro ao obter URL do arquivo')
-      }
+      // Gerar URL pública correta diretamente
+      const projectId = 'hnhzindsfuqnaxosujay'
+      const correctUrl = getCorrectPublicUrl(projectId, 'evercast-audio', filePath)
+      
+      setUploadProgress(100)
+      console.log('✅ Upload completo:', correctUrl)
+      console.log('📁 Arquivo salvo em:', filePath)
+      
+      onUploadComplete(correctUrl)
+      toast.success('Áudio enviado com sucesso!')
       
     } catch (error) {
       console.error('Erro no upload:', error)
