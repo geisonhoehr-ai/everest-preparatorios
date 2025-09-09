@@ -39,6 +39,7 @@ import {
   Save,
   X
 } from 'lucide-react'
+import { HLSPlayer } from '@/components/evercast/hls-player'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -709,15 +710,29 @@ export default function EverCastPage() {
         </div>
       )}
 
-      {/* Audio Element */}
-      <audio
-        ref={audioRef}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleNext}
-        src={currentLesson?.hls_url || currentLesson?.embed_url || currentLesson?.audio_url}
-        preload="metadata"
-      />
+      {/* HLS Player Component */}
+      {currentLesson?.hls_url && (
+        <HLSPlayer
+          hlsUrl={currentLesson.hls_url}
+          title={currentLesson.title}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleNext}
+          className="hidden" // Ocultar o player visual, usar apenas o áudio
+        />
+      )}
+      
+      {/* Fallback Audio Element para URLs não-HLS */}
+      {currentLesson && !currentLesson.hls_url && (
+        <audio
+          ref={audioRef}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleNext}
+          src={currentLesson.embed_url || currentLesson.audio_url}
+          preload="metadata"
+        />
+      )}
 
       {/* Modal de Edição */}
       {isEditing && canEdit && (

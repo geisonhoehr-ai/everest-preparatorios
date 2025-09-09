@@ -87,13 +87,13 @@ export function HLSPlayer({
         
         hls = new window.Hls({
           enableWorker: true,
-          lowLatencyMode: true,
+          lowLatencyMode: false, // Desabilitar para streams VOD
           backBufferLength: 90,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
+          maxBufferLength: 60, // Aumentar buffer para streams longos
+          maxMaxBufferLength: 120, // Buffer máximo maior
           liveSyncDurationCount: 3,
           liveMaxLatencyDurationCount: 5,
-          liveDurationInfinity: true,
+          liveDurationInfinity: false, // Desabilitar para streams VOD
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
@@ -118,6 +118,8 @@ export function HLSPlayer({
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ HLS manifest carregado')
+          console.log('📊 HLS Levels:', hls.levels)
+          console.log('⏱️ Duração estimada:', hls.media?.duration)
           setIsLoading(false)
         })
 
@@ -144,7 +146,16 @@ export function HLSPlayer({
           const level = hls.levels[data.level]
           if (level) {
             setStreamQuality(`${level.height}p`)
+            console.log('🔄 HLS Level switched to:', level)
           }
+        })
+
+        hls.on(window.Hls.Events.FRAG_LOADED, (event: any, data: any) => {
+          console.log('📦 HLS Fragment loaded:', data.frag.sn, 'at', data.frag.start)
+        })
+
+        hls.on(window.Hls.Events.BUFFER_APPENDED, (event: any, data: any) => {
+          console.log('📈 HLS Buffer appended, current time:', audio.currentTime)
         })
 
       } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
@@ -195,6 +206,11 @@ export function HLSPlayer({
       const time = audioRef.current.currentTime
       setCurrentTime(time)
       onTimeUpdate?.(time)
+      
+      // Log a cada 5 segundos para debug
+      if (Math.floor(time) % 5 === 0 && Math.floor(time) > 0) {
+        console.log(`⏱️ HLS Player - Tempo atual: ${time.toFixed(2)}s, Duração: ${audioRef.current.duration?.toFixed(2)}s`)
+      }
     }
   }
 
@@ -380,6 +396,15 @@ export function HLSPlayer({
         }}
         onLoadStart={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
+        onPause={() => {
+          console.log('⏸️ HLS Player pausado em:', audioRef.current?.currentTime)
+        }}
+        onStalled={() => {
+          console.log('🔄 HLS Player stalled em:', audioRef.current?.currentTime)
+        }}
+        onWaiting={() => {
+          console.log('⏳ HLS Player waiting em:', audioRef.current?.currentTime)
+        }}
         preload="metadata"
         crossOrigin="anonymous"
       />
