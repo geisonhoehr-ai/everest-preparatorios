@@ -87,22 +87,14 @@ export function HLSPlayer({
         
         hls = new window.Hls({
           enableWorker: true,
-          lowLatencyMode: false, // Desabilitar para streams VOD
+          lowLatencyMode: false,
           backBufferLength: 90,
-          maxBufferLength: 60, // Aumentar buffer para streams longos
-          maxMaxBufferLength: 120, // Buffer máximo maior
-          // Remover configurações conflitantes de live
+          maxBufferLength: 60,
+          maxMaxBufferLength: 120,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
-          maxFragLookUpTolerance: 0.25,
-          // Configurações específicas para Pandavideo
-          xhrSetup: (xhr: XMLHttpRequest, url: string) => {
-            xhr.withCredentials = false
-            xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
-            xhr.setRequestHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            xhr.setRequestHeader('Access-Control-Allow-Headers', 'Content-Type')
-          }
+          maxFragLookUpTolerance: 0.25
         })
 
         hls.loadSource(cleanUrl)

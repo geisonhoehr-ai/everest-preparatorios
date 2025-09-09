@@ -40,6 +40,8 @@ import {
   X
 } from 'lucide-react'
 import { HLSPlayer } from '@/components/evercast/hls-player'
+import { MP3Player } from '@/components/evercast/mp3-player'
+import { AudioUpload } from '@/components/evercast/audio-upload'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -207,6 +209,37 @@ export default function EverCastPage() {
       }
     } catch (error) {
       console.error('Erro ao criar aula:', error)
+    }
+  }
+
+  const handleAudioUpload = async (lessonId: string, audioUrl: string) => {
+    try {
+      // Aqui você implementaria a atualização da aula com a nova URL de áudio
+      console.log('Upload de áudio concluído:', { lessonId, audioUrl })
+      
+      // Atualizar a aula atual se for a mesma
+      if (currentLesson?.id === lessonId) {
+        setCurrentLesson({ ...currentLesson, audio_url: audioUrl })
+      }
+      
+      // Atualizar na lista de aulas do módulo
+      if (currentModule) {
+        const updatedModule = { ...currentModule }
+        updatedModule.audio_lessons = updatedModule.audio_lessons?.map(lesson => 
+          lesson.id === lessonId ? { ...lesson, audio_url: audioUrl } : lesson
+        )
+        setCurrentModule(updatedModule)
+        
+        // Atualizar no curso
+        const updatedCourse = { ...currentCourse! }
+        updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
+          m.id === currentModule.id ? updatedModule : m
+        )
+        setCurrentCourse(updatedCourse)
+        setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar aula com áudio:', error)
     }
   }
 
@@ -588,8 +621,11 @@ export default function EverCastPage() {
                               <Clock className="w-4 h-4 mr-1" />
                               {lesson.duration}
                             </span>
-                            {lesson.hls_url && (
-                              <span className="text-green-400">HLS</span>
+                            {lesson.audio_url && (
+                              <span className="text-green-400">MP3</span>
+                            )}
+                            {lesson.hls_url && !lesson.audio_url && (
+                              <span className="text-blue-400">HLS</span>
                             )}
                             {lesson.is_preview && (
                               <span className="text-yellow-400">Preview</span>
@@ -711,7 +747,7 @@ export default function EverCastPage() {
       )}
 
       {/* HLS Player Component */}
-      {currentLesson?.hls_url && (
+      {currentLesson?.hls_url && !currentLesson.audio_url && (
         <HLSPlayer
           hlsUrl={currentLesson.hls_url}
           title={currentLesson.title}
@@ -722,14 +758,26 @@ export default function EverCastPage() {
         />
       )}
       
-      {/* Fallback Audio Element para URLs não-HLS */}
-      {currentLesson && !currentLesson.hls_url && (
+      {/* MP3 Player Component */}
+      {currentLesson?.audio_url && (
+        <MP3Player
+          audioUrl={currentLesson.audio_url}
+          title={currentLesson.title}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleNext}
+          className="hidden" // Ocultar o player visual, usar apenas o áudio
+        />
+      )}
+      
+      {/* Fallback Audio Element para URLs não-HLS e não-MP3 */}
+      {currentLesson && !currentLesson.hls_url && !currentLesson.audio_url && (
         <audio
           ref={audioRef}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
-          src={currentLesson.embed_url || currentLesson.audio_url}
+          src={currentLesson.embed_url}
           preload="metadata"
         />
       )}
@@ -895,6 +943,20 @@ export default function EverCastPage() {
                       className="bg-white/10 border-white/20 text-white"
                       placeholder="https://player-vz-e9d62059-4a4.tv.pandavideo.com.br/embed/..."
                     />
+                  </div>
+                  
+                  {/* Upload de MP3 */}
+                  <div>
+                    <Label className="text-white">Upload de Áudio MP3</Label>
+                    <div className="mt-2">
+                      <AudioUpload
+                        lessonId={editingItem?.id || 'new'}
+                        onUploadComplete={(audioUrl) => {
+                          setLessonForm({ ...lessonForm, audio_url: audioUrl })
+                        }}
+                        currentAudioUrl={lessonForm.audio_url}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
