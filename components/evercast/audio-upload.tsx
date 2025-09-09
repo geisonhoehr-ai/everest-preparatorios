@@ -52,23 +52,8 @@ export function AudioUpload({
     try {
       const supabase = createClient()
       
-      // Verificar se o bucket existe, se não, criar
-      const { data: buckets } = await supabase.storage.listBuckets()
-      const audioBucket = buckets?.find((bucket: any) => bucket.name === 'evercast-audio')
-      
-      if (!audioBucket) {
-        console.log("📦 Criando bucket 'evercast-audio'...")
-        const { error: bucketError } = await supabase.storage.createBucket('evercast-audio', {
-          public: true, // Público para permitir acesso direto aos áudios
-          allowedMimeTypes: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/ogg'],
-          fileSizeLimit: 100 * 1024 * 1024 // 100MB
-        })
-        
-        if (bucketError) {
-          console.error("❌ Erro ao criar bucket:", bucketError)
-          throw new Error('Erro ao configurar armazenamento de áudio')
-        }
-      }
+      // Bucket já foi criado manualmente, não precisa verificar
+      console.log("📦 Usando bucket 'evercast-audio' (criado manualmente)")
 
       // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop()
@@ -76,6 +61,12 @@ export function AudioUpload({
       const filePath = `lessons/${fileName}`
 
       // Upload para Supabase Storage
+      console.log('📤 Iniciando upload...')
+      console.log('   - Arquivo:', file.name)
+      console.log('   - Tamanho:', file.size, 'bytes')
+      console.log('   - Tipo:', file.type)
+      console.log('   - Caminho:', filePath)
+      
       const { data, error } = await supabase.storage
         .from('evercast-audio')
         .upload(filePath, file, {
@@ -84,9 +75,14 @@ export function AudioUpload({
         })
 
       if (error) {
-        console.error('Erro no upload:', error)
-        throw new Error('Erro ao fazer upload do áudio')
+        console.error('❌ Erro no upload:', error)
+        console.error('   - Código:', error.statusCode)
+        console.error('   - Mensagem:', error.message)
+        console.error('   - Detalhes:', JSON.stringify(error, null, 2))
+        throw new Error(`Erro ao fazer upload do áudio: ${error.message}`)
       }
+      
+      console.log('✅ Upload bem-sucedido:', data)
 
       // Gerar URL pública correta diretamente
       const projectId = 'hnhzindsfuqnaxosujay'
