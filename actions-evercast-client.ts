@@ -11,7 +11,7 @@ export interface AudioCourse {
   created_by: string
   created_at: string
   updated_at: string
-  modules?: AudioModule[]
+  audio_modules?: AudioModule[]
 }
 
 export interface AudioModule {
@@ -24,7 +24,7 @@ export interface AudioModule {
   is_active: boolean
   created_at: string
   updated_at: string
-  lessons?: AudioLesson[]
+  audio_lessons?: AudioLesson[]
 }
 
 export interface AudioLesson {
