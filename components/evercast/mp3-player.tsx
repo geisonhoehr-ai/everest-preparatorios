@@ -141,19 +141,52 @@ export function MP3Player({
   }
 
   return (
-    <div className={`bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg p-4 ${className}`}>
+    <>
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #ea580c;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #ea580c;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .slider:focus {
+          outline: none;
+        }
+        
+        .slider:focus::-webkit-slider-thumb {
+          box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.3);
+        }
+        
+        .slider:focus::-moz-range-thumb {
+          box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.3);
+        }
+      `}</style>
+      <div className={`bg-black/30 backdrop-blur-md border border-white/20 rounded-xl p-4 sm:p-6 ${className}`}>
       {/* Informações da mídia */}
-      <div className="flex items-center space-x-4 mb-4">
-        <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
-          <Headphones className="w-6 h-6 text-white" />
+      <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
+        <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+          <Headphones className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-white truncate">{title}</h4>
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
-            <span>Áudio MP3</span>
-            <span className="bg-orange-600/30 px-2 py-1 rounded text-xs">
-              Local
+          <h4 className="font-semibold text-white truncate text-base sm:text-lg">{title}</h4>
+          <div className="flex items-center space-x-2 text-sm text-gray-300">
+            <span className="bg-orange-600/20 px-3 py-1 rounded-full text-xs font-medium">
+              Áudio
             </span>
           </div>
         </div>
@@ -164,7 +197,7 @@ export function MP3Player({
             variant="ghost" 
             size="sm" 
             onClick={handleDownload}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
           >
             <Download className="w-4 h-4" />
           </Button>
@@ -172,64 +205,68 @@ export function MP3Player({
       </div>
 
       {/* Controles de reprodução */}
-      <div className="flex items-center space-x-4 mb-4">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={skipBackward}
-          className="text-gray-400 hover:text-white"
-        >
-          <SkipBack className="w-5 h-5" />
-        </Button>
-
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handlePlayPause}
-          disabled={isLoading}
-          className="w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700"
-        >
-          {isLoading ? (
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : isPlaying ? (
-            <Pause className="w-6 h-6 text-white" />
-          ) : (
-            <Play className="w-6 h-6 text-white" />
-          )}
-        </Button>
-
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={skipForward}
-          className="text-gray-400 hover:text-white"
-        >
-          <SkipForward className="w-5 h-5" />
-        </Button>
-
+      <div className="space-y-4">
         {/* Barra de progresso */}
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-            />
-            <span className="text-xs text-gray-400">{formatTime(duration)}</span>
-          </div>
+        <div className="flex items-center space-x-3">
+          <span className="text-xs text-gray-400 font-mono min-w-[40px]">{formatTime(currentTime)}</span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleSeek}
+            className="flex-1 h-2 bg-gray-600/50 rounded-lg appearance-none cursor-pointer slider"
+            style={{
+              background: `linear-gradient(to right, #ea580c 0%, #ea580c ${(currentTime / duration) * 100}%, #4b5563 ${(currentTime / duration) * 100}%, #4b5563 100%)`
+            }}
+          />
+          <span className="text-xs text-gray-400 font-mono min-w-[40px]">{formatTime(duration)}</span>
         </div>
 
-        {/* Controle de volume */}
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={toggleMute}>
-            {isMuted ? (
-              <VolumeX className="w-5 h-5 text-white" />
+        {/* Controles principais */}
+        <div className="flex items-center justify-center space-x-4 sm:space-x-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={skipBackward}
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full p-2"
+          >
+            <SkipBack className="w-5 h-5" />
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handlePlayPause}
+            disabled={isLoading}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            {isLoading ? (
+              <div className="w-6 h-6 sm:w-7 sm:h-7 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             ) : (
-              <Volume2 className="w-5 h-5 text-white" />
+              <Play className="w-6 h-6 sm:w-7 sm:h-7 text-white ml-1" />
+            )}
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={skipForward}
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full p-2"
+          >
+            <SkipForward className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Controle de volume - oculto em telas pequenas */}
+        <div className="hidden sm:flex items-center justify-center space-x-3">
+          <Button variant="ghost" size="sm" onClick={toggleMute} className="text-gray-400 hover:text-white">
+            {isMuted ? (
+              <VolumeX className="w-4 h-4" />
+            ) : (
+              <Volume2 className="w-4 h-4" />
             )}
           </Button>
           <input
@@ -239,7 +276,10 @@ export function MP3Player({
             step="0.1"
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            className="w-24 h-1 bg-gray-600/50 rounded-lg appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, #ea580c 0%, #ea580c ${(isMuted ? 0 : volume) * 100}%, #4b5563 ${(isMuted ? 0 : volume) * 100}%, #4b5563 100%)`
+            }}
           />
         </div>
       </div>
@@ -251,12 +291,6 @@ export function MP3Player({
         </div>
       )}
 
-      {/* Informações técnicas */}
-      <div className="text-xs text-gray-500 space-y-1">
-        <p>Fonte: Arquivo MP3 Local</p>
-        <p>URL: {audioUrl}</p>
-        <p>Status: {isPlaying ? 'Reproduzindo' : 'Pausado'}</p>
-      </div>
 
       {/* Elemento de áudio oculto */}
       <audio
@@ -277,6 +311,7 @@ export function MP3Player({
         onCanPlay={() => setIsLoading(false)}
         preload="metadata"
       />
-    </div>
+      </div>
+    </>
   )
 }

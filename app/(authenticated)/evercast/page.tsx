@@ -687,84 +687,6 @@ export default function EverCastPage() {
         </div>
       </div>
 
-      {/* Player Fixo na Parte Inferior */}
-      {currentLesson && (
-        <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/10 p-4">
-          <div className="container mx-auto">
-            <div className="flex items-center space-x-4">
-              {/* Thumbnail/Info da Aula */}
-              <div className="flex-shrink-0 w-16 h-16 bg-orange-600 rounded-lg flex items-center justify-center">
-                <Play className="w-8 h-8 text-white" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-white truncate">{currentLesson.title}</h4>
-                <p className="text-sm text-gray-400 truncate">{currentModule?.name}</p>
-              </div>
-
-              {/* Controles */}
-              <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="sm" onClick={handlePrevious} disabled={currentIndex === 0}>
-                  <SkipBack className="w-5 h-5 text-white" />
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="lg" 
-                  onClick={handlePlayPause}
-                  className="w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-6 h-6 text-white" />
-                  ) : (
-                    <Play className="w-6 h-6 text-white" />
-                  )}
-                </Button>
-                
-                <Button variant="ghost" size="sm" onClick={handleNext} disabled={currentIndex === playlist.length - 1}>
-                  <SkipForward className="w-5 h-5 text-white" />
-                </Button>
-              </div>
-
-              {/* Progresso */}
-              <div className="flex-1 max-w-md">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-400">{formatTime(duration)}</span>
-                </div>
-              </div>
-
-              {/* Volume */}
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" onClick={toggleMute}>
-                  {isMuted ? (
-                    <VolumeX className="w-5 h-5 text-white" />
-                  ) : (
-                    <Volume2 className="w-5 h-5 text-white" />
-                  )}
-                </Button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* HLS Player Component */}
       {currentLesson?.hls_url && !currentLesson.audio_url && (
@@ -775,7 +697,7 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
-          className="fixed bottom-20 left-4 right-4 z-10" // Player visível na parte inferior
+          className="fixed bottom-4 left-4 right-4 z-10" // Player fixo na parte inferior
         />
       )}
       
@@ -788,7 +710,7 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
-          className="fixed bottom-20 left-4 right-4 z-10" // Player visível na parte inferior
+          className="fixed bottom-4 left-4 right-4 z-10" // Player fixo na parte inferior
         />
       )}
       
