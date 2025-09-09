@@ -108,15 +108,15 @@ export default function EverCastPage() {
         setCourses(data)
         if (data.length > 0) {
           console.log('📖 [EverCast] Primeiro curso:', data[0])
-          console.log('📂 [EverCast] Módulos do primeiro curso:', data[0].modules)
+          console.log('📂 [EverCast] Módulos do primeiro curso:', data[0].audio_modules)
           
           setCurrentCourse(data[0])
-          if (data[0].modules && data[0].modules.length > 0) {
-            console.log('📁 [EverCast] Primeiro módulo:', data[0].modules[0])
-            console.log('🎵 [EverCast] Aulas do primeiro módulo:', data[0].modules[0].lessons)
+          if (data[0].audio_modules && data[0].audio_modules.length > 0) {
+            console.log('📁 [EverCast] Primeiro módulo:', data[0].audio_modules[0])
+            console.log('🎵 [EverCast] Aulas do primeiro módulo:', data[0].audio_modules[0].audio_lessons)
             
-            setCurrentModule(data[0].modules[0])
-            setPlaylist(data[0].modules[0].lessons || [])
+            setCurrentModule(data[0].audio_modules[0])
+            setPlaylist(data[0].audio_modules[0].audio_lessons || [])
           } else {
             console.log('❌ [EverCast] Nenhum módulo encontrado no primeiro curso')
           }
@@ -158,7 +158,7 @@ export default function EverCastPage() {
       })
       if (newModule) {
         const updatedCourse = { ...currentCourse }
-        updatedCourse.modules = [...(updatedCourse.modules || []), newModule]
+        updatedCourse.audio_modules = [...(updatedCourse.audio_modules || []), newModule]
         setCurrentCourse(updatedCourse)
         setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
         setModuleForm({ name: '', description: '', order_index: 0, total_duration: '' })
@@ -180,11 +180,11 @@ export default function EverCastPage() {
       })
       if (newLesson) {
         const updatedModule = { ...currentModule }
-        updatedModule.lessons = [...(updatedModule.lessons || []), newLesson]
+        updatedModule.audio_lessons = [...(updatedModule.audio_lessons || []), newLesson]
         setCurrentModule(updatedModule)
         
         const updatedCourse = { ...currentCourse! }
-        updatedCourse.modules = updatedCourse.modules?.map(m => 
+        updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
           m.id === currentModule.id ? updatedModule : m
         )
         setCurrentCourse(updatedCourse)
@@ -297,10 +297,10 @@ export default function EverCastPage() {
 
   const handleLessonSelect = (lesson: AudioLesson, moduleIndex: number, lessonIndex: number) => {
     setCurrentLesson(lesson)
-    setCurrentModule(currentCourse?.modules?.[moduleIndex] || null)
+    setCurrentModule(currentCourse?.audio_modules?.[moduleIndex] || null)
     
     // Criar playlist a partir da aula selecionada
-    const newPlaylist = currentCourse?.modules?.[moduleIndex]?.lessons?.slice(lessonIndex) || []
+    const newPlaylist = currentCourse?.audio_modules?.[moduleIndex]?.audio_lessons?.slice(lessonIndex) || []
     setPlaylist(newPlaylist)
     setCurrentIndex(0)
   }
@@ -417,9 +417,9 @@ export default function EverCastPage() {
                     }`}
                     onClick={() => {
                       setCurrentCourse(course)
-                      if (course.modules && course.modules.length > 0) {
-                        setCurrentModule(course.modules[0])
-                        setPlaylist(course.modules[0].lessons || [])
+                      if (course.audio_modules && course.audio_modules.length > 0) {
+                        setCurrentModule(course.audio_modules[0])
+                        setPlaylist(course.audio_modules[0].audio_lessons || [])
                         setCurrentIndex(0)
                       }
                     }}
@@ -429,7 +429,7 @@ export default function EverCastPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-400">{course.total_duration}</span>
                       <span className="text-purple-400">
-                        {course.modules?.length || 0} módulos
+                        {course.audio_modules?.length || 0} módulos
                       </span>
                     </div>
                     <Progress 
@@ -478,10 +478,10 @@ export default function EverCastPage() {
                   {(() => {
                     console.log('🔍 [EverCast] Renderizando módulos...')
                     console.log('📂 [EverCast] currentCourse:', currentCourse)
-                    console.log('📁 [EverCast] currentCourse.modules:', currentCourse.modules)
-                    console.log('📊 [EverCast] Módulos length:', currentCourse.modules?.length || 0)
+                    console.log('📁 [EverCast] currentCourse.audio_modules:', currentCourse.audio_modules)
+                    console.log('📊 [EverCast] Módulos length:', currentCourse.audio_modules?.length || 0)
                     
-                    if (!currentCourse.modules || currentCourse.modules.length === 0) {
+                    if (!currentCourse.audio_modules || currentCourse.audio_modules.length === 0) {
                       console.log('❌ [EverCast] Nenhum módulo para renderizar')
                       return (
                         <div className="text-center text-gray-400 py-4">
@@ -490,7 +490,7 @@ export default function EverCastPage() {
                       )
                     }
                     
-                    return currentCourse.modules.map((module, moduleIndex) => {
+                    return currentCourse.audio_modules.map((module, moduleIndex) => {
                       console.log(`📁 [EverCast] Renderizando módulo ${moduleIndex + 1}:`, module)
                       return (
                         <div
@@ -502,7 +502,7 @@ export default function EverCastPage() {
                           }`}
                           onClick={() => {
                             setCurrentModule(module)
-                            setPlaylist(module.lessons || [])
+                            setPlaylist(module.audio_lessons || [])
                             setCurrentIndex(0)
                           }}
                         >
@@ -510,7 +510,7 @@ export default function EverCastPage() {
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-400">{module.total_duration}</span>
                             <span className="text-purple-400">
-                              {module.lessons?.length || 0} aulas
+                              {module.audio_lessons?.length || 0} aulas
                             </span>
                           </div>
                           {canEdit && (
@@ -546,7 +546,7 @@ export default function EverCastPage() {
                     <div>
                       <CardTitle className="text-white">{currentModule.name}</CardTitle>
                       <p className="text-gray-300">
-                        {currentModule.lessons?.length || 0} aulas disponíveis
+                        {currentModule.audio_lessons?.length || 0} aulas disponíveis
                       </p>
                     </div>
                     {canEdit && (
@@ -563,7 +563,7 @@ export default function EverCastPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {currentModule.lessons?.map((lesson, lessonIndex) => (
+                    {currentModule.audio_lessons?.map((lesson, lessonIndex) => (
                       <div
                         key={lesson.id}
                         className={`flex items-center p-4 rounded-lg cursor-pointer transition-all ${
@@ -572,7 +572,7 @@ export default function EverCastPage() {
                             : 'bg-white/5 hover:bg-white/10'
                         }`}
                         onClick={() => handleLessonSelect(lesson, 
-                          currentCourse?.modules?.findIndex(m => m.id === currentModule.id) || 0, 
+                          currentCourse?.audio_modules?.findIndex(m => m.id === currentModule.id) || 0, 
                           lessonIndex
                         )}
                       >
