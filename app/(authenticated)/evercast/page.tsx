@@ -311,14 +311,19 @@ export default function EverCastPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause()
-      } else {
-        audioRef.current.play()
+      try {
+        if (isPlaying) {
+          audioRef.current.pause()
+          setIsPlaying(false)
+        } else {
+          await audioRef.current.play()
+          setIsPlaying(true)
+        }
+      } catch (error) {
+        console.error('Erro ao reproduzir áudio:', error)
       }
-      setIsPlaying(!isPlaying)
     }
   }
 
@@ -400,7 +405,7 @@ export default function EverCastPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900">
       {/* Header */}
       <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-6 py-4">
@@ -414,13 +419,13 @@ export default function EverCastPage() {
                 <Button
                   onClick={() => startEditing('course')}
                   size="sm"
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-orange-600 hover:bg-orange-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Curso
                 </Button>
               )}
-              <Badge variant="secondary" className="bg-purple-600 text-white">
+              <Badge variant="secondary" className="bg-orange-600 text-white">
                 {profile.role === 'teacher' ? 'Professor' : profile.role === 'admin' ? 'Admin' : 'Estudante'}
               </Badge>
             </div>
@@ -441,7 +446,7 @@ export default function EverCastPage() {
                     <Button
                       onClick={() => startEditing('course')}
                       size="sm"
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="bg-orange-600 hover:bg-orange-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Novo
@@ -455,7 +460,7 @@ export default function EverCastPage() {
                     key={course.id}
                     className={`p-4 rounded-lg cursor-pointer transition-all ${
                       currentCourse?.id === course.id
-                        ? 'bg-purple-600/30 border border-purple-500'
+                        ? 'bg-orange-600/30 border border-orange-500'
                         : 'bg-white/5 hover:bg-white/10'
                     }`}
                     onClick={() => {
@@ -471,7 +476,7 @@ export default function EverCastPage() {
                     <p className="text-sm text-gray-300 mb-3">{course.description}</p>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-400">{course.total_duration}</span>
-                      <span className="text-purple-400">
+                      <span className="text-orange-400">
                         {course.audio_modules?.length || 0} módulos
                       </span>
                     </div>
@@ -509,7 +514,7 @@ export default function EverCastPage() {
                       <Button
                         onClick={() => startEditing('module')}
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-orange-600 hover:bg-orange-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Novo
@@ -540,7 +545,7 @@ export default function EverCastPage() {
                           key={module.id}
                           className={`p-3 rounded-lg cursor-pointer transition-all ${
                             currentModule?.id === module.id
-                              ? 'bg-purple-600/30 border border-purple-500'
+                              ? 'bg-orange-600/30 border border-orange-500'
                               : 'bg-white/5 hover:bg-white/10'
                           }`}
                           onClick={() => {
@@ -552,7 +557,7 @@ export default function EverCastPage() {
                           <h4 className="font-medium text-white mb-1">{module.name}</h4>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-400">{module.total_duration}</span>
-                            <span className="text-purple-400">
+                            <span className="text-orange-400">
                               {module.audio_lessons?.length || 0} aulas
                             </span>
                           </div>
@@ -596,7 +601,7 @@ export default function EverCastPage() {
                       <Button
                         onClick={() => startEditing('lesson')}
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-orange-600 hover:bg-orange-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Nova Aula
@@ -611,7 +616,7 @@ export default function EverCastPage() {
                         key={lesson.id}
                         className={`flex items-center p-4 rounded-lg cursor-pointer transition-all ${
                           currentLesson?.id === lesson.id
-                            ? 'bg-purple-600/30 border border-purple-500'
+                            ? 'bg-orange-600/30 border border-orange-500'
                             : 'bg-white/5 hover:bg-white/10'
                         }`}
                         onClick={() => handleLessonSelect(lesson, 
@@ -619,7 +624,7 @@ export default function EverCastPage() {
                           lessonIndex
                         )}
                       >
-                        <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4">
+                        <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mr-4">
                           <Play className="w-6 h-6 text-white" />
                         </div>
                         
@@ -682,7 +687,7 @@ export default function EverCastPage() {
           <div className="container mx-auto">
             <div className="flex items-center space-x-4">
               {/* Thumbnail/Info da Aula */}
-              <div className="flex-shrink-0 w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center">
+              <div className="flex-shrink-0 w-16 h-16 bg-orange-600 rounded-lg flex items-center justify-center">
                 <Play className="w-8 h-8 text-white" />
               </div>
               
@@ -701,7 +706,7 @@ export default function EverCastPage() {
                   variant="ghost" 
                   size="lg" 
                   onClick={handlePlayPause}
-                  className="w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700"
+                  className="w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700"
                 >
                   {isPlaying ? (
                     <Pause className="w-6 h-6 text-white" />
@@ -763,7 +768,8 @@ export default function EverCastPage() {
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
-          className="hidden" // Ocultar o player visual, usar apenas o áudio
+          onPlayPause={setIsPlaying}
+          className="fixed bottom-20 left-4 right-4 z-10" // Player visível na parte inferior
         />
       )}
       
@@ -775,7 +781,8 @@ export default function EverCastPage() {
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
-          className="hidden" // Ocultar o player visual, usar apenas o áudio
+          onPlayPause={setIsPlaying}
+          className="fixed bottom-20 left-4 right-4 z-10" // Player visível na parte inferior
         />
       )}
       
@@ -994,7 +1001,7 @@ export default function EverCastPage() {
                       handleCreateLesson()
                     }
                   }}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-orange-600 hover:bg-orange-700"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Salvar

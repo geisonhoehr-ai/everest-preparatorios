@@ -53,7 +53,7 @@ export function AudioUpload({
       
       // Verificar se o bucket existe, se não, criar
       const { data: buckets } = await supabase.storage.listBuckets()
-      const audioBucket = buckets?.find(bucket => bucket.name === 'evercast-audio')
+      const audioBucket = buckets?.find((bucket: any) => bucket.name === 'evercast-audio')
       
       if (!audioBucket) {
         console.log("📦 Criando bucket 'evercast-audio'...")

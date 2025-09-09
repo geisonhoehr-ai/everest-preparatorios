@@ -19,6 +19,7 @@ interface MP3PlayerProps {
   onTimeUpdate?: (currentTime: number) => void
   onLoadedMetadata?: (duration: number) => void
   onEnded?: () => void
+  onPlayPause?: (isPlaying: boolean) => void
   className?: string
 }
 
@@ -28,6 +29,7 @@ export function MP3Player({
   onTimeUpdate,
   onLoadedMetadata,
   onEnded,
+  onPlayPause,
   className = ""
 }: MP3PlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -49,9 +51,11 @@ export function MP3Player({
       if (isPlaying) {
         audioRef.current.pause()
         setIsPlaying(false)
+        onPlayPause?.(false)
       } else {
         await audioRef.current.play()
         setIsPlaying(true)
+        onPlayPause?.(true)
       }
     } catch (err) {
       console.error('Erro ao reproduzir:', err)
@@ -140,7 +144,7 @@ export function MP3Player({
     <div className={`bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg p-4 ${className}`}>
       {/* Informações da mídia */}
       <div className="flex items-center space-x-4 mb-4">
-        <div className="flex-shrink-0 w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+        <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
           <Headphones className="w-6 h-6 text-white" />
         </div>
         
@@ -148,7 +152,7 @@ export function MP3Player({
           <h4 className="font-medium text-white truncate">{title}</h4>
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             <span>Áudio MP3</span>
-            <span className="bg-green-600/30 px-2 py-1 rounded text-xs">
+            <span className="bg-orange-600/30 px-2 py-1 rounded text-xs">
               Local
             </span>
           </div>
@@ -183,7 +187,7 @@ export function MP3Player({
           size="sm" 
           onClick={handlePlayPause}
           disabled={isLoading}
-          className="w-12 h-12 rounded-full bg-green-600 hover:bg-green-700"
+          className="w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700"
         >
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
