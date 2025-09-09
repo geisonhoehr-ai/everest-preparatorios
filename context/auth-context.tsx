@@ -125,9 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event: string, session: Session | null) => {
         console.log('🔄 Evento de autenticação:', event, session?.user?.email)
         
-        // Evitar loops em eventos de refresh
+        // Evitar loops em eventos de refresh e múltiplos SIGNED_IN
         if (event === 'TOKEN_REFRESHED' && !session) {
           console.log('🔄 Token refresh sem sessão - ignorando')
+          return
+        }
+        
+        // Evitar múltiplos eventos SIGNED_IN para o mesmo usuário
+        if (event === 'SIGNED_IN' && session?.user?.id === user?.id) {
+          console.log('🔄 Usuário já autenticado - ignorando evento duplicado')
           return
         }
         

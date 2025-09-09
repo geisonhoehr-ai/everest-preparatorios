@@ -91,19 +91,11 @@ export function HLSPlayer({
           backBufferLength: 90,
           maxBufferLength: 60, // Aumentar buffer para streams longos
           maxMaxBufferLength: 120, // Buffer máximo maior
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 5,
-          liveDurationInfinity: false, // Desabilitar para streams VOD
+          // Remover configurações conflitantes de live
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
           maxFragLookUpTolerance: 0.25,
-          liveBackBufferLength: 0,
-          maxLiveSyncPlaybackRate: 1.5,
-          liveSyncDuration: 3,
-          livePlaybackRate: 1,
-          livePlaybackRateOffset: 0.1,
-          maxLiveSyncPlaybackRateOffset: 0.2,
           // Configurações específicas para Pandavideo
           xhrSetup: (xhr: XMLHttpRequest, url: string) => {
             xhr.withCredentials = false
