@@ -44,6 +44,7 @@ import {
 import { HLSPlayer } from '@/components/evercast/hls-player'
 import { MP3Player } from '@/components/evercast/mp3-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
+import { HLSDebug } from '@/components/evercast/hls-debug'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -631,7 +632,17 @@ export default function EverCastPage() {
           </div>
 
           {/* Main Content - Playlist */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Debug HLS - Apenas para professores/admins */}
+            {canEdit && currentLesson?.hls_url && (
+              <HLSDebug 
+                hlsUrl={currentLesson.hls_url}
+                onTestComplete={(success, details) => {
+                  console.log('🔍 Debug HLS:', { success, details })
+                }}
+              />
+            )}
+
             {currentModule && (
               <Card className="bg-black/20 backdrop-blur-sm border-white/10">
                 <CardHeader>
@@ -736,7 +747,7 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
-          className="fixed bottom-4 left-4 right-4 z-10" // Player fixo na parte inferior
+          className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto" // Player responsivo fixo na parte inferior
         />
       )}
       

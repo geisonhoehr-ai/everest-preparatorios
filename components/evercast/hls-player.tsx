@@ -96,7 +96,18 @@ export function HLSPlayer({
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
-          maxFragLookUpTolerance: 0.25
+          maxFragLookUpTolerance: 0.25,
+          // Configurações adicionais para melhor compatibilidade
+          startLevel: -1, // Auto
+          capLevelToPlayerSize: true,
+          debug: false,
+          enableSoftwareAES: true,
+          manifestLoadingTimeOut: 10000,
+          manifestLoadingMaxRetry: 3,
+          levelLoadingTimeOut: 10000,
+          levelLoadingMaxRetry: 3,
+          fragLoadingTimeOut: 20000,
+          fragLoadingMaxRetry: 3
         })
 
         hls.loadSource(cleanUrl)
@@ -249,84 +260,157 @@ export function HLSPlayer({
   }
 
   return (
-    <div className={`bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg p-4 ${className}`}>
+    <>
+      {/* Estilos CSS para sliders responsivos */}
+      <style jsx>{`
+        .slider {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          cursor: pointer;
+        }
+        
+        .slider::-webkit-slider-track {
+          background: #4b5563;
+          height: 4px;
+          border-radius: 2px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          background: #ea580c;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+          background: #c2410c;
+          transform: scale(1.1);
+        }
+        
+        .slider::-moz-range-track {
+          background: #4b5563;
+          height: 4px;
+          border-radius: 2px;
+          border: none;
+        }
+        
+        .slider::-moz-range-thumb {
+          background: #ea580c;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider::-moz-range-thumb:hover {
+          background: #c2410c;
+          transform: scale(1.1);
+        }
+        
+        @media (max-width: 640px) {
+          .slider::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+          }
+          
+          .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+          }
+        }
+      `}</style>
+      
+      <div className={`bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg p-3 sm:p-4 ${className}`}>
       {/* Informações da mídia */}
-      <div className="flex items-center space-x-4 mb-4">
-        <div className="flex-shrink-0 w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
-          <Headphones className="w-6 h-6 text-white" />
+      <div className="flex items-center space-x-2 sm:space-x-4 mb-3 sm:mb-4">
+        <div className="flex-shrink-0 w-8 h-8 sm:w-12 sm:h-12 bg-orange-600 rounded-lg flex items-center justify-center">
+          <Headphones className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-white truncate">{title}</h4>
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
+          <h4 className="font-medium text-white truncate text-sm sm:text-base">{title}</h4>
+          <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-400 flex-wrap">
             <span>Streaming HLS</span>
             {streamQuality && (
-              <span className="bg-orange-600/30 px-2 py-1 rounded text-xs">
+              <span className="bg-orange-600/30 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">
                 {streamQuality}
               </span>
             )}
             {isOnline ? (
-              <Wifi className="w-4 h-4 text-green-400" />
+              <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
             ) : (
-              <WifiOff className="w-4 h-4 text-red-400" />
+              <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
             )}
           </div>
         </div>
 
         {/* Botões de ação */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleOpenInNewTab}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text-white p-1 sm:p-2"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
           </Button>
         </div>
       </div>
 
       {/* Controles de reprodução */}
-      <div className="flex items-center space-x-4 mb-4">
+      <div className="flex items-center space-x-2 sm:space-x-4 mb-3 sm:mb-4">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={handlePlayPause}
           disabled={isLoading || !isOnline}
-          className="w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700"
+          className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-orange-600 hover:bg-orange-700 p-0"
         >
           {isLoading ? (
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 sm:w-6 sm:h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : isPlaying ? (
-            <Pause className="w-6 h-6 text-white" />
+            <Pause className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
           ) : (
-            <Play className="w-6 h-6 text-white" />
+            <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
           )}
         </Button>
 
         {/* Barra de progresso */}
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-1 sm:space-x-2 mb-1">
+            <span className="text-xs text-gray-400 hidden sm:inline">{formatTime(currentTime)}</span>
             <input
               type="range"
               min="0"
               max={duration || 0}
               value={currentTime}
               onChange={handleSeek}
-              className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
             />
-            <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+            <span className="text-xs text-gray-400 hidden sm:inline">{formatTime(duration)}</span>
+          </div>
+          {/* Tempo em mobile */}
+          <div className="flex justify-between text-xs text-gray-400 sm:hidden">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
 
         {/* Controle de volume */}
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={toggleMute}>
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <Button variant="ghost" size="sm" onClick={toggleMute} className="p-1 sm:p-2">
             {isMuted ? (
-              <VolumeX className="w-5 h-5 text-white" />
+              <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             ) : (
-              <Volume2 className="w-5 h-5 text-white" />
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             )}
           </Button>
           <input
@@ -336,7 +420,7 @@ export function HLSPlayer({
             step="0.1"
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            className="w-12 sm:w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
           />
         </div>
       </div>
@@ -382,8 +466,14 @@ export function HLSPlayer({
           setError('Erro ao carregar o stream')
           setIsLoading(false)
         }}
-        onLoadStart={() => setIsLoading(true)}
-        onCanPlay={() => setIsLoading(false)}
+        onLoadStart={() => {
+          console.log('🔄 HLS Player iniciando carregamento...')
+          setIsLoading(true)
+        }}
+        onCanPlay={() => {
+          console.log('✅ HLS Player pronto para reproduzir')
+          setIsLoading(false)
+        }}
         onPause={() => {
           console.log('⏸️ HLS Player pausado em:', audioRef.current?.currentTime)
         }}
@@ -393,10 +483,19 @@ export function HLSPlayer({
         onWaiting={() => {
           console.log('⏳ HLS Player waiting em:', audioRef.current?.currentTime)
         }}
+        onLoadStart={() => {
+          console.log('📥 HLS Player carregando dados...')
+        }}
+        onCanPlayThrough={() => {
+          console.log('🎵 HLS Player pode reproduzir completamente')
+        }}
         preload="metadata"
         crossOrigin="anonymous"
+        playsInline
+        webkit-playsinline="true"
       />
     </div>
+    </>
   )
 }
 
