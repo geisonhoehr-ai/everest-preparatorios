@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface AudioUploadProps {
   lessonId: string
@@ -48,35 +49,58 @@ export function AudioUpload({
     setUploadProgress(0)
 
     try {
-      // Simular upload para Supabase Storage
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('lessonId', lessonId)
-
-      // Aqui você implementaria o upload real para Supabase Storage
-      // Por enquanto, vamos simular o processo
-      const uploadPromise = new Promise<string>((resolve) => {
-        let progress = 0
-        const interval = setInterval(() => {
-          progress += Math.random() * 20
-          if (progress >= 100) {
-            progress = 100
-            clearInterval(interval)
-            // Simular URL do arquivo
-            resolve(`https://storage.supabase.co/evercast-audio/${lessonId}/${file.name}`)
-          }
-          setUploadProgress(progress)
-        }, 200)
-      })
-
-      const audioUrl = await uploadPromise
+      const supabase = createClient()
       
-      // Atualizar a aula com a nova URL de áudio
-      // Aqui você chamaria a API para atualizar a aula
-      console.log('Upload completo:', audioUrl)
+      // Verificar se o bucket existe, se não, criar
+      const { data: buckets } = await supabase.storage.listBuckets()
+      const audioBucket = buckets?.find(bucket => bucket.name === 'evercast-audio')
       
-      onUploadComplete(audioUrl)
-      toast.success('Áudio enviado com sucesso!')
+      if (!audioBucket) {
+        console.log("📦 Criando bucket 'evercast-audio'...")
+        const { error: bucketError } = await supabase.storage.createBucket('evercast-audio', {
+          public: true, // Público para permitir acesso direto aos áudios
+          allowedMimeTypes: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/ogg'],
+          fileSizeLimit: 100 * 1024 * 1024 // 100MB
+        })
+        
+        if (bucketError) {
+          console.error("❌ Erro ao criar bucket:", bucketError)
+          throw new Error('Erro ao configurar armazenamento de áudio')
+        }
+      }
+
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${lessonId}_${Date.now()}.${fileExt}`
+      const filePath = `lessons/${fileName}`
+
+      // Upload para Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('evercast-audio')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false // Não sobrescrever arquivos existentes
+        })
+
+      if (error) {
+        console.error('Erro no upload:', error)
+        throw new Error('Erro ao fazer upload do áudio')
+      }
+
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('evercast-audio')
+        .getPublicUrl(filePath)
+
+      if (urlData?.publicUrl) {
+        setUploadProgress(100)
+        console.log('✅ Upload completo:', urlData.publicUrl)
+        
+        onUploadComplete(urlData.publicUrl)
+        toast.success('Áudio enviado com sucesso!')
+      } else {
+        throw new Error('Erro ao obter URL do arquivo')
+      }
       
     } catch (error) {
       console.error('Erro no upload:', error)
@@ -192,11 +216,12 @@ export function AudioUpload({
         <div className="flex items-start space-x-2">
           <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
           <div className="text-xs text-blue-300">
-            <p className="font-medium mb-1">Dicas para melhor qualidade:</p>
+            <p className="font-medium mb-1">Armazenamento e Dicas:</p>
             <ul className="space-y-1 text-blue-400">
-              <li>• Use formato MP3 com bitrate de 128kbps ou superior</li>
-              <li>• Evite arquivos muito longos (recomendado: até 2 horas)</li>
-              <li>• Teste o áudio antes do upload</li>
+              <li>• <strong>Localização:</strong> Supabase Storage (bucket: evercast-audio)</li>
+              <li>• <strong>Formato:</strong> MP3, WAV, M4A, OGG (máx 100MB)</li>
+              <li>• <strong>Qualidade:</strong> Use bitrate de 128kbps ou superior</li>
+              <li>• <strong>Duração:</strong> Recomendado até 2 horas por arquivo</li>
             </ul>
           </div>
         </div>

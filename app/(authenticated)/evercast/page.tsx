@@ -13,6 +13,7 @@ import {
   createAudioLesson,
   updateAudioLesson,
   deleteAudioLesson,
+  updateAudioLessonUrl,
   type AudioCourse, 
   type AudioModule, 
   type AudioLesson 
@@ -214,32 +215,40 @@ export default function EverCastPage() {
 
   const handleAudioUpload = async (lessonId: string, audioUrl: string) => {
     try {
-      // Aqui você implementaria a atualização da aula com a nova URL de áudio
-      console.log('Upload de áudio concluído:', { lessonId, audioUrl })
+      console.log('🎵 [EverCast] Upload de áudio concluído:', { lessonId, audioUrl })
       
-      // Atualizar a aula atual se for a mesma
-      if (currentLesson?.id === lessonId) {
-        setCurrentLesson({ ...currentLesson, audio_url: audioUrl })
-      }
+      // Atualizar no banco de dados
+      const success = await updateAudioLessonUrl(lessonId, audioUrl)
       
-      // Atualizar na lista de aulas do módulo
-      if (currentModule) {
-        const updatedModule = { ...currentModule }
-        updatedModule.audio_lessons = updatedModule.audio_lessons?.map(lesson => 
-          lesson.id === lessonId ? { ...lesson, audio_url: audioUrl } : lesson
-        )
-        setCurrentModule(updatedModule)
+      if (success) {
+        // Atualizar a aula atual se for a mesma
+        if (currentLesson?.id === lessonId) {
+          setCurrentLesson({ ...currentLesson, audio_url: audioUrl })
+        }
         
-        // Atualizar no curso
-        const updatedCourse = { ...currentCourse! }
-        updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
-          m.id === currentModule.id ? updatedModule : m
-        )
-        setCurrentCourse(updatedCourse)
-        setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
+        // Atualizar na lista de aulas do módulo
+        if (currentModule) {
+          const updatedModule = { ...currentModule }
+          updatedModule.audio_lessons = updatedModule.audio_lessons?.map(lesson => 
+            lesson.id === lessonId ? { ...lesson, audio_url: audioUrl } : lesson
+          )
+          setCurrentModule(updatedModule)
+          
+          // Atualizar no curso
+          const updatedCourse = { ...currentCourse! }
+          updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
+            m.id === currentModule.id ? updatedModule : m
+          )
+          setCurrentCourse(updatedCourse)
+          setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
+        }
+        
+        console.log('✅ [EverCast] Aula atualizada com URL do áudio no banco de dados')
+      } else {
+        console.error('❌ [EverCast] Falha ao atualizar aula no banco de dados')
       }
     } catch (error) {
-      console.error('Erro ao atualizar aula com áudio:', error)
+      console.error('❌ [EverCast] Erro ao atualizar aula com áudio:', error)
     }
   }
 

@@ -519,3 +519,28 @@ export async function getUserAudioProgress(userUuid: string): Promise<AudioProgr
   }
 }
 
+export async function updateAudioLessonUrl(lessonId: string, audioUrl: string): Promise<boolean> {
+  const supabase = getSupabaseClient()
+  
+  try {
+    const { error } = await supabase
+      .from('audio_lessons')
+      .update({ 
+        audio_url: audioUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', lessonId)
+
+    if (error) {
+      console.error('❌ [EverCast] Erro ao atualizar URL do áudio:', error)
+      return false
+    }
+
+    console.log('✅ [EverCast] URL do áudio atualizada com sucesso:', audioUrl)
+    return true
+  } catch (error) {
+    console.error('❌ [EverCast] Erro ao atualizar URL do áudio:', error)
+    return false
+  }
+}
+
