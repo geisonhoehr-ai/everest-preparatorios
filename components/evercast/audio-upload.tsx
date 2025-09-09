@@ -19,18 +19,72 @@ import { fixSupabaseStorageUrl, getCorrectPublicUrl } from '@/lib/supabase/stora
 interface AudioUploadProps {
   lessonId: string
   onUploadComplete: (audioUrl: string) => void
+  onDeleteAudio?: () => void
   currentAudioUrl?: string
 }
 
 export function AudioUpload({ 
   lessonId, 
   onUploadComplete, 
+  onDeleteAudio,
   currentAudioUrl 
 }: AudioUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Função para extrair o caminho do arquivo da URL
+  const getFilePathFromUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url)
+      const pathParts = urlObj.pathname.split('/')
+      const bucketIndex = pathParts.findIndex(part => part === 'evercast-audio')
+      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+        return pathParts.slice(bucketIndex + 1).join('/')
+      }
+    } catch (error) {
+      console.error('Erro ao extrair caminho da URL:', error)
+    }
+    return null
+  }
+
+  // Função para excluir áudio atual
+  const handleDeleteAudio = async () => {
+    if (!currentAudioUrl) return
+
+    setIsDeleting(true)
+    try {
+      const supabase = createClient()
+      const filePath = getFilePathFromUrl(currentAudioUrl)
+      
+      if (!filePath) {
+        throw new Error('Não foi possível extrair o caminho do arquivo')
+      }
+
+      console.log('🗑️ Excluindo arquivo:', filePath)
+      
+      const { error } = await supabase.storage
+        .from('evercast-audio')
+        .remove([filePath])
+
+      if (error) {
+        console.error('❌ Erro ao excluir arquivo:', error)
+        throw new Error(`Erro ao excluir áudio: ${error.message}`)
+      }
+
+      console.log('✅ Arquivo excluído com sucesso')
+      onDeleteAudio?.()
+      toast.success('Áudio excluído com sucesso!')
+      
+    } catch (error) {
+      console.error('Erro ao excluir áudio:', error)
+      toast.error('Erro ao excluir o áudio. Tente novamente.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleFileSelect = async (file: File) => {
     // Validar tipo de arquivo
@@ -55,10 +109,35 @@ export function AudioUpload({
       // Bucket já foi criado manualmente, não precisa verificar
       console.log("📦 Usando bucket 'evercast-audio' (criado manualmente)")
 
-      // Gerar nome único para o arquivo
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${lessonId}_${Date.now()}.${fileExt}`
-      const filePath = `lessons/${fileName}`
+      // Se já existe um áudio, usar o mesmo nome para substituir
+      let fileName: string
+      let filePath: string
+      
+      if (currentAudioUrl) {
+        // Extrair nome do arquivo existente
+        const existingPath = getFilePathFromUrl(currentAudioUrl)
+        if (existingPath) {
+          const pathParts = existingPath.split('/')
+          const existingFileName = pathParts[pathParts.length - 1]
+          const nameWithoutExt = existingFileName.split('.')[0]
+          const fileExt = file.name.split('.').pop()
+          fileName = `${nameWithoutExt}.${fileExt}`
+          filePath = `lessons/${fileName}`
+          console.log('🔄 Atualizando arquivo existente:', fileName)
+        } else {
+          // Fallback: criar novo nome
+          const fileExt = file.name.split('.').pop()
+          fileName = `${lessonId}_${Date.now()}.${fileExt}`
+          filePath = `lessons/${fileName}`
+          console.log('📝 Criando novo arquivo:', fileName)
+        }
+      } else {
+        // Criar novo arquivo
+        const fileExt = file.name.split('.').pop()
+        fileName = `${lessonId}_${Date.now()}.${fileExt}`
+        filePath = `lessons/${fileName}`
+        console.log('📝 Criando novo arquivo:', fileName)
+      }
 
       // Upload para Supabase Storage
       console.log('📤 Iniciando upload...')
@@ -71,7 +150,7 @@ export function AudioUpload({
         .from('evercast-audio')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false // Não sobrescrever arquivos existentes
+          upsert: true // Permitir sobrescrever arquivos existentes
         })
 
       if (error) {
@@ -93,7 +172,7 @@ export function AudioUpload({
       console.log('📁 Arquivo salvo em:', filePath)
       
       onUploadComplete(correctUrl)
-      toast.success('Áudio enviado com sucesso!')
+      toast.success(currentAudioUrl ? 'Áudio atualizado com sucesso!' : 'Áudio enviado com sucesso!')
       
     } catch (error) {
       console.error('Erro no upload:', error)
@@ -194,12 +273,30 @@ export function AudioUpload({
       {/* Arquivo atual */}
       {currentAudioUrl && (
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="w-4 h-4 text-green-400" />
-            <span className="text-sm text-green-400">Áudio carregado</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span className="text-sm text-green-400">Áudio carregado</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteAudio}
+              disabled={isDeleting}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+            </Button>
           </div>
           <p className="text-xs text-gray-400 mt-1 truncate">
             {currentAudioUrl.split('/').pop()}
+          </p>
+          <p className="text-xs text-blue-400 mt-1">
+            💡 Arraste um novo arquivo para substituir ou clique no X para excluir
           </p>
         </div>
       )}

@@ -258,6 +258,45 @@ export default function EverCastPage() {
     }
   }
 
+  const handleAudioDelete = async (lessonId: string) => {
+    try {
+      console.log('🗑️ [EverCast] Excluindo áudio da aula:', lessonId)
+      
+      // Atualizar no banco de dados (remover URL do áudio)
+      const success = await updateAudioLessonUrl(lessonId, '')
+      
+      if (success) {
+        // Atualizar a aula atual se for a mesma
+        if (currentLesson?.id === lessonId) {
+          setCurrentLesson({ ...currentLesson, audio_url: '' })
+        }
+        
+        // Atualizar na lista de aulas do módulo
+        if (currentModule) {
+          const updatedModule = { ...currentModule }
+          updatedModule.audio_lessons = updatedModule.audio_lessons?.map(lesson => 
+            lesson.id === lessonId ? { ...lesson, audio_url: '' } : lesson
+          )
+          setCurrentModule(updatedModule)
+          
+          // Atualizar no curso
+          const updatedCourse = { ...currentCourse! }
+          updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
+            m.id === currentModule.id ? updatedModule : m
+          )
+          setCurrentCourse(updatedCourse)
+          setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
+        }
+        
+        console.log('✅ [EverCast] Áudio removido da aula no banco de dados')
+      } else {
+        console.error('❌ [EverCast] Falha ao remover áudio da aula no banco de dados')
+      }
+    } catch (error) {
+      console.error('❌ [EverCast] Erro ao remover áudio da aula:', error)
+    }
+  }
+
   const startEditing = (type: 'course' | 'module' | 'lesson', item?: any) => {
     setEditingType(type)
     setEditingItem(item)
@@ -897,6 +936,15 @@ export default function EverCastPage() {
                         lessonId={editingItem?.id || 'new'}
                         onUploadComplete={(audioUrl) => {
                           setLessonForm({ ...lessonForm, audio_url: audioUrl })
+                          if (editingItem?.id) {
+                            handleAudioUpload(editingItem.id, audioUrl)
+                          }
+                        }}
+                        onDeleteAudio={() => {
+                          setLessonForm({ ...lessonForm, audio_url: '' })
+                          if (editingItem?.id) {
+                            handleAudioDelete(editingItem.id)
+                          }
                         }}
                         currentAudioUrl={lessonForm.audio_url}
                       />
