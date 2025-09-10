@@ -46,6 +46,7 @@ import { MP3Player } from '@/components/evercast/mp3-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
 import { HLSDebug } from '@/components/evercast/hls-debug'
 import { HLSTestPlayer } from '@/components/evercast/hls-test-player'
+import { AudioSearch } from '@/components/evercast/audio-search'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -65,6 +66,9 @@ export default function EverCastPage() {
   const [isMuted, setIsMuted] = useState(false)
   const [playlist, setPlaylist] = useState<AudioLesson[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
+  
+  // Estados para busca de áudio PandaVideo
+  const [currentAudioHLS, setCurrentAudioHLS] = useState<string | null>(null)
   
   // Estados para edição (professores/admins)
   const [isEditing, setIsEditing] = useState(false)
@@ -296,6 +300,18 @@ export default function EverCastPage() {
       }
     } catch (error) {
       console.error('❌ [EverCast] Erro ao remover áudio da aula:', error)
+    }
+  }
+
+  // Função para buscar áudio no PandaVideo
+  const handleAudioFound = (audioData: any) => {
+    console.log('🎵 [EverCast] Áudio encontrado no PandaVideo:', audioData)
+    setCurrentAudioHLS(audioData.hls_url)
+    
+    // Atualizar a aula atual com o HLS se houver uma aula selecionada
+    if (currentLesson) {
+      updateAudioLessonUrl(currentLesson.id, audioData.hls_url)
+      setCurrentLesson(prev => prev ? { ...prev, hls_url: audioData.hls_url } : null)
     }
   }
 
@@ -634,6 +650,14 @@ export default function EverCastPage() {
 
           {/* Main Content - Playlist */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Busca de áudio PandaVideo - Apenas para professores/admins */}
+            {canEdit && (
+              <AudioSearch 
+                onAudioFound={handleAudioFound}
+                currentVideoId={currentLesson?.pandavideo_id}
+              />
+            )}
+
             {/* Debug HLS - Apenas para professores/admins */}
             {canEdit && currentLesson?.hls_url && (
               <HLSDebug 
@@ -757,6 +781,19 @@ export default function EverCastPage() {
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
           className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto" // Player responsivo fixo na parte inferior
+        />
+      )}
+
+      {/* HLS Player para áudio do PandaVideo */}
+      {currentAudioHLS && (
+        <HLSPlayer
+          hlsUrl={currentAudioHLS}
+          title="Áudio do PandaVideo"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleNext}
+          onPlayPause={setIsPlaying}
+          className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
         />
       )}
       
