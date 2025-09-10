@@ -546,9 +546,6 @@ export function HLSPlayer({
         onWaiting={() => {
           console.log('⏳ HLS Player waiting em:', audioRef.current?.currentTime)
         }}
-        onLoadStart={() => {
-          console.log('📥 HLS Player carregando dados...')
-        }}
         onCanPlayThrough={() => {
           console.log('🎵 HLS Player pode reproduzir completamente')
         }}
