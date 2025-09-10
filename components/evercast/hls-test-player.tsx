@@ -77,7 +77,7 @@ export function HLSTestPlayer({ hlsUrl, title = "Teste HLS" }: HLSTestPlayerProp
           hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
             addLog('✅ Manifest HLS carregado com sucesso')
             addLog(`📊 Níveis disponíveis: ${hls.levels.length}`)
-            hls.levels.forEach((level, index) => {
+            hls.levels.forEach((level: any, index: number) => {
               addLog(`   ${index}: ${level.height}p - ${level.bitrate} bps`)
             })
             setHlsStatus('Pronto para reproduzir')
