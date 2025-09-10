@@ -654,7 +654,7 @@ export default function EverCastPage() {
             {canEdit && (
               <AudioSearch 
                 onAudioFound={handleAudioFound}
-                currentVideoId={currentLesson?.pandavideo_id}
+                currentVideoId={undefined}
               />
             )}
 
