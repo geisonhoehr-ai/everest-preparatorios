@@ -95,7 +95,7 @@ export function HLSTestPlayer({ hlsUrl, title = "Teste HLS" }: HLSTestPlayerProp
             }
           })
 
-          hls.on(window.Hls.Events.LEVEL_SWITCHED, (event, data) => {
+          hls.on(window.Hls.Events.LEVEL_SWITCHED, (event: any, data: any) => {
             const level = hls.levels[data.level]
             if (level) {
               addLog(`🔄 Qualidade alterada para: ${level.height}p`)
