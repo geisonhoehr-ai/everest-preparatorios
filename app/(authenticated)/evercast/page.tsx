@@ -323,7 +323,7 @@ export default function EverCastPage() {
     if (!confirm('Tem certeza que deseja excluir esta aula?')) return
     
     try {
-      await deleteAudioLesson(lessonId)
+      await deleteAudioLesson(profile?.id || '', lessonId)
       
       // Atualizar o estado local
       if (currentModule) {
@@ -359,7 +359,7 @@ export default function EverCastPage() {
     if (!confirm('Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.')) return
     
     try {
-      await deleteAudioModule(moduleId)
+      await deleteAudioModule(profile?.id || '', moduleId)
       
       // Atualizar o estado local
       if (currentCourse) {
@@ -385,7 +385,7 @@ export default function EverCastPage() {
     if (!confirm('Tem certeza que deseja excluir este curso? Todos os módulos e aulas serão excluídos também.')) return
     
     try {
-      await deleteAudioCourse(courseId)
+      await deleteAudioCourse(profile?.id || '', courseId)
       
       // Atualizar o estado local
       const updatedCourses = courses.filter(c => c.id !== courseId)
