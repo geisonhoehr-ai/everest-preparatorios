@@ -35,6 +35,7 @@ export interface AudioLesson {
   duration?: string
   duration_seconds?: number
   hls_url?: string
+  soundcloud_url?: string
   embed_url?: string
   audio_url?: string
   order_index: number
