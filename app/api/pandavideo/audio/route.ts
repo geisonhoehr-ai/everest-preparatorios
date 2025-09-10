@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       
       const response = await fetch(`https://api-v2.pandavideo.com.br/videos/${video_id}`, {
         headers: {
-          'Authorization': `Bearer ${PANDAVIDEO_API_KEY}`,
+          'Authorization': PANDAVIDEO_API_KEY,
           'Content-Type': 'application/json'
         }
       })
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
       const response = await fetch(searchUrl.toString(), {
         headers: {
-          'Authorization': `Bearer ${PANDAVIDEO_API_KEY}`,
+          'Authorization': PANDAVIDEO_API_KEY,
           'Content-Type': 'application/json'
         }
       })

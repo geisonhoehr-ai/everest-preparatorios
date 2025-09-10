@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(apiUrl.toString(), {
       headers: {
-        'Authorization': `Bearer ${PANDAVIDEO_API_KEY}`,
+        'Authorization': PANDAVIDEO_API_KEY,
         'Content-Type': 'application/json'
       }
     })
