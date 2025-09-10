@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     // Se tem ID, buscar vídeo específico
     if (video_id) {
       console.log('🎵 [Audio API] Buscando vídeo por ID:', video_id)
+      console.log('🔑 [Audio API] Usando API Key:', PANDAVIDEO_API_KEY?.substring(0, 20) + '...')
       
       const response = await fetch(`https://api-v2.pandavideo.com.br/videos/${video_id}`, {
         headers: {
@@ -33,8 +34,14 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      console.log('📊 [Audio API] Status da resposta:', response.status)
+      
       if (response.ok) {
         video = await response.json()
+        console.log('✅ [Audio API] Vídeo encontrado:', video.title)
+      } else {
+        const errorText = await response.text()
+        console.error('❌ [Audio API] Erro na API:', response.status, errorText)
       }
     }
 

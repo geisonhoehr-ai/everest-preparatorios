@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     apiUrl.searchParams.set('limit', limit)
 
     console.log('🎵 [Videos API] Buscando vídeos:', apiUrl.toString())
+    console.log('🔑 [Videos API] Usando API Key:', PANDAVIDEO_API_KEY?.substring(0, 20) + '...')
 
     const response = await fetch(apiUrl.toString(), {
       headers: {
@@ -30,6 +31,8 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json'
       }
     })
+
+    console.log('📊 [Videos API] Status da resposta:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
