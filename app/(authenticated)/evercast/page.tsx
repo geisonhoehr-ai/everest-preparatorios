@@ -43,6 +43,7 @@ import {
 } from 'lucide-react'
 import { HLSPlayer } from '@/components/evercast/hls-player'
 import { MP3Player } from '@/components/evercast/mp3-player'
+import { SoundCloudPlayer } from '@/components/evercast/soundcloud-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
 import { HLSDebug } from '@/components/evercast/hls-debug'
 import { HLSTestPlayer } from '@/components/evercast/hls-test-player'
@@ -96,6 +97,7 @@ export default function EverCastPage() {
     duration: '',
     duration_seconds: 0,
     hls_url: '',
+    soundcloud_url: '',
     embed_url: '',
     audio_url: '',
     order_index: 0,
@@ -212,6 +214,7 @@ export default function EverCastPage() {
           duration: '',
           duration_seconds: 0,
           hls_url: '',
+          soundcloud_url: '',
           embed_url: '',
           audio_url: '',
           order_index: 0,
@@ -315,6 +318,91 @@ export default function EverCastPage() {
     }
   }
 
+  // Função para excluir aula
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta aula?')) return
+    
+    try {
+      await deleteAudioLesson(lessonId)
+      
+      // Atualizar o estado local
+      if (currentModule) {
+        const updatedLessons = currentModule.audio_lessons?.filter(l => l.id !== lessonId) || []
+        const updatedModule = { ...currentModule, audio_lessons: updatedLessons }
+        setCurrentModule(updatedModule)
+        
+        // Atualizar o curso atual
+        if (currentCourse) {
+          const updatedCourse = {
+            ...currentCourse,
+            audio_modules: currentCourse.audio_modules?.map(m => 
+              m.id === currentModule.id ? updatedModule : m
+            ) || []
+          }
+          setCurrentCourse(updatedCourse)
+          setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
+        }
+        
+        // Se a aula excluída era a atual, limpar seleção
+        if (currentLesson?.id === lessonId) {
+          setCurrentLesson(null)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao excluir aula:', error)
+      alert('Erro ao excluir aula. Tente novamente.')
+    }
+  }
+
+  // Função para excluir módulo
+  const handleDeleteModule = async (moduleId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.')) return
+    
+    try {
+      await deleteAudioModule(moduleId)
+      
+      // Atualizar o estado local
+      if (currentCourse) {
+        const updatedModules = currentCourse.audio_modules?.filter(m => m.id !== moduleId) || []
+        const updatedCourse = { ...currentCourse, audio_modules: updatedModules }
+        setCurrentCourse(updatedCourse)
+        setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
+        
+        // Se o módulo excluído era o atual, limpar seleção
+        if (currentModule?.id === moduleId) {
+          setCurrentModule(null)
+          setCurrentLesson(null)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao excluir módulo:', error)
+      alert('Erro ao excluir módulo. Tente novamente.')
+    }
+  }
+
+  // Função para excluir curso
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este curso? Todos os módulos e aulas serão excluídos também.')) return
+    
+    try {
+      await deleteAudioCourse(courseId)
+      
+      // Atualizar o estado local
+      const updatedCourses = courses.filter(c => c.id !== courseId)
+      setCourses(updatedCourses)
+      
+      // Se o curso excluído era o atual, limpar seleção
+      if (currentCourse?.id === courseId) {
+        setCurrentCourse(null)
+        setCurrentModule(null)
+        setCurrentLesson(null)
+      }
+    } catch (error) {
+      console.error('Erro ao excluir curso:', error)
+      alert('Erro ao excluir curso. Tente novamente.')
+    }
+  }
+
   const startEditing = (type: 'course' | 'module' | 'lesson', item?: any) => {
     setEditingType(type)
     setEditingItem(item)
@@ -341,6 +429,7 @@ export default function EverCastPage() {
         duration: item?.duration || '',
         duration_seconds: item?.duration_seconds || 0,
         hls_url: item?.hls_url || '',
+        soundcloud_url: item?.soundcloud_url || '',
         embed_url: item?.embed_url || '',
         audio_url: item?.audio_url || '',
         order_index: item?.order_index || 0,
@@ -361,6 +450,7 @@ export default function EverCastPage() {
       duration: '',
       duration_seconds: 0,
       hls_url: '',
+      soundcloud_url: '',
       embed_url: '',
       audio_url: '',
       order_index: 0,
@@ -560,6 +650,17 @@ export default function EverCastPage() {
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCourse(course.id)
+                          }}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -687,14 +788,34 @@ export default function EverCastPage() {
                       </p>
                     </div>
                     {canEdit && (
-                      <Button
-                        onClick={() => startEditing('lesson')}
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Nova Aula
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          onClick={() => startEditing('lesson')}
+                          size="sm"
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Nova Aula
+                        </Button>
+                        <Button
+                          onClick={() => startEditing('module', currentModule)}
+                          size="sm"
+                          variant="outline"
+                          className="border-white/20 text-white hover:bg-white/10"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteModule(currentModule.id)}
+                          size="sm"
+                          variant="outline"
+                          className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardHeader>
@@ -727,7 +848,10 @@ export default function EverCastPage() {
                             {lesson.audio_url && (
                               <span className="text-green-400">MP3</span>
                             )}
-                            {lesson.hls_url && !lesson.audio_url && (
+                            {lesson.soundcloud_url && !lesson.audio_url && !lesson.hls_url && (
+                              <span className="text-orange-400">SoundCloud</span>
+                            )}
+                            {lesson.hls_url && !lesson.audio_url && !lesson.soundcloud_url && (
                               <span className="text-blue-400">HLS</span>
                             )}
                             {lesson.is_preview && (
@@ -744,17 +868,30 @@ export default function EverCastPage() {
                             <Download className="w-4 h-4" />
                           </Button>
                           {canEdit && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                startEditing('lesson', lesson)
-                              }}
-                              className="text-gray-400 hover:text-white"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditing('lesson', lesson)
+                                }}
+                                className="text-gray-400 hover:text-white"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteLesson(lesson.id)
+                                }}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
                           <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
                             <MoreHorizontal className="w-4 h-4" />
@@ -771,8 +908,18 @@ export default function EverCastPage() {
       </div>
 
 
+      {/* SoundCloud Player Component */}
+      {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
+        <SoundCloudPlayer
+          soundcloudUrl={currentLesson.soundcloud_url}
+          title={currentLesson.title}
+          onPlayPause={setIsPlaying}
+          className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
+        />
+      )}
+
       {/* HLS Player Component */}
-      {currentLesson?.hls_url && !currentLesson.audio_url && (
+      {currentLesson?.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
         <HLSPlayer
           hlsUrl={currentLesson.hls_url}
           title={currentLesson.title}
@@ -810,8 +957,8 @@ export default function EverCastPage() {
         />
       )}
       
-      {/* Fallback Audio Element para URLs não-HLS e não-MP3 */}
-      {currentLesson && !currentLesson.hls_url && !currentLesson.audio_url && (
+      {/* Fallback Audio Element para URLs não-HLS, não-MP3 e não-SoundCloud */}
+      {currentLesson && !currentLesson.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
         <audio
           ref={audioRef}
           onTimeUpdate={handleTimeUpdate}
@@ -972,6 +1119,16 @@ export default function EverCastPage() {
                       onChange={(e) => setLessonForm({ ...lessonForm, hls_url: e.target.value })}
                       className="bg-white/10 border-white/20 text-white"
                       placeholder="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/..."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lesson-soundcloud-url" className="text-white">URL SoundCloud</Label>
+                    <Input
+                      id="lesson-soundcloud-url"
+                      value={lessonForm.soundcloud_url}
+                      onChange={(e) => setLessonForm({ ...lessonForm, soundcloud_url: e.target.value })}
+                      className="bg-white/10 border-white/20 text-white"
+                      placeholder="https://soundcloud.com/everest-cursos-preparatorios/..."
                     />
                   </div>
                   <div>
