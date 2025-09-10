@@ -45,6 +45,7 @@ import { HLSPlayer } from '@/components/evercast/hls-player'
 import { MP3Player } from '@/components/evercast/mp3-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
 import { HLSDebug } from '@/components/evercast/hls-debug'
+import { HLSTestPlayer } from '@/components/evercast/hls-test-player'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -640,6 +641,14 @@ export default function EverCastPage() {
                 onTestComplete={(success, details) => {
                   console.log('🔍 Debug HLS:', { success, details })
                 }}
+              />
+            )}
+
+            {/* Teste HLS com URL específica - Apenas para professores/admins */}
+            {canEdit && (
+              <HLSTestPlayer 
+                hlsUrl="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8"
+                title="Teste URL HLS Pandavideo"
               />
             )}
 

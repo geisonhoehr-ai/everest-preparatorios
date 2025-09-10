@@ -62,12 +62,22 @@ export function HLSPlayer({
   // Carregar HLS.js se necessário
   useEffect(() => {
     const loadHLS = async () => {
-      if (typeof window !== 'undefined' && !window.Hls) {
-        try {
-          const Hls = (await import('hls.js')).default
-          window.Hls = Hls
-        } catch (error) {
-          console.error('Erro ao carregar HLS.js:', error)
+      if (typeof window !== 'undefined') {
+        if (!window.Hls) {
+          try {
+            console.log('🔄 Carregando HLS.js...')
+            const Hls = (await import('hls.js')).default
+            window.Hls = Hls
+            console.log('✅ HLS.js carregado com sucesso')
+            console.log('🔍 HLS.js versão:', Hls.version)
+            console.log('🌐 Suporte HLS:', Hls.isSupported())
+          } catch (error) {
+            console.error('❌ Erro ao carregar HLS.js:', error)
+            setError('Erro ao carregar biblioteca HLS.js')
+          }
+        } else {
+          console.log('✅ HLS.js já carregado')
+          console.log('🌐 Suporte HLS:', window.Hls.isSupported())
         }
       }
     }
@@ -122,20 +132,44 @@ export function HLSPlayer({
 
         hls.on(window.Hls.Events.ERROR, (event: any, data: any) => {
           console.error('❌ Erro HLS:', data)
+          console.error('   - Tipo:', data.type)
+          console.error('   - Detalhes:', data.details)
+          console.error('   - Fatal:', data.fatal)
+          console.error('   - URL:', data.url)
+          
           if (data.fatal) {
             switch (data.type) {
               case window.Hls.ErrorTypes.NETWORK_ERROR:
-                setError('Erro de rede. Verifique sua conexão.')
+                console.log('🔄 Tentando recuperar erro de rede...')
+                setError('Erro de rede. Tentando recuperar...')
+                setTimeout(() => {
+                  hls.startLoad()
+                }, 1000)
                 break
               case window.Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('🔄 Tentando recuperar erro de mídia...')
                 setError('Erro de mídia. Tentando recuperar...')
                 hls.recoverMediaError()
                 break
+              case window.Hls.ErrorTypes.MUX_ERROR:
+                console.log('🔄 Erro de mux, tentando recarregar...')
+                setError('Erro de formato. Recarregando...')
+                hls.destroy()
+                setTimeout(() => {
+                  setupHLS()
+                }, 2000)
+                break
               default:
+                console.log('🔄 Erro fatal, recarregando...')
                 setError('Erro fatal. Recarregando...')
                 hls.destroy()
+                setTimeout(() => {
+                  setupHLS()
+                }, 3000)
                 break
             }
+          } else {
+            console.log('⚠️ Erro não fatal, continuando...')
           }
         })
 
@@ -157,11 +191,40 @@ export function HLSPlayer({
 
       } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari nativo
+        console.log('🍎 Usando HLS nativo do Safari')
         const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
         audio.src = cleanUrl
         setIsLoading(false)
       } else {
-        setError('HLS não suportado neste navegador')
+        // Fallback: tentar reproduzir diretamente
+        console.log('⚠️ HLS.js não suportado, tentando fallback direto...')
+        const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
+        
+        // Tentar diferentes tipos MIME
+        const mimeTypes = [
+          'application/vnd.apple.mpegurl',
+          'application/x-mpegurl',
+          'video/mp2t',
+          'audio/mpegurl'
+        ]
+        
+        let canPlay = false
+        for (const mimeType of mimeTypes) {
+          if (audio.canPlayType(mimeType)) {
+            console.log(`✅ Suporte encontrado para: ${mimeType}`)
+            canPlay = true
+            break
+          }
+        }
+        
+        if (canPlay) {
+          console.log('🔄 Tentando reproduzir diretamente...')
+          audio.src = cleanUrl
+          setIsLoading(false)
+        } else {
+          console.error('❌ Nenhum suporte HLS encontrado')
+          setError('HLS não suportado neste navegador. Tente usar Chrome, Firefox ou Safari.')
+        }
       }
     }
 
