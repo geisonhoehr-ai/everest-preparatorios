@@ -84,7 +84,7 @@ export function HLSTestPlayer({ hlsUrl, title = "Teste HLS" }: HLSTestPlayerProp
             setIsLoading(false)
           })
 
-          hls.on(window.Hls.Events.ERROR, (event, data) => {
+          hls.on(window.Hls.Events.ERROR, (event: any, data: any) => {
             addLog(`❌ Erro HLS: ${data.type} - ${data.details}`)
             addLog(`   Fatal: ${data.fatal}`)
             addLog(`   URL: ${data.url}`)
