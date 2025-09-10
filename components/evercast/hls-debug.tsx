@@ -129,10 +129,11 @@ export function HLSDebug({ hlsUrl, onTestComplete }: HLSDebugProps) {
       onTestComplete?.(true, results)
 
     } catch (error) {
-      addLog(`❌ Erro no teste: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      addLog(`❌ Erro no teste: ${errorMessage}`)
       const results = {
         success: false,
-        error: error.message,
+        error: errorMessage,
         url: hlsUrl
       }
       setTestResults(results)
