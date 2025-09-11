@@ -82,7 +82,7 @@ export default function MobileModuleAccordion({
             <div>
               <h3 className="font-semibold text-white text-lg">{module.name}</h3>
               <p className="text-gray-400 text-sm">
-                {module.lessons?.length || 0} aulas • {formatDuration(module.total_duration || 0)}
+                {module.audio_lessons?.length || 0} aulas • {formatDuration(module.total_duration || 0)}
               </p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function MobileModuleAccordion({
       {isExpanded && (
         <CardContent className="pt-0">
           <div className="space-y-3">
-            {module.lessons?.map((lesson, index) => {
+            {module.audio_lessons?.map((lesson, index) => {
               const isFavorite = favoriteAudios.has(lesson.id);
               const isCached = cachedAudios.has(lesson.id);
               const isCurrent = currentLesson?.id === lesson.id;
