@@ -1041,7 +1041,7 @@ export default function EverCastPage() {
                           Editar
                         </Button>
                         <Button
-                          onClick={() => handleDeleteModule(currentModule?.id)}
+                          onClick={() => currentModule?.id && handleDeleteModule(currentModule.id)}
                           size="sm"
                           variant="outline"
                           className="border-red-500/50 text-red-400 hover:bg-red-500/10"
