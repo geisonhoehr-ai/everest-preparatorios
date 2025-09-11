@@ -82,7 +82,7 @@ export default function MobileModuleAccordion({
             <div>
               <h3 className="font-semibold text-white text-lg">{module.name}</h3>
               <p className="text-gray-400 text-sm">
-                {module.audio_lessons?.length || 0} aulas • {formatDuration(parseInt(module.total_duration) || 0)}
+                {module.audio_lessons?.length || 0} aulas • {formatDuration(parseInt(module.total_duration || '0') || 0)}
               </p>
             </div>
           </div>
