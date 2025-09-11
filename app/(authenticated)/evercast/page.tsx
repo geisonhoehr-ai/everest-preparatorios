@@ -243,7 +243,7 @@ export default function EverCastPage() {
         updatedModule.audio_lessons = [...(updatedModule.audio_lessons || []), newLesson]
         
         // Recalcular duração total do módulo
-        updatedModule.total_duration = calculateModuleDuration(updatedModule)
+        updatedModule.total_duration = calculateModuleDuration(updatedModule).toString()
         
         setCurrentModule(updatedModule)
         
