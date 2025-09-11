@@ -216,7 +216,7 @@ export default function EverCastPage() {
     try {
       const newLesson = await createAudioLesson(user.id, {
         ...lessonForm,
-        module_id: currentModule.id
+        module_id: currentModule?.id
       })
       if (newLesson) {
         const updatedModule = { ...currentModule }
@@ -225,7 +225,7 @@ export default function EverCastPage() {
         
         const updatedCourse = { ...currentCourse! }
         updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
-          m.id === currentModule.id ? updatedModule : m
+          m.id === currentModule?.id ? updatedModule : m
         )
         setCurrentCourse(updatedCourse)
         setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
@@ -275,7 +275,7 @@ export default function EverCastPage() {
           
           const updatedCourse = { ...currentCourse! }
           updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
-            m.id === currentModule.id ? updatedModule : m
+            m.id === currentModule?.id ? updatedModule : m
           )
           setCurrentCourse(updatedCourse)
           setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
@@ -326,7 +326,7 @@ export default function EverCastPage() {
           // Atualizar no curso
           const updatedCourse = { ...currentCourse! }
           updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
-            m.id === currentModule.id ? updatedModule : m
+            m.id === currentModule?.id ? updatedModule : m
           )
           setCurrentCourse(updatedCourse)
           setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
@@ -365,7 +365,7 @@ export default function EverCastPage() {
           // Atualizar no curso
           const updatedCourse = { ...currentCourse! }
           updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
-            m.id === currentModule.id ? updatedModule : m
+            m.id === currentModule?.id ? updatedModule : m
           )
           setCurrentCourse(updatedCourse)
           setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
@@ -461,7 +461,7 @@ export default function EverCastPage() {
         
         // Atualizar o estado local
         if (currentModule) {
-          const updatedLessons = currentModule.audio_lessons?.filter(l => l.id !== lessonId) || []
+          const updatedLessons = currentModule?.audio_lessons?.filter(l => l.id !== lessonId) || []
           const updatedModule = { ...currentModule, audio_lessons: updatedLessons }
           setCurrentModule(updatedModule)
           
@@ -470,7 +470,7 @@ export default function EverCastPage() {
             const updatedCourse = {
               ...currentCourse,
               audio_modules: currentCourse.audio_modules?.map(m => 
-                m.id === currentModule.id ? updatedModule : m
+                m.id === currentModule?.id ? updatedModule : m
               ) || []
             }
             setCurrentCourse(updatedCourse)
@@ -1016,9 +1016,9 @@ export default function EverCastPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-white">{currentModule.name}</CardTitle>
+                      <CardTitle className="text-white">{currentModule?.name}</CardTitle>
                       <p className="text-gray-300">
-                        {currentModule.audio_lessons?.length || 0} aulas disponíveis
+                        {currentModule?.audio_lessons?.length || 0} aulas disponíveis
                       </p>
                     </div>
                     {canEdit && (
@@ -1041,7 +1041,7 @@ export default function EverCastPage() {
                           Editar
                         </Button>
                         <Button
-                          onClick={() => handleDeleteModule(currentModule.id)}
+                          onClick={() => handleDeleteModule(currentModule?.id)}
                           size="sm"
                           variant="outline"
                           className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -1055,7 +1055,7 @@ export default function EverCastPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {currentModule.audio_lessons?.map((lesson, lessonIndex) => (
+                    {currentModule?.audio_lessons?.map((lesson, lessonIndex) => (
                       <div
                         key={lesson.id}
                         className={`flex items-center p-4 rounded-lg cursor-pointer transition-all ${
@@ -1064,7 +1064,7 @@ export default function EverCastPage() {
                             : 'bg-white/5 hover:bg-white/10'
                         }`}
                         onClick={() => handleLessonSelect(lesson, 
-                          currentCourse?.audio_modules?.findIndex(m => m.id === currentModule.id) || 0, 
+                          currentCourse?.audio_modules?.findIndex(m => m.id === currentModule?.id) || 0, 
                           lessonIndex
                         )}
                       >
