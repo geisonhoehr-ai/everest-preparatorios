@@ -31,9 +31,10 @@ export default function FavoritesSection({
   cachedAudios,
   currentLesson
 }: FavoritesSectionProps) {
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
+  const formatDuration = (seconds: number | string) => {
+    const numSeconds = typeof seconds === 'string' ? parseInt(seconds) || 0 : seconds;
+    const mins = Math.floor(numSeconds / 60);
+    const secs = Math.floor(numSeconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
