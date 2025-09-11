@@ -79,9 +79,11 @@ export default function AudioOnlyHLSPlayer({
             fragLoadingMaxRetry: 3,
             // Debug
             debug: false,
-            // CORS
+            // CORS - Remover headers que causam problemas
             xhrSetup: (xhr: XMLHttpRequest) => {
-              xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+              xhr.withCredentials = false;
+              // Não adicionar headers CORS que podem causar problemas
+              // O servidor Panda Video deve configurar CORS adequadamente
             }
           });
 

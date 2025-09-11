@@ -131,7 +131,8 @@ export function HLSPlayer({
           // Configurações específicas para CORS
           xhrSetup: (xhr: XMLHttpRequest, url: string) => {
             xhr.withCredentials = false
-            xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
+            // Não adicionar headers CORS que podem causar problemas
+            // O servidor Panda Video deve configurar CORS adequadamente
           }
         })
 
