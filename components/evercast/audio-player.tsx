@@ -146,11 +146,7 @@ export function AudioPlayer({
       {/* Informações da mídia */}
       <div className="flex items-center space-x-4 mb-4">
         <div className="flex-shrink-0 w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-          {isVideo ? (
-            <ExternalLink className="w-6 h-6 text-white" />
-          ) : (
-            <Play className="w-6 h-6 text-white" />
-          )}
+          <Play className="w-6 h-6 text-white" />
         </div>
         
         <div className="flex-1 min-w-0">
