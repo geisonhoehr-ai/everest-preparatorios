@@ -475,41 +475,85 @@ export default function EverCastPage() {
   const detectHLSDuration = async (hlsUrl: string): Promise<number> => {
     return new Promise((resolve, reject) => {
       setIsDetectingDuration(true)
+      console.log('🔍 [EverCast] Iniciando detecção de duração para:', hlsUrl)
       
       // Criar elemento de áudio temporário
       const audio = new Audio()
       audio.crossOrigin = 'anonymous'
+      audio.preload = 'metadata'
       
       const timeout = setTimeout(() => {
+        console.log('⏰ [EverCast] Timeout na detecção de duração')
         audio.remove()
         setIsDetectingDuration(false)
         reject(new Error('Timeout ao detectar duração'))
-      }, 10000) // 10 segundos de timeout
+      }, 15000) // 15 segundos de timeout
       
-      audio.addEventListener('loadedmetadata', () => {
+      const cleanup = () => {
         clearTimeout(timeout)
-        const duration = audio.duration
         audio.remove()
         setIsDetectingDuration(false)
+      }
+      
+      audio.addEventListener('loadedmetadata', () => {
+        cleanup()
+        const duration = audio.duration
+        console.log('📊 [EverCast] Duração bruta detectada:', duration)
         
-        if (isNaN(duration) || duration === 0) {
+        if (isNaN(duration) || duration === 0 || !isFinite(duration)) {
+          console.warn('⚠️ [EverCast] Duração inválida:', duration)
           reject(new Error('Duração inválida'))
         } else {
-          console.log('✅ Duração detectada:', duration, 'segundos')
-          resolve(Math.floor(duration))
+          const roundedDuration = Math.floor(duration)
+          console.log('✅ [EverCast] Duração final:', roundedDuration, 'segundos')
+          resolve(roundedDuration)
+        }
+      })
+      
+      audio.addEventListener('canplay', () => {
+        console.log('🎵 [EverCast] Áudio pode ser reproduzido')
+        if (audio.duration && audio.duration > 0) {
+          cleanup()
+          const roundedDuration = Math.floor(audio.duration)
+          console.log('✅ [EverCast] Duração detectada via canplay:', roundedDuration, 'segundos')
+          resolve(roundedDuration)
+        }
+      })
+      
+      audio.addEventListener('durationchange', () => {
+        console.log('⏱️ [EverCast] Duração mudou:', audio.duration)
+        if (audio.duration && audio.duration > 0) {
+          cleanup()
+          const roundedDuration = Math.floor(audio.duration)
+          console.log('✅ [EverCast] Duração detectada via durationchange:', roundedDuration, 'segundos')
+          resolve(roundedDuration)
         }
       })
       
       audio.addEventListener('error', (e) => {
-        clearTimeout(timeout)
-        audio.remove()
-        setIsDetectingDuration(false)
-        reject(new Error('Erro ao carregar HLS'))
+        console.error('❌ [EverCast] Erro ao carregar HLS:', e)
+        cleanup()
+        reject(new Error('Erro ao carregar HLS: ' + e.type))
+      })
+      
+      audio.addEventListener('loadstart', () => {
+        console.log('🚀 [EverCast] Iniciando carregamento do HLS')
+      })
+      
+      audio.addEventListener('progress', () => {
+        console.log('📈 [EverCast] Progresso do carregamento:', audio.buffered.length)
       })
       
       // Tentar carregar o HLS
-      audio.src = hlsUrl
-      audio.load()
+      try {
+        audio.src = hlsUrl
+        audio.load()
+        console.log('🔄 [EverCast] HLS carregado, aguardando metadados...')
+      } catch (error) {
+        console.error('❌ [EverCast] Erro ao definir src do áudio:', error)
+        cleanup()
+        reject(error)
+      }
     })
   }
 
@@ -517,11 +561,50 @@ export default function EverCastPage() {
   const calculateModuleDuration = (module: any): number => {
     if (!module.audio_lessons) return 0
     return module.audio_lessons.reduce((total: number, lesson: any) => {
-      const duration = typeof lesson.duration === 'string' 
-        ? parseInt(lesson.duration) || 0 
-        : lesson.duration || 0
+      // Usar duration_seconds se disponível, senão tentar converter duration
+      let duration = 0
+      if (lesson.duration_seconds) {
+        duration = typeof lesson.duration_seconds === 'string' 
+          ? parseInt(lesson.duration_seconds) || 0 
+          : lesson.duration_seconds || 0
+      } else if (lesson.duration) {
+        // Se duration é uma string no formato "1h 30m 45s", converter para segundos
+        if (typeof lesson.duration === 'string' && lesson.duration.includes('h')) {
+          duration = parseDurationString(lesson.duration)
+        } else {
+          duration = typeof lesson.duration === 'string' 
+            ? parseInt(lesson.duration) || 0 
+            : lesson.duration || 0
+        }
+      }
+      console.log(`📊 [EverCast] Aula "${lesson.title}": ${duration} segundos`)
       return total + duration
     }, 0)
+  }
+
+  // Função para converter string de duração para segundos
+  const parseDurationString = (durationStr: string): number => {
+    let totalSeconds = 0
+    
+    // Extrair horas
+    const hoursMatch = durationStr.match(/(\d+)h/)
+    if (hoursMatch) {
+      totalSeconds += parseInt(hoursMatch[1]) * 3600
+    }
+    
+    // Extrair minutos
+    const minutesMatch = durationStr.match(/(\d+)m/)
+    if (minutesMatch) {
+      totalSeconds += parseInt(minutesMatch[1]) * 60
+    }
+    
+    // Extrair segundos
+    const secondsMatch = durationStr.match(/(\d+)s/)
+    if (secondsMatch) {
+      totalSeconds += parseInt(secondsMatch[1])
+    }
+    
+    return totalSeconds
   }
 
   // Função para formatar duração em horas e minutos
@@ -536,6 +619,27 @@ export default function EverCastPage() {
       return `${minutes}m ${secs}s`
     } else {
       return `${secs}s`
+    }
+  }
+
+  // Função para detectar duração quando URL HLS é colada
+  const handleHLSUrlChange = async (url: string) => {
+    setLessonForm({ ...lessonForm, hls_url: url })
+    
+    // Se tem URL HLS e não tem duração, tentar detectar
+    if (url && url.includes('.m3u8') && !lessonForm.duration_seconds) {
+      try {
+        console.log('🔍 [EverCast] URL HLS detectada, iniciando detecção...')
+        const detectedDuration = await detectHLSDuration(url)
+        setLessonForm(prev => ({
+          ...prev,
+          duration_seconds: detectedDuration,
+          duration: formatDuration(detectedDuration)
+        }))
+        console.log('✅ [EverCast] Duração detectada e aplicada:', detectedDuration, 'segundos')
+      } catch (error) {
+        console.warn('⚠️ [EverCast] Não foi possível detectar duração automaticamente:', error)
+      }
     }
   }
 
@@ -1487,10 +1591,15 @@ export default function EverCastPage() {
                     <Input
                       id="lesson-hls-url"
                       value={lessonForm.hls_url}
-                      onChange={(e) => setLessonForm({ ...lessonForm, hls_url: e.target.value })}
+                      onChange={(e) => handleHLSUrlChange(e.target.value)}
                       className="bg-white/10 border-white/20 text-white"
                       placeholder="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/..."
                     />
+                    {lessonForm.hls_url && lessonForm.hls_url.includes('.m3u8') && (
+                      <p className="text-xs text-blue-400 mt-1">
+                        🔍 URL HLS detectada - a duração será detectada automaticamente
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="lesson-soundcloud-url" className="text-white">URL SoundCloud</Label>
