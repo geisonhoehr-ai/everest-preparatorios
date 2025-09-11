@@ -470,21 +470,15 @@ export function HLSPlayer({
         
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-white truncate text-sm sm:text-base">{title}</h4>
-          <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-400 flex-wrap">
-            <span>Streaming HLS</span>
+          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-400">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>Streaming</span>
+            </div>
             {streamQuality && (
-              <span className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs ${
-                streamQuality === 'Vídeo' 
-                  ? 'bg-blue-600/30 text-blue-300' 
-                  : 'bg-orange-600/30 text-orange-300'
-              }`}>
+              <span className="px-2 py-1 rounded-full text-xs bg-orange-600/30 text-orange-300">
                 {streamQuality}
               </span>
-            )}
-            {isOnline ? (
-              <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-            ) : (
-              <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
             )}
           </div>
         </div>
@@ -581,16 +575,12 @@ export function HLSPlayer({
         </div>
       )}
 
-      {/* Informações técnicas */}
-      <div className="text-xs text-gray-500 space-y-1">
-        <p>Fonte: {streamQuality === 'Vídeo' ? 'Pandavideo HLS (Vídeo)' : 'HLS Stream (Áudio)'}</p>
-        <p>URL: {hlsUrl}</p>
-        <p>Tipo: {streamQuality || 'Detectando...'}</p>
-        <p>Status: {isOnline ? 'Online' : 'Offline'}</p>
-        {streamQuality === 'Vídeo' && (
-          <p className="text-blue-400">💡 Stream de vídeo - reproduzindo apenas áudio</p>
-        )}
-      </div>
+      {/* Informação simplificada */}
+      {streamQuality === 'Vídeo' && (
+        <div className="text-xs text-blue-400 bg-blue-900/20 rounded-lg p-2 text-center">
+          💡 Stream de vídeo - reproduzindo apenas áudio
+        </div>
+      )}
 
       {/* Elemento de áudio oculto */}
       <audio

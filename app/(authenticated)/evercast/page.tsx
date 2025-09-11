@@ -39,19 +39,20 @@ import {
   Edit,
   Trash2,
   Save,
-  X
+  X,
+  Star,
+  Repeat,
+  Menu,
+  Smartphone
 } from 'lucide-react'
 import { HLSPlayer } from '@/components/evercast/hls-player'
 import { MP3Player } from '@/components/evercast/mp3-player'
 import { SoundCloudPlayer } from '@/components/evercast/soundcloud-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
-import { HLSDebug } from '@/components/evercast/hls-debug'
-import { HLSTestPlayer } from '@/components/evercast/hls-test-player'
-import { PandaVideoTest } from '@/components/evercast/pandavideo-test'
 import PandaVideoManager from '@/components/evercast/panda-video-manager'
 import AudioOnlyHLSPlayer from '@/components/evercast/audio-only-hls-player'
-import PandaVideoTestConnection from '@/components/evercast/panda-video-test-connection'
-import { AudioSearch } from '@/components/evercast/audio-search'
+import MobileModuleAccordion from '@/components/evercast/mobile-module-accordion'
+import FavoritesSection from '@/components/evercast/favorites-section'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -76,6 +77,13 @@ export default function EverCastPage() {
   const [currentAudioHLS, setCurrentAudioHLS] = useState<string | null>(null)
   const [showPandaVideoManager, setShowPandaVideoManager] = useState(false)
   const [extractedAudio, setExtractedAudio] = useState<{blob: Blob, title: string} | null>(null)
+  
+  // Estados para funcionalidades mobile
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
+  const [favoriteAudios, setFavoriteAudios] = useState<Set<string>>(new Set())
+  const [isLooping, setIsLooping] = useState(false)
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [cachedAudios, setCachedAudios] = useState<Map<string, Blob>>(new Map())
   
   // Estados para edição (professores/admins)
   const [isEditing, setIsEditing] = useState(false)
@@ -153,6 +161,14 @@ export default function EverCastPage() {
     }
 
     loadCourses()
+  }, [])
+
+  // Carregar favoritos do localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favoriteAudios')
+    if (savedFavorites) {
+      setFavoriteAudios(new Set(JSON.parse(savedFavorites)))
+    }
   }, [])
 
   // Funções de CRUD para professores/admins
@@ -364,17 +380,6 @@ export default function EverCastPage() {
     }
   }
 
-  // Função para buscar áudio no PandaVideo
-  const handleAudioFound = (audioData: any) => {
-    console.log('🎵 [EverCast] Áudio encontrado no PandaVideo:', audioData)
-    setCurrentAudioHLS(audioData.hls_url)
-    
-    // Atualizar a aula atual com o HLS se houver uma aula selecionada
-    if (currentLesson) {
-      updateAudioLessonUrl(currentLesson.id, audioData.hls_url)
-      setCurrentLesson(prev => prev ? { ...prev, hls_url: audioData.hls_url } : null)
-    }
-  }
 
   // Função para lidar com áudio extraído da Panda Video
   const handleAudioExtracted = (audioBlob: Blob, video: any) => {
@@ -389,6 +394,57 @@ export default function EverCastPage() {
   const handlePandaVideoError = (error: string) => {
     console.error('❌ [EverCast] Erro no gerenciador Panda Video:', error)
     alert(`Erro: ${error}`)
+  }
+
+  // Funções para funcionalidades mobile
+  const toggleModule = (moduleId: string) => {
+    const newExpanded = new Set(expandedModules)
+    if (newExpanded.has(moduleId)) {
+      newExpanded.delete(moduleId)
+    } else {
+      newExpanded.add(moduleId)
+    }
+    setExpandedModules(newExpanded)
+  }
+
+  const toggleFavorite = (lessonId: string) => {
+    const newFavorites = new Set(favoriteAudios)
+    if (newFavorites.has(lessonId)) {
+      newFavorites.delete(lessonId)
+    } else {
+      newFavorites.add(lessonId)
+    }
+    setFavoriteAudios(newFavorites)
+    
+    // Salvar no localStorage
+    localStorage.setItem('favoriteAudios', JSON.stringify(Array.from(newFavorites)))
+  }
+
+  const toggleLoop = () => {
+    setIsLooping(!isLooping)
+  }
+
+  const cacheAudio = async (lesson: AudioLesson) => {
+    if (cachedAudios.has(lesson.id)) return
+
+    try {
+      // Para HLS, vamos cachear o manifest
+      if (lesson.hls_url) {
+        const response = await fetch(lesson.hls_url)
+        const blob = await response.blob()
+        setCachedAudios(prev => new Map(prev).set(lesson.id, blob))
+        console.log('✅ Áudio cacheado:', lesson.title)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao cachear áudio:', error)
+    }
+  }
+
+  const getFavoriteAudios = () => {
+    if (!currentCourse) return []
+    
+    const allLessons = currentCourse.modules?.flatMap(module => module.lessons || []) || []
+    return allLessons.filter(lesson => favoriteAudios.has(lesson.id))
   }
 
   // Função para excluir aula
@@ -586,7 +642,11 @@ export default function EverCastPage() {
   }
 
   const handleNext = () => {
-    if (currentIndex < playlist.length - 1) {
+    if (isLooping) {
+      // Se está em loop, reinicia a mesma aula
+      setCurrentLesson(playlist[currentIndex])
+      setIsPlaying(false)
+    } else if (currentIndex < playlist.length - 1) {
       const newIndex = currentIndex + 1
       setCurrentIndex(newIndex)
       setCurrentLesson(playlist[newIndex])
@@ -848,32 +908,14 @@ export default function EverCastPage() {
 
           {/* Main Content - Playlist */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Busca de áudio PandaVideo - Apenas para professores/admins */}
-            {canEdit && (
-              <AudioSearch 
-                onAudioFound={handleAudioFound}
-                currentVideoId={undefined}
-              />
-            )}
-
-            {/* Debug HLS - Apenas para professores/admins */}
-            {canEdit && currentLesson?.hls_url && (
-              <HLSDebug 
-                hlsUrl={currentLesson.hls_url}
-                onTestComplete={(success, details) => {
-                  console.log('🔍 Debug HLS:', { success, details })
-                }}
-              />
-            )}
-
-            {/* Teste HLS com URL específica - Apenas para professores/admins */}
+            {/* Gerenciador Panda Video - Apenas para professores/admins */}
             {canEdit && (
               <div className="space-y-4">
                 <div className="flex gap-2 mb-4">
                   <Button
                     onClick={() => setShowPandaVideoManager(!showPandaVideoManager)}
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-blue-600/20 border-blue-500/30 text-blue-300 hover:bg-blue-600/30"
                   >
                     <Download className="w-4 h-4" />
                     {showPandaVideoManager ? 'Fechar' : 'Abrir'} Gerenciador Panda Video
@@ -886,22 +928,90 @@ export default function EverCastPage() {
                     onError={handlePandaVideoError}
                   />
                 )}
-                
-                <PandaVideoTestConnection />
-                
-                <PandaVideoTest 
-                  onUrlTested={(url, success) => {
-                    console.log('🔍 [PandaVideo] Teste concluído:', { url, success })
-                  }}
-                />
-                <HLSTestPlayer 
-                  hlsUrl="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8"
-                  title="Teste Player HLS"
-                />
               </div>
             )}
 
-            {currentModule && (
+            {/* Interface Mobile-First */}
+            <div className="space-y-4">
+              {/* Botões de controle mobile */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => setShowFavorites(!showFavorites)}
+                  variant="outline"
+                  className={`flex items-center gap-2 ${
+                    showFavorites 
+                      ? 'bg-red-600/20 border-red-500/30 text-red-300' 
+                      : 'bg-gray-600/20 border-gray-500/30 text-gray-300'
+                  }`}
+                >
+                  <Star className="w-4 h-4" />
+                  Favoritos ({favoriteAudios.size})
+                </Button>
+                
+                <Button
+                  onClick={toggleLoop}
+                  variant="outline"
+                  className={`flex items-center gap-2 ${
+                    isLooping 
+                      ? 'bg-orange-600/20 border-orange-500/30 text-orange-300' 
+                      : 'bg-gray-600/20 border-gray-500/30 text-gray-300'
+                  }`}
+                >
+                  <Repeat className="w-4 h-4" />
+                  {isLooping ? 'Loop Ativo' : 'Loop'}
+                </Button>
+
+                {canEdit && (
+                  <Button
+                    onClick={() => startEditing('lesson')}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Aula
+                  </Button>
+                )}
+              </div>
+
+              {/* Seção de Favoritos */}
+              {showFavorites && (
+                <FavoritesSection
+                  favoriteAudios={getFavoriteAudios()}
+                  onPlayLesson={(lesson) => {
+                    setCurrentLesson(lesson)
+                    setIsPlaying(false)
+                  }}
+                  onToggleFavorite={toggleFavorite}
+                  onCacheAudio={cacheAudio}
+                  cachedAudios={new Set(Array.from(cachedAudios.keys()))}
+                  currentLesson={currentLesson}
+                />
+              )}
+
+              {/* Módulos em Sanfona */}
+              {currentCourse?.audio_modules?.map((module) => (
+                <MobileModuleAccordion
+                  key={module.id}
+                  module={module}
+                  isExpanded={expandedModules.has(module.id)}
+                  onToggle={() => toggleModule(module.id)}
+                  onPlayLesson={(lesson) => {
+                    setCurrentLesson(lesson)
+                    setCurrentModule(module)
+                    setIsPlaying(false)
+                  }}
+                  onToggleFavorite={toggleFavorite}
+                  onCacheAudio={cacheAudio}
+                  favoriteAudios={favoriteAudios}
+                  cachedAudios={new Set(Array.from(cachedAudios.keys()))}
+                  isLooping={isLooping}
+                  onToggleLoop={toggleLoop}
+                  currentLesson={currentLesson}
+                />
+              ))}
+            </div>
+
+            {/* Interface antiga - mantida para compatibilidade */}
+            {currentModule && false && (
               <Card className="bg-black/20 backdrop-blur-sm border-white/10">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -1071,16 +1181,19 @@ export default function EverCastPage() {
       {/* Player de áudio extraído da Panda Video */}
       {extractedAudio && (
         <div className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-green-500">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-800">
-                🎵 Áudio Extraído: {extractedAudio.title}
-              </h3>
+          <div className="bg-gradient-to-r from-green-900/90 to-blue-900/90 backdrop-blur-sm rounded-xl shadow-2xl p-4 border border-green-500/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <h3 className="font-semibold text-white text-lg">
+                  🎵 {extractedAudio.title}
+                </h3>
+              </div>
               <Button
                 onClick={() => setExtractedAudio(null)}
                 variant="ghost"
                 size="sm"
-                className="text-gray-500 hover:text-gray-700"
+                className="text-white/70 hover:text-white hover:bg-white/10 rounded-full"
               >
                 <X className="w-4 h-4" />
               </Button>

@@ -1,0 +1,5 @@
+[33mee1a22b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m fix: adiciona soundcloud_url ao tipo AudioLesson
+[33m5b9bd1b[m fix: corrige parâmetros das funções de exclusão (userUuid + id)
+[33m9a5a4c4[m feat: adiciona funcionalidade de exclusão de aulas, módulos e cursos + integração SoundCloud Player
+[33m461736f[m fix: corrige autenticação da API PandaVideo removendo prefixo Bearer e atualiza API Key
+[33m4dda2d0[m feat: adiciona logs de debug para investigar problema da API Key do PandaVideo
