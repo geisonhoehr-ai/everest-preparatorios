@@ -9,7 +9,6 @@ import {
   ChevronRight, 
   Play, 
   Heart, 
-  Download,
   Clock,
   Wifi,
   WifiOff
@@ -43,8 +42,14 @@ export default function MobileModuleAccordion({
   onToggleLoop,
   currentLesson
 }: MobileModuleAccordionProps) {
-  const formatDuration = (seconds: number | string) => {
-    const numSeconds = typeof seconds === 'string' ? parseInt(seconds) || 0 : seconds;
+  const formatDuration = (duration: number | string) => {
+    // Se já está no formato "mm:ss", retorna como está
+    if (typeof duration === 'string' && duration.includes(':')) {
+      return duration;
+    }
+    
+    // Se é um número (segundos), converte para mm:ss
+    const numSeconds = typeof duration === 'string' ? parseInt(duration) || 0 : duration;
     const mins = Math.floor(numSeconds / 60);
     const secs = Math.floor(numSeconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -146,8 +151,7 @@ export default function MobileModuleAccordion({
                         </div>
                         {isCached && (
                           <div className="flex items-center gap-1 text-green-400 text-xs">
-                            <Download className="w-3 h-3" />
-                            Offline
+                            <span>Offline</span>
                           </div>
                         )}
                       </div>
@@ -155,18 +159,6 @@ export default function MobileModuleAccordion({
 
                     {/* Controles */}
                     <div className="flex items-center gap-1">
-                      {/* Botão de cache */}
-                      {!isCached && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onCacheAudio(lesson)}
-                          className="text-gray-400 hover:text-white p-2"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      )}
-
                       {/* Botão de favorito */}
                       <Button
                         variant="ghost"

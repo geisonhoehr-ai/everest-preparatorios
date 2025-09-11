@@ -80,13 +80,19 @@ export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boole
       return hasAccess
     }
 
-    // Fallback temporário para usuário professor conhecido
-    if (userUuid === 'c8b5bff0-b5cc-4dab-9cfa-0a0cf4983dc5') {
+    // Fallback temporário para usuários professor conhecidos
+    const knownTeachers = [
+      'c8b5bff0-b5cc-4dab-9cfa-0a0cf4983dc5',
+      '7a6999a9-db96-4b08-87f1-cdc48bd4a8d6'
+    ]
+    
+    if (knownTeachers.includes(userUuid)) {
       console.log("🔄 [EverCast] Fallback: permitindo acesso para usuário professor conhecido")
       return true
     }
 
-    console.error("❌ [EverCast] Usuário não encontrado em user_profiles")
+    console.error("❌ [EverCast] Usuário não encontrado em user_profiles ou sem permissão")
+    console.error("❌ [EverCast] Profile error:", profileError)
     return false
   } catch (error) {
     console.error("❌ [EverCast] Erro ao verificar acesso:", error)

@@ -10,8 +10,7 @@ import {
   SkipForward, 
   Volume2, 
   VolumeX,
-  Download,
-  ExternalLink
+  Repeat
 } from 'lucide-react'
 
 interface AudioPlayerProps {
@@ -22,6 +21,8 @@ interface AudioPlayerProps {
   onLoadedMetadata?: (duration: number) => void
   onEnded?: () => void
   className?: string
+  isLooping?: boolean
+  onToggleLoop?: () => void
 }
 
 export function AudioPlayer({ 
@@ -31,7 +32,9 @@ export function AudioPlayer({
   onTimeUpdate,
   onLoadedMetadata,
   onEnded,
-  className = ""
+  className = "",
+  isLooping = false,
+  onToggleLoop
 }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -133,20 +136,7 @@ export function AudioPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleDownload = () => {
-    if (src) {
-      const link = document.createElement('a')
-      link.href = src
-      link.download = title || 'audio'
-      link.click()
-    }
-  }
-
-  const handleOpenInNewTab = () => {
-    if (src) {
-      window.open(src, '_blank')
-    }
-  }
+  // Funções de download e abrir vídeo removidas conforme solicitado
 
   // Determinar a URL final (áudio apenas se for vídeo)
   const finalSrc = isVideo ? getAudioOnlyUrl(src) : src
@@ -172,26 +162,9 @@ export function AudioPlayer({
           </p>
         </div>
 
-        {/* Botões de ação */}
+        {/* Botões de ação - download e abrir vídeo removidos */}
         <div className="flex items-center space-x-2">
-          {isVideo && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleOpenInNewTab}
-              className="text-gray-400 hover:text-white"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleDownload}
-            className="text-gray-400 hover:text-white"
-          >
-            <Download className="w-4 h-4" />
-          </Button>
+          {/* Botões de download e abrir vídeo removidos conforme solicitado */}
         </div>
       </div>
 
@@ -229,7 +202,7 @@ export function AudioPlayer({
           </div>
         </div>
 
-        {/* Controle de volume */}
+        {/* Controle de volume e loop */}
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" onClick={toggleMute}>
             {isMuted ? (
@@ -247,6 +220,20 @@ export function AudioPlayer({
             onChange={handleVolumeChange}
             className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
           />
+          {onToggleLoop && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onToggleLoop}
+              className={`${
+                isLooping 
+                  ? 'text-orange-400 hover:text-orange-300' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Repeat className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -277,8 +264,16 @@ export function AudioPlayer({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => {
-          setIsPlaying(false)
-          onEnded?.()
+          if (isLooping) {
+            // Se está em loop, reinicia o áudio
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0
+              audioRef.current.play()
+            }
+          } else {
+            setIsPlaying(false)
+            onEnded?.()
+          }
         }}
         onError={(e) => {
           console.error('Erro no áudio:', e)

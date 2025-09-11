@@ -911,14 +911,14 @@ export default function EverCastPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50 dark:from-slate-900 dark:via-orange-900 dark:to-slate-900">
       {/* Header */}
-      <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
+      <div className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-b border-gray-200 dark:border-white/10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">🎧 EverCast</h1>
-              <p className="text-gray-300">Seus cursos em áudio para estudar em qualquer lugar</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">🎧 EverCast</h1>
+              <p className="text-gray-600 dark:text-gray-300">Seus cursos em áudio para estudar em qualquer lugar</p>
             </div>
             <div className="flex items-center space-x-4">
               {canEdit && (
@@ -931,7 +931,7 @@ export default function EverCastPage() {
                   Novo Curso
                 </Button>
               )}
-              <Badge variant="secondary" className="bg-orange-600 text-white">
+              <Badge variant="secondary" className="bg-orange-600 text-white dark:bg-orange-600 dark:text-white">
                 {profile.role === 'teacher' ? 'Professor' : profile.role === 'admin' ? 'Admin' : 'Estudante'}
               </Badge>
             </div>
@@ -944,10 +944,10 @@ export default function EverCastPage() {
           {/* Sidebar - Cursos e Módulos */}
           <div className="lg:col-span-1 space-y-6">
             {/* Cursos */}
-            <Card className="bg-black/20 backdrop-blur-sm border-white/10">
+            <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white">Meus Cursos</CardTitle>
+                  <CardTitle className="text-gray-900 dark:text-white">Meus Cursos</CardTitle>
                   {canEdit && (
                     <Button
                       onClick={() => startEditing('course')}
@@ -967,7 +967,7 @@ export default function EverCastPage() {
                     className={`p-4 rounded-lg cursor-pointer transition-all ${
                       currentCourse?.id === course.id
                         ? 'bg-orange-600/30 border border-orange-500'
-                        : 'bg-white/5 hover:bg-white/10'
+                        : 'bg-gray-50/50 dark:bg-white/5 hover:bg-gray-100/50 dark:hover:bg-white/10'
                     }`}
                     onClick={() => {
                       setCurrentCourse(course)
@@ -978,11 +978,11 @@ export default function EverCastPage() {
                       }
                     }}
                   >
-                    <h3 className="font-semibold text-white mb-2">{course.name}</h3>
-                    <p className="text-sm text-gray-300 mb-3">{course.description}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{course.name}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{course.description}</p>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">{course.total_duration}</span>
-                      <span className="text-orange-400">
+                      <span className="text-gray-500 dark:text-gray-400">{course.total_duration}</span>
+                      <span className="text-orange-600 dark:text-orange-400">
                         {course.audio_modules?.length || 0} módulos
                       </span>
                     </div>
@@ -999,7 +999,7 @@ export default function EverCastPage() {
                             e.stopPropagation()
                             startEditing('course', course)
                           }}
-                          className="text-gray-400 hover:text-white"
+                          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                         >
                           <Edit className="w-3 h-3" />
                         </Button>
@@ -1010,7 +1010,7 @@ export default function EverCastPage() {
                             e.stopPropagation()
                             handleDeleteCourse(course.id)
                           }}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -1023,10 +1023,10 @@ export default function EverCastPage() {
 
             {/* Módulos do Curso Atual */}
             {currentCourse && (
-              <Card className="bg-black/20 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-white">Módulos</CardTitle>
+                    <CardTitle className="text-gray-900 dark:text-white">Módulos</CardTitle>
                     {canEdit && (
                       <Button
                         onClick={() => startEditing('module')}
@@ -1049,7 +1049,7 @@ export default function EverCastPage() {
                     if (!currentCourse.audio_modules || currentCourse.audio_modules.length === 0) {
                       console.log('❌ [EverCast] Nenhum módulo para renderizar')
                       return (
-                        <div className="text-center text-gray-400 py-4">
+                        <div className="text-center text-gray-500 dark:text-gray-400 py-4">
                           Nenhum módulo encontrado
                         </div>
                       )
@@ -1063,7 +1063,7 @@ export default function EverCastPage() {
                           className={`p-3 rounded-lg cursor-pointer transition-all ${
                             currentModule?.id === module.id
                               ? 'bg-orange-600/30 border border-orange-500'
-                              : 'bg-white/5 hover:bg-white/10'
+                              : 'bg-gray-50/50 dark:bg-white/5 hover:bg-gray-100/50 dark:hover:bg-white/10'
                           }`}
                           onClick={() => {
                             setCurrentModule(module)
@@ -1071,10 +1071,10 @@ export default function EverCastPage() {
                             setCurrentIndex(0)
                           }}
                         >
-                          <h4 className="font-medium text-white mb-1">{module.name}</h4>
+                          <h4 className="font-medium text-gray-900 dark:text-white mb-1">{module.name}</h4>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400">{module.total_duration}</span>
-                            <span className="text-orange-400">
+                            <span className="text-gray-500 dark:text-gray-400">{module.total_duration}</span>
+                            <span className="text-orange-600 dark:text-orange-400">
                               {module.audio_lessons?.length || 0} aulas
                             </span>
                           </div>
@@ -1087,7 +1087,7 @@ export default function EverCastPage() {
                                   e.stopPropagation()
                                   startEditing('module', module)
                                 }}
-                                className="text-gray-400 hover:text-white"
+                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
                               >
                                 <Edit className="w-3 h-3" />
                               </Button>
@@ -1208,12 +1208,12 @@ export default function EverCastPage() {
 
             {/* Interface antiga - mantida para compatibilidade */}
             {currentModule && false && (
-              <Card className="bg-black/20 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-white">{currentModule?.name}</CardTitle>
-                      <p className="text-gray-300">
+                      <CardTitle className="text-gray-900 dark:text-white">{currentModule?.name}</CardTitle>
+                      <p className="text-gray-600 dark:text-gray-300">
                         {currentModule?.audio_lessons?.length || 0} aulas disponíveis
                       </p>
                     </div>
@@ -1357,6 +1357,8 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
+          isLooping={isLooping}
+          onToggleLoop={toggleLoop}
           className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto" // Player responsivo fixo na parte inferior
         />
       )}
@@ -1370,6 +1372,8 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
+          isLooping={isLooping}
+          onToggleLoop={toggleLoop}
           className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
         />
       )}
@@ -1415,6 +1419,8 @@ export default function EverCastPage() {
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleNext}
           onPlayPause={setIsPlaying}
+          isLooping={isLooping}
+          onToggleLoop={toggleLoop}
           className="fixed bottom-4 left-4 right-4 z-10" // Player fixo na parte inferior
         />
       )}
@@ -1434,10 +1440,10 @@ export default function EverCastPage() {
       {/* Modal de Edição */}
       {isEditing && canEdit && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl bg-black/90 backdrop-blur-sm border-white/10">
+          <Card className="w-full max-w-2xl bg-white/95 dark:bg-black/90 backdrop-blur-sm border-gray-200 dark:border-white/10">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white">
+                <CardTitle className="text-gray-900 dark:text-white">
                   {editingType === 'course' && (editingItem ? 'Editar Curso' : 'Novo Curso')}
                   {editingType === 'module' && 'Novo Módulo'}
                   {editingType === 'lesson' && 'Nova Aula'}
@@ -1456,7 +1462,7 @@ export default function EverCastPage() {
                       id="course-name"
                       value={courseForm.name}
                       onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Ex: Extensivo EAOF 2026 - Português e Redação"
                     />
                   </div>
@@ -1466,7 +1472,7 @@ export default function EverCastPage() {
                       id="course-description"
                       value={courseForm.description}
                       onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Descrição do curso..."
                     />
                   </div>
@@ -1476,7 +1482,7 @@ export default function EverCastPage() {
                       id="course-thumbnail"
                       value={courseForm.thumbnail_url}
                       onChange={(e) => setCourseForm({ ...courseForm, thumbnail_url: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="https://exemplo.com/thumbnail.jpg"
                     />
                   </div>
@@ -1486,7 +1492,7 @@ export default function EverCastPage() {
                       id="course-duration"
                       value={courseForm.total_duration}
                       onChange={(e) => setCourseForm({ ...courseForm, total_duration: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Ex: 75h 26m"
                     />
                   </div>
@@ -1501,7 +1507,7 @@ export default function EverCastPage() {
                       id="module-name"
                       value={moduleForm.name}
                       onChange={(e) => setModuleForm({ ...moduleForm, name: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Ex: FRENTE 1 - Fonética e Morfologia"
                     />
                   </div>
@@ -1511,7 +1517,7 @@ export default function EverCastPage() {
                       id="module-description"
                       value={moduleForm.description}
                       onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Descrição do módulo..."
                     />
                   </div>
@@ -1521,7 +1527,7 @@ export default function EverCastPage() {
                       id="module-duration"
                       value={moduleForm.total_duration}
                       onChange={(e) => setModuleForm({ ...moduleForm, total_duration: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Ex: 3h 45m"
                     />
                   </div>
@@ -1536,7 +1542,7 @@ export default function EverCastPage() {
                       id="lesson-title"
                       value={lessonForm.title}
                       onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Ex: Aula 1 - Fonética"
                     />
                   </div>
@@ -1546,7 +1552,7 @@ export default function EverCastPage() {
                       id="lesson-description"
                       value={lessonForm.description}
                       onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="Descrição da aula..."
                     />
                   </div>
@@ -1557,7 +1563,7 @@ export default function EverCastPage() {
                         id="lesson-duration"
                         value={lessonForm.duration}
                         onChange={(e) => setLessonForm({ ...lessonForm, duration: e.target.value })}
-                        className="bg-white/10 border-white/20 text-white"
+                        className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                         placeholder="Ex: 31:36"
                       />
                     </div>
@@ -1569,7 +1575,7 @@ export default function EverCastPage() {
                           type="number"
                           value={lessonForm.duration_seconds}
                           onChange={(e) => setLessonForm({ ...lessonForm, duration_seconds: parseInt(e.target.value) || 0 })}
-                          className="bg-white/10 border-white/20 text-white"
+                          className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                           placeholder="1896"
                         />
                         {isDetectingDuration && (
@@ -1592,7 +1598,7 @@ export default function EverCastPage() {
                       id="lesson-hls-url"
                       value={lessonForm.hls_url}
                       onChange={(e) => handleHLSUrlChange(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/..."
                     />
                     {lessonForm.hls_url && lessonForm.hls_url.includes('.m3u8') && (
@@ -1607,7 +1613,7 @@ export default function EverCastPage() {
                       id="lesson-soundcloud-url"
                       value={lessonForm.soundcloud_url}
                       onChange={(e) => setLessonForm({ ...lessonForm, soundcloud_url: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="https://soundcloud.com/everest-cursos-preparatorios/..."
                     />
                   </div>
@@ -1617,14 +1623,14 @@ export default function EverCastPage() {
                       id="lesson-embed-url"
                       value={lessonForm.embed_url}
                       onChange={(e) => setLessonForm({ ...lessonForm, embed_url: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
+                      className="bg-gray-50 dark:bg-white/10 border-gray-300 dark:border-white/20 text-gray-900 dark:text-white"
                       placeholder="https://player-vz-e9d62059-4a4.tv.pandavideo.com.br/embed/..."
                     />
                   </div>
                   
                   {/* Upload de MP3 */}
                   <div>
-                    <Label className="text-white">Upload de Áudio MP3</Label>
+                    <Label className="text-gray-900 dark:text-white">Upload de Áudio MP3</Label>
                     <div className="mt-2">
                       <AudioUpload
                         lessonId={editingItem?.id || 'new'}

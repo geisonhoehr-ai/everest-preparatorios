@@ -9,8 +9,8 @@ import {
   SkipForward, 
   Volume2, 
   VolumeX,
-  Download,
-  Headphones
+  Headphones,
+  Repeat
 } from 'lucide-react'
 
 interface MP3PlayerProps {
@@ -21,6 +21,8 @@ interface MP3PlayerProps {
   onEnded?: () => void
   onPlayPause?: (isPlaying: boolean) => void
   className?: string
+  isLooping?: boolean
+  onToggleLoop?: () => void
 }
 
 export function MP3Player({ 
@@ -30,7 +32,9 @@ export function MP3Player({
   onLoadedMetadata,
   onEnded,
   onPlayPause,
-  className = ""
+  className = "",
+  isLooping = false,
+  onToggleLoop
 }: MP3PlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -131,14 +135,7 @@ export function MP3Player({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleDownload = () => {
-    const link = document.createElement('a')
-    link.href = audioUrl
-    link.download = title || 'audio.mp3'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+  // Função de download removida conforme solicitado
 
   return (
     <>
@@ -191,16 +188,9 @@ export function MP3Player({
           </div>
         </div>
 
-        {/* Botões de ação */}
+        {/* Botões de ação - download removido */}
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleDownload}
-            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
-          >
-            <Download className="w-4 h-4" />
-          </Button>
+          {/* Botão de download removido conforme solicitado */}
         </div>
       </div>
 
@@ -260,7 +250,7 @@ export function MP3Player({
           </Button>
         </div>
 
-        {/* Controle de volume - oculto em telas pequenas */}
+        {/* Controle de volume e loop - oculto em telas pequenas */}
         <div className="hidden sm:flex items-center justify-center space-x-3">
           <Button variant="ghost" size="sm" onClick={toggleMute} className="text-gray-400 hover:text-white">
             {isMuted ? (
@@ -281,6 +271,20 @@ export function MP3Player({
               background: `linear-gradient(to right, #ea580c 0%, #ea580c ${(isMuted ? 0 : volume) * 100}%, #4b5563 ${(isMuted ? 0 : volume) * 100}%, #4b5563 100%)`
             }}
           />
+          {onToggleLoop && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onToggleLoop}
+              className={`${
+                isLooping 
+                  ? 'text-orange-400 hover:text-orange-300' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Repeat className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -299,8 +303,16 @@ export function MP3Player({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => {
-          setIsPlaying(false)
-          onEnded?.()
+          if (isLooping) {
+            // Se está em loop, reinicia o áudio
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0
+              audioRef.current.play()
+            }
+          } else {
+            setIsPlaying(false)
+            onEnded?.()
+          }
         }}
         onError={(e) => {
           console.error('Erro no áudio:', e)

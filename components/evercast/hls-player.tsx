@@ -9,10 +9,10 @@ import {
   SkipForward, 
   Volume2, 
   VolumeX,
-  ExternalLink,
   Headphones,
   Wifi,
-  WifiOff
+  WifiOff,
+  Repeat
 } from 'lucide-react'
 
 interface HLSPlayerProps {
@@ -23,6 +23,8 @@ interface HLSPlayerProps {
   onEnded?: () => void
   onPlayPause?: (isPlaying: boolean) => void
   className?: string
+  isLooping?: boolean
+  onToggleLoop?: () => void
 }
 
 export function HLSPlayer({ 
@@ -32,7 +34,9 @@ export function HLSPlayer({
   onLoadedMetadata,
   onEnded,
   onPlayPause,
-  className = ""
+  className = "",
+  isLooping = false,
+  onToggleLoop
 }: HLSPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -388,9 +392,7 @@ export function HLSPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleOpenInNewTab = () => {
-    window.open(hlsUrl, '_blank')
-  }
+  // Função removida - ícone de abrir vídeo foi removido
 
   return (
     <>
@@ -483,16 +485,9 @@ export function HLSPlayer({
           </div>
         </div>
 
-        {/* Botões de ação */}
+        {/* Botões de ação - removido ícone de abrir vídeo */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleOpenInNewTab}
-            className="text-gray-400 hover:text-white p-1 sm:p-2"
-          >
-            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-          </Button>
+          {/* Ícone de abrir vídeo removido conforme solicitado */}
         </div>
       </div>
 
@@ -535,7 +530,7 @@ export function HLSPlayer({
           </div>
         </div>
 
-        {/* Controle de volume */}
+        {/* Controle de volume e loop */}
         <div className="flex items-center space-x-1 sm:space-x-2">
           <Button variant="ghost" size="sm" onClick={toggleMute} className="p-1 sm:p-2">
             {isMuted ? (
@@ -553,6 +548,20 @@ export function HLSPlayer({
             onChange={handleVolumeChange}
             className="w-12 sm:w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
           />
+          {onToggleLoop && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onToggleLoop}
+              className={`p-1 sm:p-2 ${
+                isLooping 
+                  ? 'text-orange-400 hover:text-orange-300' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Repeat className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -588,8 +597,16 @@ export function HLSPlayer({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => {
-          setIsPlaying(false)
-          onEnded?.()
+          if (isLooping) {
+            // Se está em loop, reinicia o áudio
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0
+              audioRef.current.play()
+            }
+          } else {
+            setIsPlaying(false)
+            onEnded?.()
+          }
         }}
         onError={(e) => {
           console.error('Erro no áudio:', e)

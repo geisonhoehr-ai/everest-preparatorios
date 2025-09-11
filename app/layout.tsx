@@ -31,7 +31,7 @@ export default function RootLayout({
      crossOrigin="anonymous"></script>
       </head>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
           <AuthProvider>
             <PerformanceOptimizer>
               {children}
