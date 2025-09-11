@@ -93,83 +93,141 @@ export function HLSPlayer({
     let hls: any = null
 
     const setupHLS = () => {
+      // Validar URL HLS
+      if (!hlsUrl.includes('.m3u8')) {
+        console.error('❌ [HLS] URL não é um manifest HLS válido:', hlsUrl)
+        setError('URL não é um manifest HLS válido')
+        return
+      }
+
       if (window.Hls && window.Hls.isSupported()) {
         // Limpar URL se tiver @ no início
         const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
         
+        console.log('🔧 [HLS] Configurando HLS.js com URL:', cleanUrl)
+        
         hls = new window.Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          backBufferLength: 90,
+          backBufferLength: 30,
           maxBufferLength: 60,
           maxMaxBufferLength: 120,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
           maxFragLookUpTolerance: 0.25,
-          // Configurações adicionais para melhor compatibilidade
+          // Configurações otimizadas para vídeo/áudio
           startLevel: -1, // Auto
-          capLevelToPlayerSize: true,
-          debug: false,
+          capLevelToPlayerSize: true, // Habilitar para vídeo
+          debug: true, // Ativar debug para diagnóstico
           enableSoftwareAES: true,
-          manifestLoadingTimeOut: 10000,
-          manifestLoadingMaxRetry: 3,
-          levelLoadingTimeOut: 10000,
-          levelLoadingMaxRetry: 3,
-          fragLoadingTimeOut: 20000,
-          fragLoadingMaxRetry: 3
+          // Timeouts mais generosos para PandaVideo
+          manifestLoadingTimeOut: 15000,
+          manifestLoadingMaxRetry: 5,
+          levelLoadingTimeOut: 15000,
+          levelLoadingMaxRetry: 5,
+          fragLoadingTimeOut: 30000,
+          fragLoadingMaxRetry: 5,
+          // Configurações específicas para CORS
+          xhrSetup: (xhr: XMLHttpRequest, url: string) => {
+            xhr.withCredentials = false
+            xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
+          }
         })
 
         hls.loadSource(cleanUrl)
         hls.attachMedia(audio)
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-          console.log('✅ HLS manifest carregado')
-          console.log('📊 HLS Levels:', hls.levels)
-          console.log('⏱️ Duração estimada:', hls.media?.duration)
+          console.log('✅ [HLS] Manifest carregado com sucesso')
+          console.log('📊 [HLS] Níveis disponíveis:', hls.levels?.length || 0)
+          
+          if (hls.levels && hls.levels.length > 0) {
+            hls.levels.forEach((level: any, index: number) => {
+              const resolution = level.height ? `${level.height}p` : 'Áudio'
+              const bitrate = level.bitrate ? `${Math.round(level.bitrate / 1000)}kbps` : 'N/A'
+              console.log(`   ${index}: ${resolution} - ${bitrate}`)
+            })
+            
+            // Detectar se é stream de vídeo ou áudio
+            const hasVideo = hls.levels.some((level: any) => level.height && level.height > 0)
+            if (hasVideo) {
+              console.log('🎥 [HLS] Stream de vídeo detectado (PandaVideo)')
+              setStreamQuality('Vídeo')
+            } else {
+              console.log('🎵 [HLS] Stream de áudio detectado')
+              setStreamQuality('Áudio')
+            }
+          }
+          
+          console.log('⏱️ [HLS] Duração estimada:', hls.media?.duration || 'N/A')
+          setError(null)
           setIsLoading(false)
         })
 
         hls.on(window.Hls.Events.ERROR, (event: any, data: any) => {
-          console.error('❌ Erro HLS:', data)
-          console.error('   - Tipo:', data.type)
-          console.error('   - Detalhes:', data.details)
-          console.error('   - Fatal:', data.fatal)
-          console.error('   - URL:', data.url)
+          console.error('❌ [HLS] Erro detectado:', {
+            type: data.type,
+            details: data.details,
+            fatal: data.fatal,
+            url: data.url,
+            reason: data.reason
+          })
           
           if (data.fatal) {
+            let errorMessage = 'Erro fatal no stream HLS'
+            
             switch (data.type) {
               case window.Hls.ErrorTypes.NETWORK_ERROR:
-                console.log('🔄 Tentando recuperar erro de rede...')
-                setError('Erro de rede. Tentando recuperar...')
+                console.log('🔄 [HLS] Tentando recuperar erro de rede...')
+                errorMessage = 'Erro de rede. Verificando conectividade...'
+                setError(errorMessage)
                 setTimeout(() => {
-                  hls.startLoad()
-                }, 1000)
-                break
-              case window.Hls.ErrorTypes.MEDIA_ERROR:
-                console.log('🔄 Tentando recuperar erro de mídia...')
-                setError('Erro de mídia. Tentando recuperar...')
-                hls.recoverMediaError()
-                break
-              case window.Hls.ErrorTypes.MUX_ERROR:
-                console.log('🔄 Erro de mux, tentando recarregar...')
-                setError('Erro de formato. Recarregando...')
-                hls.destroy()
-                setTimeout(() => {
-                  setupHLS()
+                  try {
+                    hls.startLoad()
+                  } catch (e) {
+                    console.error('❌ [HLS] Falha ao reiniciar após erro de rede:', e)
+                    setError('Falha na recuperação. Tente recarregar a página.')
+                  }
                 }, 2000)
                 break
-              default:
-                console.log('🔄 Erro fatal, recarregando...')
-                setError('Erro fatal. Recarregando...')
+              case window.Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('🔄 [HLS] Tentando recuperar erro de mídia...')
+                errorMessage = 'Erro de mídia. Tentando recuperar...'
+                setError(errorMessage)
+                try {
+                  hls.recoverMediaError()
+                } catch (e) {
+                  console.error('❌ [HLS] Falha na recuperação de mídia:', e)
+                  setError('Falha na recuperação de mídia. Recarregando...')
+                  hls.destroy()
+                  setTimeout(() => {
+                    setupHLS()
+                  }, 3000)
+                }
+                break
+              case window.Hls.ErrorTypes.MUX_ERROR:
+                console.log('🔄 [HLS] Erro de mux, recarregando...')
+                errorMessage = 'Erro de formato de stream. Recarregando...'
+                setError(errorMessage)
                 hls.destroy()
                 setTimeout(() => {
                   setupHLS()
                 }, 3000)
                 break
+              default:
+                console.log('🔄 [HLS] Erro fatal desconhecido, recarregando...')
+                errorMessage = `Erro fatal: ${data.details || 'Desconhecido'}. Recarregando...`
+                setError(errorMessage)
+                hls.destroy()
+                setTimeout(() => {
+                  setupHLS()
+                }, 5000)
+                break
             }
           } else {
-            console.log('⚠️ Erro não fatal, continuando...')
+            console.log('⚠️ [HLS] Erro não fatal, continuando...')
+            // Para erros não fatais, apenas log, não alterar estado
           }
         })
 
@@ -191,14 +249,22 @@ export function HLSPlayer({
 
       } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari nativo
-        console.log('🍎 Usando HLS nativo do Safari')
+        console.log('🍎 [HLS] Usando HLS nativo do Safari')
         const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
         audio.src = cleanUrl
+        setError(null)
         setIsLoading(false)
       } else {
         // Fallback: tentar reproduzir diretamente
-        console.log('⚠️ HLS.js não suportado, tentando fallback direto...')
+        console.log('⚠️ [HLS] HLS.js não suportado, tentando fallback direto...')
         const cleanUrl = hlsUrl.startsWith('@') ? hlsUrl.substring(1) : hlsUrl
+        
+        // Validar URL antes de tentar reproduzir
+        if (!cleanUrl.includes('.m3u8')) {
+          console.error('❌ [HLS] URL não é um manifest HLS válido')
+          setError('URL não é um manifest HLS válido')
+          return
+        }
         
         // Tentar diferentes tipos MIME
         const mimeTypes = [
@@ -209,20 +275,23 @@ export function HLSPlayer({
         ]
         
         let canPlay = false
+        let supportedMimeType = ''
         for (const mimeType of mimeTypes) {
           if (audio.canPlayType(mimeType)) {
-            console.log(`✅ Suporte encontrado para: ${mimeType}`)
+            console.log(`✅ [HLS] Suporte encontrado para: ${mimeType}`)
             canPlay = true
+            supportedMimeType = mimeType
             break
           }
         }
         
         if (canPlay) {
-          console.log('🔄 Tentando reproduzir diretamente...')
+          console.log(`🔄 [HLS] Tentando reproduzir diretamente com ${supportedMimeType}...`)
           audio.src = cleanUrl
+          setError(null)
           setIsLoading(false)
         } else {
-          console.error('❌ Nenhum suporte HLS encontrado')
+          console.error('❌ [HLS] Nenhum suporte HLS encontrado')
           setError('HLS não suportado neste navegador. Tente usar Chrome, Firefox ou Safari.')
         }
       }
@@ -403,7 +472,11 @@ export function HLSPlayer({
           <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-gray-400 flex-wrap">
             <span>Streaming HLS</span>
             {streamQuality && (
-              <span className="bg-orange-600/30 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">
+              <span className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs ${
+                streamQuality === 'Vídeo' 
+                  ? 'bg-blue-600/30 text-blue-300' 
+                  : 'bg-orange-600/30 text-orange-300'
+              }`}>
                 {streamQuality}
               </span>
             )}
@@ -509,10 +582,13 @@ export function HLSPlayer({
 
       {/* Informações técnicas */}
       <div className="text-xs text-gray-500 space-y-1">
-        <p>Fonte: Pandavideo HLS Stream</p>
+        <p>Fonte: {streamQuality === 'Vídeo' ? 'Pandavideo HLS (Vídeo)' : 'HLS Stream (Áudio)'}</p>
         <p>URL: {hlsUrl}</p>
-        <p>Qualidade: {streamQuality || 'Auto'}</p>
+        <p>Tipo: {streamQuality || 'Detectando...'}</p>
         <p>Status: {isOnline ? 'Online' : 'Offline'}</p>
+        {streamQuality === 'Vídeo' && (
+          <p className="text-blue-400">💡 Stream de vídeo - reproduzindo apenas áudio</p>
+        )}
       </div>
 
       {/* Elemento de áudio oculto */}

@@ -24,30 +24,59 @@ export function SoundCloudPlayer({
   // Função para extrair o ID do SoundCloud da URL
   const getSoundCloudId = (url: string): string | null => {
     try {
-      // Padrões de URL do SoundCloud
+      console.log('🔍 [SoundCloud] Analisando URL:', url)
+      
+      // Padrões de URL do SoundCloud mais abrangentes
       const patterns = [
         /soundcloud\.com\/[^\/]+\/[^\/]+\/s-([a-zA-Z0-9]+)/,
         /soundcloud\.com\/[^\/]+\/[^\/]+\/([a-zA-Z0-9]+)/,
-        /soundcloud\.com\/[^\/]+\/([a-zA-Z0-9]+)/
+        /soundcloud\.com\/[^\/]+\/([a-zA-Z0-9]+)/,
+        /soundcloud\.com\/tracks\/([a-zA-Z0-9]+)/,
+        /soundcloud\.com\/[^\/]+\/sets\/([a-zA-Z0-9]+)/
       ]
       
       for (const pattern of patterns) {
         const match = url.match(pattern)
-        if (match) return match[1]
+        if (match) {
+          console.log('✅ [SoundCloud] ID encontrado:', match[1])
+          return match[1]
+        }
       }
       
+      console.log('❌ [SoundCloud] Nenhum ID encontrado na URL')
       return null
-    } catch {
+    } catch (error) {
+      console.error('❌ [SoundCloud] Erro ao extrair ID:', error)
       return null
     }
   }
 
   // Função para gerar URL de embed do SoundCloud
   const getEmbedUrl = (url: string): string => {
-    const id = getSoundCloudId(url)
-    if (!id) return url
-    
-    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
+    try {
+      console.log('🔗 [SoundCloud] Gerando URL de embed para:', url)
+      
+      // Se a URL já é uma URL de embed, retornar como está
+      if (url.includes('w.soundcloud.com/player')) {
+        console.log('✅ [SoundCloud] URL já é de embed')
+        return url
+      }
+      
+      // Validar se é uma URL válida do SoundCloud
+      if (!url.includes('soundcloud.com')) {
+        console.error('❌ [SoundCloud] URL não é do SoundCloud:', url)
+        setError('URL inválida do SoundCloud')
+        return url
+      }
+      
+      const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`
+      console.log('✅ [SoundCloud] URL de embed gerada:', embedUrl)
+      return embedUrl
+    } catch (error) {
+      console.error('❌ [SoundCloud] Erro ao gerar URL de embed:', error)
+      setError('Erro ao processar URL do SoundCloud')
+      return url
+    }
   }
 
   const handlePlayPause = () => {
@@ -68,9 +97,25 @@ export function SoundCloudPlayer({
     setIsLoading(true)
     setError(null)
     
+    // Validar URL do SoundCloud
+    if (!soundcloudUrl) {
+      setError('URL do SoundCloud não fornecida')
+      setIsLoading(false)
+      return
+    }
+    
+    if (!soundcloudUrl.includes('soundcloud.com')) {
+      setError('URL inválida do SoundCloud')
+      setIsLoading(false)
+      return
+    }
+    
+    console.log('🎵 [SoundCloud] Inicializando player para:', soundcloudUrl)
+    
     // Simular carregamento
     const timer = setTimeout(() => {
       setIsLoading(false)
+      console.log('✅ [SoundCloud] Player carregado')
     }, 1000)
     
     return () => clearTimeout(timer)

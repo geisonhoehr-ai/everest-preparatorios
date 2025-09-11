@@ -35,6 +35,7 @@ export interface AudioLesson {
   duration?: string
   duration_seconds?: number
   hls_url?: string
+  soundcloud_url?: string
   embed_url?: string
   audio_url?: string
   order_index: number
@@ -363,6 +364,7 @@ export async function createAudioLesson(userUuid: string, lessonData: Partial<Au
         duration: lessonData.duration,
         duration_seconds: lessonData.duration_seconds,
         hls_url: lessonData.hls_url,
+        soundcloud_url: lessonData.soundcloud_url,
         embed_url: lessonData.embed_url,
         audio_url: lessonData.audio_url,
         order_index: lessonData.order_index || 0,
@@ -402,6 +404,7 @@ export async function updateAudioLesson(userUuid: string, lessonId: string, less
         duration: lessonData.duration,
         duration_seconds: lessonData.duration_seconds,
         hls_url: lessonData.hls_url,
+        soundcloud_url: lessonData.soundcloud_url,
         embed_url: lessonData.embed_url,
         audio_url: lessonData.audio_url,
         order_index: lessonData.order_index,

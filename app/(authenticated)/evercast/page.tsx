@@ -47,6 +47,10 @@ import { SoundCloudPlayer } from '@/components/evercast/soundcloud-player'
 import { AudioUpload } from '@/components/evercast/audio-upload'
 import { HLSDebug } from '@/components/evercast/hls-debug'
 import { HLSTestPlayer } from '@/components/evercast/hls-test-player'
+import { PandaVideoTest } from '@/components/evercast/pandavideo-test'
+import { PandaVideoManager } from '@/components/evercast/panda-video-manager'
+import { AudioOnlyHLSPlayer } from '@/components/evercast/audio-only-hls-player'
+import { PandaVideoTestConnection } from '@/components/evercast/panda-video-test-connection'
 import { AudioSearch } from '@/components/evercast/audio-search'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -70,6 +74,8 @@ export default function EverCastPage() {
   
   // Estados para busca de áudio PandaVideo
   const [currentAudioHLS, setCurrentAudioHLS] = useState<string | null>(null)
+  const [showPandaVideoManager, setShowPandaVideoManager] = useState(false)
+  const [extractedAudio, setExtractedAudio] = useState<{blob: Blob, title: string} | null>(null)
   
   // Estados para edição (professores/admins)
   const [isEditing, setIsEditing] = useState(false)
@@ -222,9 +228,61 @@ export default function EverCastPage() {
         })
         setIsEditing(false)
         setEditingType(null)
+        setEditingItem(null)
       }
     } catch (error) {
       console.error('Erro ao criar aula:', error)
+    }
+  }
+
+  const handleUpdateLesson = async () => {
+    if (!user?.id || !editingItem?.id) return
+
+    try {
+      console.log('🔄 [EverCast] Atualizando aula:', editingItem.id)
+      
+      const updatedLesson = await updateAudioLesson(user.id, editingItem.id, {
+        ...lessonForm,
+        module_id: currentModule?.id
+      })
+      
+      if (updatedLesson) {
+        console.log('✅ [EverCast] Aula atualizada com sucesso')
+        
+        // Atualizar o estado local
+        if (currentModule) {
+          const updatedModule = { ...currentModule }
+          updatedModule.audio_lessons = updatedModule.audio_lessons?.map(l => 
+            l.id === editingItem.id ? updatedLesson : l
+          ) || []
+          setCurrentModule(updatedModule)
+          
+          const updatedCourse = { ...currentCourse! }
+          updatedCourse.audio_modules = updatedCourse.audio_modules?.map(m => 
+            m.id === currentModule.id ? updatedModule : m
+          )
+          setCurrentCourse(updatedCourse)
+          setCourses(courses.map(c => c.id === currentCourse!.id ? updatedCourse : c))
+        }
+        
+        setLessonForm({
+          title: '',
+          description: '',
+          duration: '',
+          duration_seconds: 0,
+          hls_url: '',
+          soundcloud_url: '',
+          embed_url: '',
+          audio_url: '',
+          order_index: 0,
+          is_preview: false
+        })
+        setIsEditing(false)
+        setEditingType(null)
+        setEditingItem(null)
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar aula:', error)
     }
   }
 
@@ -318,39 +376,62 @@ export default function EverCastPage() {
     }
   }
 
+  // Função para lidar com áudio extraído da Panda Video
+  const handleAudioExtracted = (audioBlob: Blob, video: any) => {
+    setExtractedAudio({
+      blob: audioBlob,
+      title: video.title
+    })
+    console.log('🎵 [EverCast] Áudio extraído da Panda Video:', video.title)
+  }
+
+  // Função para lidar com erros do gerenciador
+  const handlePandaVideoError = (error: string) => {
+    console.error('❌ [EverCast] Erro no gerenciador Panda Video:', error)
+    alert(`Erro: ${error}`)
+  }
+
   // Função para excluir aula
   const handleDeleteLesson = async (lessonId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta aula?')) return
     
     try {
-      await deleteAudioLesson(profile?.id || '', lessonId)
+      console.log('🗑️ [EverCast] Excluindo aula:', lessonId)
       
-      // Atualizar o estado local
-      if (currentModule) {
-        const updatedLessons = currentModule.audio_lessons?.filter(l => l.id !== lessonId) || []
-        const updatedModule = { ...currentModule, audio_lessons: updatedLessons }
-        setCurrentModule(updatedModule)
+      const success = await deleteAudioLesson(profile?.id || '', lessonId)
+      
+      if (success) {
+        console.log('✅ [EverCast] Aula excluída com sucesso')
         
-        // Atualizar o curso atual
-        if (currentCourse) {
-          const updatedCourse = {
-            ...currentCourse,
-            audio_modules: currentCourse.audio_modules?.map(m => 
-              m.id === currentModule.id ? updatedModule : m
-            ) || []
+        // Atualizar o estado local
+        if (currentModule) {
+          const updatedLessons = currentModule.audio_lessons?.filter(l => l.id !== lessonId) || []
+          const updatedModule = { ...currentModule, audio_lessons: updatedLessons }
+          setCurrentModule(updatedModule)
+          
+          // Atualizar o curso atual
+          if (currentCourse) {
+            const updatedCourse = {
+              ...currentCourse,
+              audio_modules: currentCourse.audio_modules?.map(m => 
+                m.id === currentModule.id ? updatedModule : m
+              ) || []
+            }
+            setCurrentCourse(updatedCourse)
+            setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
           }
-          setCurrentCourse(updatedCourse)
-          setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
+          
+          // Se a aula excluída era a atual, limpar seleção
+          if (currentLesson?.id === lessonId) {
+            setCurrentLesson(null)
+          }
         }
-        
-        // Se a aula excluída era a atual, limpar seleção
-        if (currentLesson?.id === lessonId) {
-          setCurrentLesson(null)
-        }
+      } else {
+        throw new Error('Falha ao excluir aula no servidor')
       }
     } catch (error) {
-      console.error('Erro ao excluir aula:', error)
-      alert('Erro ao excluir aula. Tente novamente.')
+      console.error('❌ [EverCast] Erro ao excluir aula:', error)
+      alert(`Erro ao excluir aula: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
 
@@ -359,24 +440,32 @@ export default function EverCastPage() {
     if (!confirm('Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.')) return
     
     try {
-      await deleteAudioModule(profile?.id || '', moduleId)
+      console.log('🗑️ [EverCast] Excluindo módulo:', moduleId)
       
-      // Atualizar o estado local
-      if (currentCourse) {
-        const updatedModules = currentCourse.audio_modules?.filter(m => m.id !== moduleId) || []
-        const updatedCourse = { ...currentCourse, audio_modules: updatedModules }
-        setCurrentCourse(updatedCourse)
-        setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
+      const success = await deleteAudioModule(profile?.id || '', moduleId)
+      
+      if (success) {
+        console.log('✅ [EverCast] Módulo excluído com sucesso')
         
-        // Se o módulo excluído era o atual, limpar seleção
-        if (currentModule?.id === moduleId) {
-          setCurrentModule(null)
-          setCurrentLesson(null)
+        // Atualizar o estado local
+        if (currentCourse) {
+          const updatedModules = currentCourse.audio_modules?.filter(m => m.id !== moduleId) || []
+          const updatedCourse = { ...currentCourse, audio_modules: updatedModules }
+          setCurrentCourse(updatedCourse)
+          setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c))
+          
+          // Se o módulo excluído era o atual, limpar seleção
+          if (currentModule?.id === moduleId) {
+            setCurrentModule(null)
+            setCurrentLesson(null)
+          }
         }
+      } else {
+        throw new Error('Falha ao excluir módulo no servidor')
       }
     } catch (error) {
-      console.error('Erro ao excluir módulo:', error)
-      alert('Erro ao excluir módulo. Tente novamente.')
+      console.error('❌ [EverCast] Erro ao excluir módulo:', error)
+      alert(`Erro ao excluir módulo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
 
@@ -385,21 +474,29 @@ export default function EverCastPage() {
     if (!confirm('Tem certeza que deseja excluir este curso? Todos os módulos e aulas serão excluídos também.')) return
     
     try {
-      await deleteAudioCourse(profile?.id || '', courseId)
+      console.log('🗑️ [EverCast] Excluindo curso:', courseId)
       
-      // Atualizar o estado local
-      const updatedCourses = courses.filter(c => c.id !== courseId)
-      setCourses(updatedCourses)
+      const success = await deleteAudioCourse(profile?.id || '', courseId)
       
-      // Se o curso excluído era o atual, limpar seleção
-      if (currentCourse?.id === courseId) {
-        setCurrentCourse(null)
-        setCurrentModule(null)
-        setCurrentLesson(null)
+      if (success) {
+        console.log('✅ [EverCast] Curso excluído com sucesso')
+        
+        // Atualizar o estado local
+        const updatedCourses = courses.filter(c => c.id !== courseId)
+        setCourses(updatedCourses)
+        
+        // Se o curso excluído era o atual, limpar seleção
+        if (currentCourse?.id === courseId) {
+          setCurrentCourse(null)
+          setCurrentModule(null)
+          setCurrentLesson(null)
+        }
+      } else {
+        throw new Error('Falha ao excluir curso no servidor')
       }
     } catch (error) {
-      console.error('Erro ao excluir curso:', error)
-      alert('Erro ao excluir curso. Tente novamente.')
+      console.error('❌ [EverCast] Erro ao excluir curso:', error)
+      alert(`Erro ao excluir curso: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
 
@@ -771,10 +868,37 @@ export default function EverCastPage() {
 
             {/* Teste HLS com URL específica - Apenas para professores/admins */}
             {canEdit && (
-              <HLSTestPlayer 
-                hlsUrl="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8"
-                title="Teste URL HLS Pandavideo"
-              />
+              <div className="space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    onClick={() => setShowPandaVideoManager(!showPandaVideoManager)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    {showPandaVideoManager ? 'Fechar' : 'Abrir'} Gerenciador Panda Video
+                  </Button>
+                </div>
+                
+                {showPandaVideoManager && (
+                  <PandaVideoManager
+                    onAudioExtracted={handleAudioExtracted}
+                    onError={handlePandaVideoError}
+                  />
+                )}
+                
+                <PandaVideoTestConnection />
+                
+                <PandaVideoTest 
+                  onUrlTested={(url, success) => {
+                    console.log('🔍 [PandaVideo] Teste concluído:', { url, success })
+                  }}
+                />
+                <HLSTestPlayer 
+                  hlsUrl="https://b-vz-e9d62059-4a4.tv.pandavideo.com.br/e13112a8-6545-49e7-ba1c-9825b15c9c09/playlist.m3u8"
+                  title="Teste Player HLS"
+                />
+              </div>
             )}
 
             {currentModule && (
@@ -942,6 +1066,35 @@ export default function EverCastPage() {
           onPlayPause={setIsPlaying}
           className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
         />
+      )}
+
+      {/* Player de áudio extraído da Panda Video */}
+      {extractedAudio && (
+        <div className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-green-500">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-800">
+                🎵 Áudio Extraído: {extractedAudio.title}
+              </h3>
+              <Button
+                onClick={() => setExtractedAudio(null)}
+                variant="ghost"
+                size="sm"
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <AudioOnlyHLSPlayer
+              hlsUrl={URL.createObjectURL(extractedAudio.blob)}
+              title={extractedAudio.title}
+              onError={(error) => {
+                console.error('Erro no player de áudio extraído:', error)
+                alert(`Erro no player: ${error}`)
+              }}
+            />
+          </div>
+        </div>
       )}
       
       {/* MP3 Player Component */}
@@ -1161,6 +1314,9 @@ export default function EverCastPage() {
                           }
                         }}
                         currentAudioUrl={lessonForm.audio_url}
+                        compressionEnabled={true}
+                        compressionQuality="medium"
+                        maxSizeMB={10}
                       />
                     </div>
                   </div>
@@ -1184,11 +1340,25 @@ export default function EverCastPage() {
                 <Button
                   onClick={() => {
                     if (editingType === 'course') {
-                      handleCreateCourse()
+                      if (editingItem) {
+                        // TODO: Implementar updateAudioCourse
+                        handleCreateCourse()
+                      } else {
+                        handleCreateCourse()
+                      }
                     } else if (editingType === 'module') {
-                      handleCreateModule()
+                      if (editingItem) {
+                        // TODO: Implementar updateAudioModule
+                        handleCreateModule()
+                      } else {
+                        handleCreateModule()
+                      }
                     } else if (editingType === 'lesson') {
-                      handleCreateLesson()
+                      if (editingItem) {
+                        handleUpdateLesson()
+                      } else {
+                        handleCreateLesson()
+                      }
                     }
                   }}
                   className="bg-orange-600 hover:bg-orange-700"
