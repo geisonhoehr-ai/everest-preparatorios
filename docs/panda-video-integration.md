@@ -40,8 +40,10 @@ Adicione as seguintes variáveis ao seu arquivo `.env.local`:
 
 ```env
 # Configurações da Panda Video
-NEXT_PUBLIC_PANDA_VIDEO_API_KEY=sua_chave_api_aqui
+NEXT_PUBLIC_PANDA_VIDEO_API_KEY=panda-3046a07e6e8a7ff8e7a9f20b13bb39513b25ee5c2d12bd7a0f452332abf0ae3e
 NEXT_PUBLIC_PANDA_VIDEO_BASE_URL=https://api.pandavideo.com/v2
+NEXT_PUBLIC_PANDA_VIDEO_CLIENT_ID=3d69uvb4oqm1qoi8e74kvch1v4
+NEXT_PUBLIC_PANDA_VIDEO_CLIENT_SECRET=1fu129jsanubuet2thmetsih75cd4iv83r8ve3bcm33b5ka0im2c
 ```
 
 **Nota**: A implementação utiliza a API v2 da Panda Video, que é a versão mais recente e estável.

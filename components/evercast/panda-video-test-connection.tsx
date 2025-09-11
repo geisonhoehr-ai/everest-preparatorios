@@ -45,7 +45,10 @@ export default function PandaVideoTestConnection() {
       <div className="space-y-4">
         <div className="p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Chave API:</strong> panda-67b0e45386fbde4995819c39285ea4325fc883d2ea7626316602c0d4cea565ea
+            <strong>Chave API:</strong> panda-3046a07e6e8a7ff8e7a9f20b13bb39513b25ee5c2d12bd7a0f452332abf0ae3e
+          </p>
+          <p className="text-sm text-blue-600 mt-1">
+            <strong>Client ID:</strong> 3d69uvb4oqm1qoi8e74kvch1v4
           </p>
           <p className="text-sm text-blue-600 mt-1">
             <strong>Endpoint:</strong> https://api.pandavideo.com/v2
