@@ -85,6 +85,9 @@ export default function EverCastPage() {
   const [showFavorites, setShowFavorites] = useState(false)
   const [cachedAudios, setCachedAudios] = useState<Map<string, Blob>>(new Map())
   
+  // Estados para detecção de duração
+  const [isDetectingDuration, setIsDetectingDuration] = useState(false)
+  
   // Estados para edição (professores/admins)
   const [isEditing, setIsEditing] = useState(false)
   const [editingType, setEditingType] = useState<'course' | 'module' | 'lesson' | null>(null)
@@ -214,13 +217,34 @@ export default function EverCastPage() {
     if (!user?.id || !currentModule) return
 
     try {
+      let lessonData = { ...lessonForm }
+      
+      // Se tem HLS URL, tentar detectar duração automaticamente
+      if (lessonForm.hls_url && !lessonForm.duration_seconds) {
+        try {
+          console.log('🔍 [EverCast] Detectando duração do HLS...')
+          const detectedDuration = await detectHLSDuration(lessonForm.hls_url)
+          lessonData.duration_seconds = detectedDuration
+          lessonData.duration = formatDuration(detectedDuration)
+          console.log('✅ [EverCast] Duração detectada:', detectedDuration, 'segundos')
+        } catch (error) {
+          console.warn('⚠️ [EverCast] Não foi possível detectar duração:', error)
+          // Continua sem duração se não conseguir detectar
+        }
+      }
+      
       const newLesson = await createAudioLesson(user.id, {
-        ...lessonForm,
+        ...lessonData,
         module_id: currentModule?.id
       })
+      
       if (newLesson) {
         const updatedModule = { ...currentModule }
         updatedModule.audio_lessons = [...(updatedModule.audio_lessons || []), newLesson]
+        
+        // Recalcular duração total do módulo
+        updatedModule.total_duration = calculateModuleDuration(updatedModule)
+        
         setCurrentModule(updatedModule)
         
         const updatedCourse = { ...currentCourse! }
@@ -445,6 +469,74 @@ export default function EverCastPage() {
     
     const allLessons = currentCourse.audio_modules?.flatMap(module => module.audio_lessons || []) || []
     return allLessons.filter(lesson => favoriteAudios.has(lesson.id))
+  }
+
+  // Função para detectar duração do HLS
+  const detectHLSDuration = async (hlsUrl: string): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      setIsDetectingDuration(true)
+      
+      // Criar elemento de áudio temporário
+      const audio = new Audio()
+      audio.crossOrigin = 'anonymous'
+      
+      const timeout = setTimeout(() => {
+        audio.remove()
+        setIsDetectingDuration(false)
+        reject(new Error('Timeout ao detectar duração'))
+      }, 10000) // 10 segundos de timeout
+      
+      audio.addEventListener('loadedmetadata', () => {
+        clearTimeout(timeout)
+        const duration = audio.duration
+        audio.remove()
+        setIsDetectingDuration(false)
+        
+        if (isNaN(duration) || duration === 0) {
+          reject(new Error('Duração inválida'))
+        } else {
+          console.log('✅ Duração detectada:', duration, 'segundos')
+          resolve(Math.floor(duration))
+        }
+      })
+      
+      audio.addEventListener('error', (e) => {
+        clearTimeout(timeout)
+        audio.remove()
+        setIsDetectingDuration(false)
+        reject(new Error('Erro ao carregar HLS'))
+      })
+      
+      // Tentar carregar o HLS
+      audio.src = hlsUrl
+      audio.load()
+    })
+  }
+
+  // Função para calcular duração total do módulo
+  const calculateModuleDuration = (module: any): number => {
+    if (!module.audio_lessons) return 0
+    return module.audio_lessons.reduce((total: number, lesson: any) => {
+      const duration = typeof lesson.duration === 'string' 
+        ? parseInt(lesson.duration) || 0 
+        : lesson.duration || 0
+      return total + duration
+    }, 0)
+  }
+
+  // Função para formatar duração em horas e minutos
+  const formatDuration = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    } else {
+      return `${secs}s`
+    }
   }
 
   // Função para excluir aula
@@ -1367,14 +1459,27 @@ export default function EverCastPage() {
                     </div>
                     <div>
                       <Label htmlFor="lesson-duration-seconds" className="text-white">Duração (segundos)</Label>
-                      <Input
-                        id="lesson-duration-seconds"
-                        type="number"
-                        value={lessonForm.duration_seconds}
-                        onChange={(e) => setLessonForm({ ...lessonForm, duration_seconds: parseInt(e.target.value) || 0 })}
-                        className="bg-white/10 border-white/20 text-white"
-                        placeholder="1896"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="lesson-duration-seconds"
+                          type="number"
+                          value={lessonForm.duration_seconds}
+                          onChange={(e) => setLessonForm({ ...lessonForm, duration_seconds: parseInt(e.target.value) || 0 })}
+                          className="bg-white/10 border-white/20 text-white"
+                          placeholder="1896"
+                        />
+                        {isDetectingDuration && (
+                          <div className="flex items-center gap-2 text-orange-400 text-sm">
+                            <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                            Detectando...
+                          </div>
+                        )}
+                      </div>
+                      {lessonForm.hls_url && !lessonForm.duration_seconds && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          💡 A duração será detectada automaticamente do HLS
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div>

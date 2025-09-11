@@ -95,19 +95,25 @@ export default function FavoritesSection({
                 key={lesson.id}
                 className={`p-3 rounded-lg border transition-all ${
                   isCurrent 
-                    ? 'bg-orange-500/20 border-orange-500/50' 
+                    ? 'bg-orange-500/30 border-orange-500 shadow-lg shadow-orange-500/20' 
                     : 'bg-white/5 border-white/10 hover:bg-white/10'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {/* Ícone de música */}
-                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    isCurrent 
+                      ? 'bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30' 
+                      : 'bg-gradient-to-br from-red-500 to-pink-500'
+                  }`}>
                     <Music className="w-5 h-5 text-white" />
                   </div>
 
                   {/* Informações da aula */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-white truncate">
+                    <h4 className={`font-medium truncate ${
+                      isCurrent ? 'text-orange-300' : 'text-white'
+                    }`}>
                       {lesson.title}
                     </h4>
                     <div className="flex items-center gap-2 mt-1">
