@@ -64,11 +64,6 @@ export default function AudioOnlyHLSPlayer({
             liveBackBufferLength: 0,
             maxLiveSyncPlaybackRate: 1.5,
             liveSyncDuration: 2,
-            liveSyncDurationCount: 2,
-            liveMaxLatencyDurationCount: 5,
-            liveDurationInfinity: true,
-            liveBackBufferLength: 0,
-            maxLiveSyncPlaybackRate: 1.5,
             // Configurações específicas para áudio
             audioPreference: 'audio',
             audioCodecSwitch: true,
