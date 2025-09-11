@@ -443,7 +443,7 @@ export default function EverCastPage() {
   const getFavoriteAudios = () => {
     if (!currentCourse) return []
     
-    const allLessons = currentCourse.modules?.flatMap(module => module.lessons || []) || []
+    const allLessons = currentCourse.audio_modules?.flatMap(module => module.audio_lessons || []) || []
     return allLessons.filter(lesson => favoriteAudios.has(lesson.id))
   }
 
