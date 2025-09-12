@@ -1368,7 +1368,6 @@ export default function EverCastPage() {
         </div>
       </div>
 
-
       {/* SoundCloud Player Component */}
       {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
         <SoundCloudPlayer
