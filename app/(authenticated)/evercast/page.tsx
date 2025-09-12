@@ -1134,7 +1134,6 @@ export default function EverCastPage() {
         </div>
       </div>
 
-      {/* Área de Conteúdo - Playlist e Controles */}
       <div className="container mx-auto px-6 pb-8">
         <div className="max-w-6xl mx-auto">
           {/* Gerenciador Panda Video - Apenas para professores/admins */}
