@@ -1134,7 +1134,7 @@ export default function EverCastPage() {
         </div>
       
         <div className="container mx-auto px-6 pb-8">
-        <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
           {/* Gerenciador Panda Video - Apenas para professores/admins */}
           {canEdit && (
               <div className="space-y-4">
@@ -1368,7 +1368,6 @@ export default function EverCastPage() {
         </div>
       </div>
 
-      {/* SoundCloud Player Component */}
       {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
         <SoundCloudPlayer
           soundcloudUrl={currentLesson.soundcloud_url}
@@ -1734,6 +1733,8 @@ export default function EverCastPage() {
           </Card>
         </div>
       )}
+          </div>
+        </div>
       </div>
     </div>
   )
