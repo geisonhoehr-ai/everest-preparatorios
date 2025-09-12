@@ -444,18 +444,19 @@ export default function EverCastPage() {
         <HLSPlayer
           hlsUrl={currentLesson.hls_url}
           title={currentLesson.title}
-          isPlaying={isPlaying}
-          onPlayPause={setIsPlaying}
-          currentTime={currentTime}
           onTimeUpdate={setCurrentTime}
-          duration={duration}
-          onDurationChange={setDuration}
-          volume={volume}
-          onVolumeChange={setVolume}
-          isMuted={isMuted}
-          onMuteToggle={setIsMuted}
+          onLoadedMetadata={setDuration}
+          onPlayPause={setIsPlaying}
           isLooping={isLooping}
           onToggleLoop={() => setIsLooping(!isLooping)}
+          onEnded={() => {
+            if (isLooping) {
+              // Reiniciar o áudio se estiver em loop
+              setTimeout(() => setIsPlaying(true), 100)
+            } else {
+              setIsPlaying(false)
+            }
+          }}
           className="hidden"
         />
       )}
@@ -464,18 +465,19 @@ export default function EverCastPage() {
         <MP3Player
           audioUrl={currentLesson.audio_url}
           title={currentLesson.title}
-          isPlaying={isPlaying}
-          onPlayPause={setIsPlaying}
-          currentTime={currentTime}
           onTimeUpdate={setCurrentTime}
-          duration={duration}
-          onDurationChange={setDuration}
-          volume={volume}
-          onVolumeChange={setVolume}
-          isMuted={isMuted}
-          onMuteToggle={setIsMuted}
+          onLoadedMetadata={setDuration}
+          onPlayPause={setIsPlaying}
           isLooping={isLooping}
           onToggleLoop={() => setIsLooping(!isLooping)}
+          onEnded={() => {
+            if (isLooping) {
+              // Reiniciar o áudio se estiver em loop
+              setTimeout(() => setIsPlaying(true), 100)
+            } else {
+              setIsPlaying(false)
+            }
+          }}
           className="hidden"
         />
       )}
