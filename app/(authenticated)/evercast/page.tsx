@@ -1132,7 +1132,7 @@ export default function EverCastPage() {
 
           </div>
         </div>
-      
+        
         <div className="container mx-auto px-6 pb-8">
           <div className="max-w-6xl mx-auto">
           {/* Gerenciador Panda Video - Apenas para professores/admins */}
@@ -1366,7 +1366,6 @@ export default function EverCastPage() {
             )}
           </div>
         </div>
-      </div>
 
       {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
         <SoundCloudPlayer
