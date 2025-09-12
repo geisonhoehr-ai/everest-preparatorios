@@ -363,6 +363,131 @@ export default function EverCastPage() {
           </Card>
         </div>
       </div>
+
+      {/* Player de Áudio Fixo no Rodapé - Transparente */}
+      {currentLesson && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-t border-white/10">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/* Informações da Aula */}
+              <div className="flex items-center space-x-4 flex-1 min-w-0">
+                <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">
+                    {currentLesson.title.charAt(0)}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-white font-medium truncate">
+                    {currentLesson.title}
+                  </h4>
+                  <p className="text-gray-300 text-sm truncate">
+                    {currentCourse?.name} • {currentModule?.name}
+                  </p>
+                </div>
+              </div>
+
+              {/* Controles do Player */}
+              <div className="flex items-center space-x-4">
+                {/* Botão de Loop */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsLooping(!isLooping)}
+                  className={`text-white hover:bg-white/10 ${
+                    isLooping ? 'text-orange-400' : 'text-gray-300'
+                  }`}
+                >
+                  <Repeat className="w-4 h-4" />
+                </Button>
+
+                {/* Botão Play/Pause */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="text-white hover:bg-white/10"
+                >
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                </Button>
+
+                {/* Botão de Fechar */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentLesson(null)}
+                  className="text-gray-300 hover:text-white hover:bg-white/10"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Barra de Progresso */}
+            <div className="mt-3">
+              <div className="flex items-center space-x-2 text-xs text-gray-300">
+                <span>{Math.floor(currentTime / 60)}:{(currentTime % 60).toString().padStart(2, '0')}</span>
+                <div className="flex-1 bg-gray-600 rounded-full h-1">
+                  <div 
+                    className="bg-orange-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
+                  />
+                </div>
+                <span>{Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Players de Áudio - Renderizados condicionalmente */}
+      {currentLesson?.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
+        <HLSPlayer
+          hlsUrl={currentLesson.hls_url}
+          title={currentLesson.title}
+          isPlaying={isPlaying}
+          onPlayPause={setIsPlaying}
+          currentTime={currentTime}
+          onTimeUpdate={setCurrentTime}
+          duration={duration}
+          onDurationChange={setDuration}
+          volume={volume}
+          onVolumeChange={setVolume}
+          isMuted={isMuted}
+          onMuteToggle={setIsMuted}
+          isLooping={isLooping}
+          onToggleLoop={() => setIsLooping(!isLooping)}
+          className="hidden"
+        />
+      )}
+
+      {currentLesson?.audio_url && !currentLesson.hls_url && !currentLesson.soundcloud_url && (
+        <MP3Player
+          audioUrl={currentLesson.audio_url}
+          title={currentLesson.title}
+          isPlaying={isPlaying}
+          onPlayPause={setIsPlaying}
+          currentTime={currentTime}
+          onTimeUpdate={setCurrentTime}
+          duration={duration}
+          onDurationChange={setDuration}
+          volume={volume}
+          onVolumeChange={setVolume}
+          isMuted={isMuted}
+          onMuteToggle={setIsMuted}
+          isLooping={isLooping}
+          onToggleLoop={() => setIsLooping(!isLooping)}
+          className="hidden"
+        />
+      )}
+
+      {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
+        <SoundCloudPlayer
+          soundcloudUrl={currentLesson.soundcloud_url}
+          title={currentLesson.title}
+          onPlayPause={setIsPlaying}
+          className="hidden"
+        />
+      )}
     </div>
   )
 }
