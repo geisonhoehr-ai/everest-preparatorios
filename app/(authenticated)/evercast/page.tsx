@@ -575,13 +575,16 @@ export default function EverCastPage() {
         // Se duration é uma string no formato "1h 30m 45s", converter para segundos
         if (typeof lesson.duration === 'string' && lesson.duration.includes('h')) {
           duration = parseDurationString(lesson.duration)
+        } else if (typeof lesson.duration === 'string' && lesson.duration.includes(':')) {
+          // Formato HH:MM:SS ou MM:SS
+          duration = parseTimeString(lesson.duration)
         } else {
           duration = typeof lesson.duration === 'string' 
             ? parseInt(lesson.duration) || 0 
             : lesson.duration || 0
         }
       }
-      console.log(`📊 [EverCast] Aula "${lesson.title}": ${duration} segundos`)
+      console.log(`📊 [EverCast] Aula "${lesson.title}": ${duration} segundos (${lesson.duration})`)
       return total + duration
     }, 0)
   }
@@ -609,6 +612,24 @@ export default function EverCastPage() {
     }
     
     return totalSeconds
+  }
+
+  // Função para converter string de tempo (HH:MM:SS ou MM:SS) para segundos
+  const parseTimeString = (timeStr: string): number => {
+    const parts = timeStr.split(':').map(part => parseInt(part) || 0)
+    
+    if (parts.length === 3) {
+      // Formato HH:MM:SS
+      return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    } else if (parts.length === 2) {
+      // Formato MM:SS
+      return parts[0] * 60 + parts[1]
+    } else if (parts.length === 1) {
+      // Apenas segundos
+      return parts[0]
+    }
+    
+    return 0
   }
 
   // Função para formatar duração em horas e minutos
@@ -955,14 +976,12 @@ export default function EverCastPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Sidebar - Cursos */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Cursos */}
-            <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-gray-900 dark:text-white">Meus Cursos</CardTitle>
+        <div className="max-w-6xl mx-auto">
+          {/* Card Principal - Estilo Spotify */}
+          <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-gray-900 dark:text-white">Meus Cursos</CardTitle>
                   {canEdit && (
                     <Button
                       onClick={() => startEditing('course')}
@@ -970,49 +989,100 @@ export default function EverCastPage() {
                       className="bg-orange-600 hover:bg-orange-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Novo
+                      Novo Curso
                     </Button>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {courses.map((course) => (
-                  <div
-                    key={course.id}
-                    className={`p-4 rounded-lg cursor-pointer transition-all ${
-                      currentCourse?.id === course.id
-                        ? 'bg-orange-600/30 border border-orange-500'
-                        : 'bg-gray-50/50 dark:bg-white/5 hover:bg-gray-100/50 dark:hover:bg-white/10'
-                    }`}
-                    onClick={() => {
-                      setCurrentCourse(course)
-                      if (course.audio_modules && course.audio_modules.length > 0) {
-                        setCurrentModule(course.audio_modules[0])
-                        setPlaylist(course.audio_modules[0].audio_lessons || [])
-                        setCurrentIndex(0)
-                      }
-                    }}
-                  >
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{course.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{course.description}</p>
-                    <div className="flex items-center justify-between text-sm mb-3">
-                      <span className="text-gray-500 dark:text-gray-400">{course.total_duration}</span>
-                      <span className="text-orange-600 dark:text-orange-400">
-                        {course.audio_modules?.length || 0} módulos
-                      </span>
+              <CardContent>
+                {/* Seletor de Cursos */}
+                <div className="mb-6">
+                  <div className="flex flex-wrap gap-2">
+                    {courses.map((course) => (
+                      <Button
+                        key={course.id}
+                        variant={currentCourse?.id === course.id ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentCourse(course)
+                          if (course.audio_modules && course.audio_modules.length > 0) {
+                            setCurrentModule(course.audio_modules[0])
+                            setPlaylist(course.audio_modules[0].audio_lessons || [])
+                            setCurrentIndex(0)
+                          }
+                        }}
+                        className={currentCourse?.id === course.id 
+                          ? "bg-orange-600 hover:bg-orange-700" 
+                          : "border-gray-300 dark:border-gray-600"
+                        }
+                      >
+                        {course.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Conteúdo do Curso Selecionado */}
+                {currentCourse && (
+                  <div className="space-y-6">
+                    {/* Informações do Curso */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{currentCourse.name}</h2>
+                        <p className="text-gray-600 dark:text-gray-300">{currentCourse.description}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                          <span>{currentCourse.audio_modules?.length || 0} módulos</span>
+                          <span>{currentCourse.total_duration}</span>
+                        </div>
+                      </div>
+                      {canEdit && (
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => startEditing('course', currentCourse)}
+                            className="border-gray-300 dark:border-gray-600"
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteCourse(currentCourse.id)}
+                            className="border-red-300 dark:border-red-600 text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    
-                    {/* Módulos do curso selecionado */}
-                    {currentCourse?.id === course.id && course.audio_modules && course.audio_modules.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Módulos:</h4>
-                        {course.audio_modules.map((module: any) => (
+
+                    {/* Módulos */}
+                    {currentCourse.audio_modules && currentCourse.audio_modules.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Módulos</h3>
+                          {canEdit && (
+                            <Button
+                              onClick={() => startEditing('module')}
+                              size="sm"
+                              className="bg-orange-600 hover:bg-orange-700"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Novo Módulo
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {currentCourse.audio_modules.map((module: any) => (
                           <div
                             key={module.id}
-                            className={`p-2 rounded-lg cursor-pointer transition-all text-sm ${
+                            className={`p-4 rounded-lg border transition-all cursor-pointer ${
                               currentModule?.id === module.id
-                                ? 'bg-orange-600/30 border border-orange-500'
-                                : 'bg-gray-50/50 dark:bg-white/5 hover:bg-gray-100/50 dark:hover:bg-white/10'
+                                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-600'
+                                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
                             }`}
                             onClick={() => {
                               setCurrentModule(module)
@@ -1021,72 +1091,52 @@ export default function EverCastPage() {
                             }}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-gray-900 dark:text-white">{module.name}</span>
-                              <div className="flex items-center space-x-2 text-xs">
-                                <span className="text-gray-500 dark:text-gray-400">{module.total_duration}</span>
-                                <span className="text-orange-600 dark:text-orange-400">
-                                  {module.audio_lessons?.length || 0} aulas
-                                </span>
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm">
+                                    {module.name.charAt(0)}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900 dark:text-white">{module.name}</h4>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <span>{module.audio_lessons?.length || 0} aulas</span>
+                                    <span>{module.total_duration}</span>
+                                  </div>
+                                </div>
                               </div>
+                              {canEdit && (
+                                <div className="flex space-x-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      startEditing('module', module)
+                                    }}
+                                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
-                    <Progress 
-                      value={0} 
-                      className="mt-2"
-                    />
-                    {canEdit && (
-                      <div className="flex justify-end space-x-1 mt-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            startEditing('course', course)
-                          }}
-                          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteCourse(course.id)
-                          }}
-                          className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
 
-            {/* Botão para adicionar novo módulo */}
-            {currentCourse && canEdit && (
-              <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
-                <CardContent className="pt-6">
-                  <Button
-                    onClick={() => startEditing('module')}
-                    size="sm"
-                    className="w-full bg-orange-600 hover:bg-orange-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Módulo
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
+        </div>
+      </div>
 
-          {/* Main Content - Playlist */}
-          <div className="lg:col-span-1 space-y-6">
+      {/* Área de Conteúdo - Playlist e Controles */}
+      <div className="container mx-auto px-6 pb-8">
+        <div className="max-w-6xl mx-auto">
             {/* Gerenciador Panda Video - Apenas para professores/admins */}
             {canEdit && (
               <div className="space-y-4">
