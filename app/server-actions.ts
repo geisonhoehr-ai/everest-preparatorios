@@ -2143,7 +2143,7 @@ export async function getAllMembers() {
         classes(name),
         student_subscriptions(
           *,
-          access_plans(name, duration_months, features),
+          access_plans(id, name, duration_months, features),
           classes(name)
         )
       `)
