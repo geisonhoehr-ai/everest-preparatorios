@@ -1081,7 +1081,7 @@ export async function getAllQuizzesByTopic(topicId: string) {
 
   const { data, error } = await supabase
     .from("quiz_questions")
-    .select("id, topic_id, question_text, options, correct_answer, explanation")
+    .select("id, topic_id, quiz_id, question_text, options, correct_answer, explanation")
     .eq("topic_id", topicId)
     .order("id")
 
@@ -1094,7 +1094,7 @@ export async function getAllQuizzesByTopic(topicId: string) {
   return data || []
 }
 
-// Função para criar um novo quiz
+// Função para criar uma nova questão de quiz
 export async function createQuiz(userId: string, quizData: {
   topic_id: string
   question_text: string
@@ -1103,7 +1103,7 @@ export async function createQuiz(userId: string, quizData: {
   explanation: string
 }) {
   const supabase = await getSupabase()
-  console.log(`📝 [Server Action] Criando quiz para tópico: ${quizData.topic_id}`)
+  console.log(`📝 [Server Action] Criando questão de quiz para tópico: ${quizData.topic_id}`)
 
   const { data, error } = await supabase
     .from("quiz_questions")
@@ -1112,23 +1112,22 @@ export async function createQuiz(userId: string, quizData: {
       question_text: quizData.question_text,
       options: quizData.options,
       correct_answer: quizData.correct_answer,
-      explanation: quizData.explanation,
-      created_by: userId
+      explanation: quizData.explanation
     })
     .select()
     .single()
 
   if (error) {
-    console.error("❌ [Server Action] Erro ao criar quiz:", error)
+    console.error("❌ [Server Action] Erro ao criar questão de quiz:", error)
     return { success: false, error: error.message }
   }
 
-  console.log(`✅ [Server Action] Quiz criado: ${data.id}`)
+  console.log(`✅ [Server Action] Questão de quiz criada: ${data.id}`)
   revalidatePath("/quiz")
   return { success: true, data }
 }
 
-// Função para atualizar um quiz
+// Função para atualizar uma questão de quiz
 export async function updateQuiz(userId: string, quizId: string, updateData: {
   question_text: string
   options: string[]
@@ -1136,7 +1135,7 @@ export async function updateQuiz(userId: string, quizId: string, updateData: {
   explanation: string
 }) {
   const supabase = await getSupabase()
-  console.log(`📝 [Server Action] Atualizando quiz: ${quizId}`)
+  console.log(`📝 [Server Action] Atualizando questão de quiz: ${quizId}`)
 
   const { data, error } = await supabase
     .from("quiz_questions")
@@ -1144,27 +1143,26 @@ export async function updateQuiz(userId: string, quizId: string, updateData: {
       question_text: updateData.question_text,
       options: updateData.options,
       correct_answer: updateData.correct_answer,
-      explanation: updateData.explanation,
-      updated_by: userId
+      explanation: updateData.explanation
     })
     .eq("id", quizId)
     .select()
     .single()
 
   if (error) {
-    console.error("❌ [Server Action] Erro ao atualizar quiz:", error)
+    console.error("❌ [Server Action] Erro ao atualizar questão de quiz:", error)
     return { success: false, error: error.message }
   }
 
-  console.log(`✅ [Server Action] Quiz atualizado: ${data.id}`)
+  console.log(`✅ [Server Action] Questão de quiz atualizada: ${data.id}`)
   revalidatePath("/quiz")
   return { success: true, data }
 }
 
-// Função para deletar um quiz
+// Função para deletar uma questão de quiz
 export async function deleteQuiz(userId: string, quizId: string) {
   const supabase = await getSupabase()
-  console.log(`🗑️ [Server Action] Deletando quiz: ${quizId}`)
+  console.log(`🗑️ [Server Action] Deletando questão de quiz: ${quizId}`)
 
   const { error } = await supabase
     .from("quiz_questions")
@@ -1172,11 +1170,11 @@ export async function deleteQuiz(userId: string, quizId: string) {
     .eq("id", quizId)
 
   if (error) {
-    console.error("❌ [Server Action] Erro ao deletar quiz:", error)
+    console.error("❌ [Server Action] Erro ao deletar questão de quiz:", error)
     return { success: false, error: error.message }
   }
 
-  console.log(`✅ [Server Action] Quiz deletado: ${quizId}`)
+  console.log(`✅ [Server Action] Questão de quiz deletada: ${quizId}`)
   revalidatePath("/quiz")
   return { success: true }
 }
@@ -1195,8 +1193,7 @@ export async function createTopic(userId: string, topicData: {
     .insert({
       subject_id: topicData.subject_id,
       name: topicData.name,
-      description: topicData.description,
-      created_by: userId
+      description: topicData.description
     })
     .select()
     .single()
@@ -1223,8 +1220,7 @@ export async function updateTopic(userId: string, topicId: string, updateData: {
     .from("topics")
     .update({
       name: updateData.name,
-      description: updateData.description,
-      updated_by: userId
+      description: updateData.description
     })
     .eq("id", topicId)
     .select()
