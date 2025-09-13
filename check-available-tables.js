@@ -15,6 +15,7 @@ async function checkTables() {
     'topics', 
     'flashcards',
     'quizzes',
+    'quiz_questions',
     'user_profiles',
     'user_roles',
     'student_profiles',
@@ -46,6 +47,7 @@ async function checkTables() {
     'topic',
     'flashcard',
     'quiz',
+    'quiz_question',
     'user_profile',
     'user_role'
   ]

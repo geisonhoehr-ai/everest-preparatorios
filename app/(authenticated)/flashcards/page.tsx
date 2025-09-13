@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard } from "../../server-actions"
+import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -86,9 +86,24 @@ export default function FlashcardsPage() {
   const [showAnswer, setShowAnswer] = useState(false)
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [studyMode, setStudyMode] = useState<"select" | "study" | "finished">("select")
+  const [studyType, setStudyType] = useState<"review" | "new" | "learning" | "all">("review")
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 })
   const [isLoading, setIsLoading] = useState(false)
   const [xpGained, setXpGained] = useState(0)
+  const [progressStats, setProgressStats] = useState({
+    new: 0,
+    learning: 0,
+    review: 0,
+    relearning: 0,
+    total: 0
+  })
+  
+  // Estados para busca e filtros
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "difficulty" | "progress">("newest")
   
   // Estados para edição inline (admin/teacher)
   const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
@@ -263,14 +278,60 @@ export default function FlashcardsPage() {
     }
   }
 
-  const loadFlashcards = async (topicId: string) => {
+  const loadFlashcards = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review") => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}...`)
+      console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}, tipo: ${type}...`)
       
-      const flashcardsData = await getFlashcardsForReview(topicId, 50) // Buscar até 50 flashcards
-      console.log("✅ Flashcards carregados:", flashcardsData.length)
+      if (!user?.id) {
+        console.error("❌ Usuário não autenticado")
+        return
+      }
+
+      let flashcardsData: any[] = []
+
+      switch (type) {
+        case "review":
+          const reviewResult = await getCardsForReview(user.id, topicId, 20)
+          if (reviewResult.success) {
+            flashcardsData = reviewResult.data.map((item: any) => ({
+              id: item.flashcards.id,
+              topic_id: item.flashcards.topic_id,
+              question: item.flashcards.question,
+              answer: item.flashcards.answer,
+              progress: item // Incluir dados de progresso
+            }))
+          }
+          break
+        case "new":
+          const newResult = await getNewCards(user.id, topicId, 10)
+          if (newResult.success) {
+            flashcardsData = newResult.data
+          }
+          break
+        case "learning":
+          // Para learning, buscar cards com status 'learning' ou 'relearning'
+          const learningResult = await getCardsForReview(user.id, topicId, 15)
+          if (learningResult.success) {
+            flashcardsData = learningResult.data
+              .filter((item: any) => item.status === 'learning' || item.status === 'relearning')
+              .map((item: any) => ({
+                id: item.flashcards.id,
+                topic_id: item.flashcards.topic_id,
+                question: item.flashcards.question,
+                answer: item.flashcards.answer,
+                progress: item
+              }))
+          }
+          break
+        case "all":
+        default:
+          const allResult = await getFlashcardsForReview(topicId, 50)
+          flashcardsData = allResult
+          break
+      }
       
+      console.log(`✅ Flashcards carregados (${type}):`, flashcardsData.length)
       setFlashcards(flashcardsData)
       
     } catch (error) {
@@ -281,13 +342,27 @@ export default function FlashcardsPage() {
     }
   }
 
-  const startStudy = (topicId: string) => {
+  const startStudy = (topicId: string, type: "review" | "new" | "learning" | "all" = "review") => {
     setSelectedTopic(topicId)
-    loadFlashcards(topicId)
+    setStudyType(type)
+    loadFlashcards(topicId, type)
     setStudyMode("study")
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+  }
+
+  const loadProgressStats = async (topicId?: string) => {
+    if (!user?.id) return
+    
+    try {
+      const result = await getFlashcardProgressStats(user.id, topicId)
+      if (result.success) {
+        setProgressStats(result.data)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar estatísticas:", error)
+    }
   }
 
   const nextCard = () => {
@@ -309,13 +384,14 @@ export default function FlashcardsPage() {
   const markCorrect = async () => {
     setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }))
     
-    // Salvar progresso no Supabase
-    if (user && selectedTopic) {
+    // Salvar progresso usando algoritmo SM2
+    if (user && safeFlashcards[currentCardIndex]) {
       try {
-        const result = await updateFlashcardProgress(user.id, selectedTopic, true, 0)
-        if (result.success && result.xpGained !== undefined) {
-          setXpGained(prev => prev + result.xpGained!)
-          console.log(`✅ +${result.xpGained} XP ganho!`)
+        const currentCard = safeFlashcards[currentCardIndex]
+        const result = await updateFlashcardProgressSM2(user.id, currentCard.id, 4) // Qualidade 4 = correto
+        if (result.success) {
+          setXpGained(prev => prev + 5) // 5 XP por acerto
+          console.log(`✅ Card marcado como correto!`)
         }
       } catch (error) {
         console.error('❌ Erro ao salvar progresso:', error)
@@ -328,16 +404,42 @@ export default function FlashcardsPage() {
   const markIncorrect = async () => {
     setSessionStats(prev => ({ ...prev, incorrect: prev.incorrect + 1 }))
     
-    // Salvar progresso no Supabase
-    if (user && selectedTopic) {
+    // Salvar progresso usando algoritmo SM2
+    if (user && safeFlashcards[currentCardIndex]) {
       try {
-        const result = await updateFlashcardProgress(user.id, selectedTopic, false, 0)
-        if (result.success && result.xpGained !== undefined) {
-          setXpGained(prev => prev + result.xpGained!)
-          console.log(`✅ +${result.xpGained} XP ganho!`)
+        const currentCard = safeFlashcards[currentCardIndex]
+        const result = await updateFlashcardProgressSM2(user.id, currentCard.id, 2) // Qualidade 2 = incorreto
+        if (result.success) {
+          setXpGained(prev => prev + 1) // 1 XP por tentativa
+          console.log(`❌ Card marcado como incorreto!`)
         }
       } catch (error) {
         console.error('❌ Erro ao salvar progresso:', error)
+      }
+    }
+    
+    nextCard()
+  }
+
+  // Nova função para avaliação de qualidade (0-5)
+  const rateQuality = async (quality: number) => {
+    if (user && safeFlashcards[currentCardIndex]) {
+      try {
+        const currentCard = safeFlashcards[currentCardIndex]
+        const result = await updateFlashcardProgressSM2(user.id, currentCard.id, quality)
+        if (result.success) {
+          // Atualizar estatísticas baseado na qualidade
+          if (quality >= 3) {
+            setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }))
+            setXpGained(prev => prev + (quality * 2)) // Mais XP para melhor qualidade
+          } else {
+            setSessionStats(prev => ({ ...prev, incorrect: prev.incorrect + 1 }))
+            setXpGained(prev => prev + 1)
+          }
+          console.log(`📊 Card avaliado com qualidade ${quality}`)
+        }
+      } catch (error) {
+        console.error('❌ Erro ao avaliar card:', error)
       }
     }
     
@@ -355,7 +457,16 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     loadSubjects()
-  }, [])
+    if (user?.id) {
+      loadProgressStats()
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (selectedTopic && user?.id) {
+      loadProgressStats(selectedTopic)
+    }
+  }, [selectedTopic, user?.id])
 
   if (isLoading && studyMode === "select") {
     return (
@@ -517,6 +628,103 @@ export default function FlashcardsPage() {
             )}
           </div>
 
+          {/* Dashboard de Estatísticas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <Card className="text-center">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">{progressStats.new}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Novos</div>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">{progressStats.learning}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Aprendendo</div>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">{progressStats.review}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Revisão</div>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-red-600">{progressStats.relearning}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Reaprendendo</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Seção de Busca e Filtros */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Buscar flashcards..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchTerm("")
+                      setSelectedCategory(null)
+                      setSelectedTag(null)
+                      setDifficultyFilter(null)
+                      setSortBy("newest")
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Limpar
+                  </Button>
+                </div>
+                
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Ordenar por:
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                    >
+                      <option value="newest">Mais recentes</option>
+                      <option value="oldest">Mais antigos</option>
+                      <option value="difficulty">Dificuldade</option>
+                      <option value="progress">Progresso</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Dificuldade:
+                    </label>
+                    <select
+                      value={difficultyFilter || ""}
+                      onChange={(e) => setDifficultyFilter(e.target.value || null)}
+                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                    >
+                      <option value="">Todas</option>
+                      <option value="easy">Fácil</option>
+                      <option value="medium">Médio</option>
+                      <option value="hard">Difícil</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -544,10 +752,31 @@ export default function FlashcardsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
-                      <Play className="mr-3 h-6 w-6" />
-                      Estudar Tópico
-                    </Button>
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={() => startStudy(topic.id, "review")}
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 rounded-lg transition-all duration-300"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Revisão
+                      </Button>
+                      <Button 
+                        onClick={() => startStudy(topic.id, "new")}
+                        variant="outline"
+                        className="w-full border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Novos
+                      </Button>
+                      <Button 
+                        onClick={() => startStudy(topic.id, "learning")}
+                        variant="outline"
+                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                      >
+                        <Brain className="mr-2 h-4 w-4" />
+                        Aprendendo
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -674,22 +903,54 @@ export default function FlashcardsPage() {
                       Mostrar Resposta
                     </Button>
                   ) : (
-                    <div className="flex gap-4">
-                      <Button 
-                        onClick={markIncorrect}
-                        variant="destructive"
-                        className="px-8 py-3 text-lg"
-                      >
-                        <XCircle className="mr-2 h-5 w-5" />
-                        Errei
-                      </Button>
-                      <Button 
-                        onClick={markCorrect}
-                        className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg"
-                      >
-                        <CheckCircle className="mr-2 h-5 w-5" />
-                        Acertei
-                      </Button>
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          Como foi sua resposta?
+                        </p>
+                        <div className="flex gap-2 justify-center">
+                          {[0, 1, 2, 3, 4, 5].map((quality) => (
+                            <Button
+                              key={quality}
+                              onClick={() => rateQuality(quality)}
+                              variant={quality >= 3 ? "default" : "destructive"}
+                              size="sm"
+                              className={`w-12 h-12 rounded-full ${
+                                quality >= 3 
+                                  ? "bg-green-500 hover:bg-green-600 text-white" 
+                                  : "bg-red-500 hover:bg-red-600 text-white"
+                              }`}
+                            >
+                              {quality}
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                          <span>Esqueci</span>
+                          <span>Difícil</span>
+                          <span>Bom</span>
+                          <span>Fácil</span>
+                        </div>
+                      </div>
+                      
+                      {/* Botões alternativos para compatibilidade */}
+                      <div className="flex gap-4 justify-center">
+                        <Button 
+                          onClick={() => rateQuality(2)}
+                          variant="destructive"
+                          className="px-6 py-2 text-sm"
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Errei
+                        </Button>
+                        <Button 
+                          onClick={() => rateQuality(4)}
+                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 text-sm"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Acertei
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

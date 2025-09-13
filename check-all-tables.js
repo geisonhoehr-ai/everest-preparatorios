@@ -10,50 +10,48 @@ async function checkAllTables() {
   console.log('🔍 Verificando todas as tabelas disponíveis...')
   
   try {
-    // Lista de tabelas que vimos no backup
-    const tables = [
-      'subjects',
-      'topics', 
-      'flashcards',
-      'quizzes',
-      'quiz_questions',
-      'user_profiles',
-      'events',
-      'simulados',
-      'simulado_questoes',
-      'simulado_resultados',
-      'subscriptions',
-      'study_streaks',
-      'rpg_ranks'
-    ]
+    // Buscar todas as tabelas usando uma query SQL
+    const { data, error } = await supabase.rpc('get_all_tables')
     
-    for (const table of tables) {
-      try {
-        console.log(`\n📋 Verificando tabela: ${table}`)
-        const { data, error } = await supabase
-          .from(table)
-          .select('*')
-          .limit(2)
-        
-        if (error) {
-          console.log(`❌ ${table}: ${error.message}`)
-        } else {
-          console.log(`✅ ${table}: Acessível`)
-          if (data && data.length > 0) {
-            console.log(`📊 Estrutura:`, Object.keys(data[0]))
-            console.log(`📈 Registros: ${data.length} (mostrando 2 primeiros)`)
+    if (error) {
+      console.log('❌ Erro ao buscar tabelas:', error.message)
+      
+      // Tentar método alternativo
+      console.log('\n🔍 Tentando método alternativo...')
+      
+      // Lista de possíveis tabelas baseada nos scripts
+      const possibleTables = [
+        'user_profiles', 'subjects', 'topics', 'flashcards', 'quizzes', 'quiz_questions',
+        'user_roles', 'student_profiles', 'teacher_profiles', 'calendar_events',
+        'audio_courses', 'audio_modules', 'audio_lessons', 'classes', 'access_plans',
+        'page_permissions', 'student_subscriptions', 'temporary_passwords',
+        'user_progress', 'quiz_attempts', 'redacoes', 'temas_redacao', 'provas',
+        'questoes', 'opcoes_questao', 'tentativas_prova', 'respostas_tentativa'
+      ]
+      
+      console.log('📋 Testando tabelas possíveis:')
+      for (const tableName of possibleTables) {
+        try {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .limit(1)
+          
+          if (error) {
+            console.log(`❌ ${tableName}: ${error.message}`)
           } else {
-            console.log(`📊 Tabela vazia`)
+            console.log(`✅ ${tableName}: ${data ? data.length : 0} registros`)
           }
+        } catch (err) {
+          console.log(`❌ ${tableName}: ${err.message}`)
         }
-      } catch (err) {
-        console.log(`❌ ${table}: Erro - ${err.message}`)
       }
+    } else {
+      console.log('✅ Tabelas encontradas:', data)
     }
-    
-  } catch (error) {
-    console.error('❌ Erro geral:', error)
+  } catch (err) {
+    console.log('❌ Erro geral:', err.message)
   }
 }
 
-checkAllTables()
+checkAllTables().catch(console.error)

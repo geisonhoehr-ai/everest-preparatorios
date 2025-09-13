@@ -2820,4 +2820,336 @@ export async function updateFlashcardProgress(
   }
 }
 
+// ========================================
+// SISTEMA DE REPETIÇÃO ESPAÇADA (SM2/ANKI)
+// ========================================
+
+// Interface para progresso de flashcard
+interface FlashcardProgress {
+  id?: number
+  user_id: string
+  flashcard_id: number
+  ease_factor: number
+  interval_days: number
+  repetitions: number
+  quality: number
+  last_reviewed?: string
+  next_review: string
+  status: 'new' | 'learning' | 'review' | 'relearning'
+}
+
+// Função para calcular próximo intervalo usando algoritmo SM2
+function calculateSM2Interval(
+  easeFactor: number,
+  interval: number,
+  repetitions: number,
+  quality: number
+): { newInterval: number; newEaseFactor: number; newRepetitions: number } {
+  let newEaseFactor = easeFactor
+  let newInterval = interval
+  let newRepetitions = repetitions
+
+  // Atualizar fator de facilidade
+  newEaseFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+  
+  // Limitar fator de facilidade entre 1.3 e 2.5
+  newEaseFactor = Math.max(1.3, Math.min(2.5, newEaseFactor))
+
+  // Calcular novo intervalo baseado na qualidade
+  if (quality < 3) {
+    // Resposta incorreta - reiniciar
+    newRepetitions = 0
+    newInterval = 1
+  } else {
+    // Resposta correta
+    newRepetitions += 1
+    
+    if (newRepetitions === 1) {
+      newInterval = 1
+    } else if (newRepetitions === 2) {
+      newInterval = 6
+    } else {
+      newInterval = Math.round(newInterval * newEaseFactor)
+    }
+  }
+
+  return { newInterval, newEaseFactor, newRepetitions }
+}
+
+// Função para obter progresso de um flashcard
+export async function getFlashcardProgress(userId: string, flashcardId: number) {
+  const supabase = await getSupabase()
+  console.log(`🧠 [Server Action] Buscando progresso do flashcard ${flashcardId} para usuário ${userId}`)
+
+  const { data, error } = await supabase
+    .from("flashcard_progress")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("flashcard_id", flashcardId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    console.error("❌ [Server Action] Erro ao buscar progresso:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Progresso encontrado:`, data ? 'Sim' : 'Não')
+  return { success: true, data: data || null }
+}
+
+// Função para criar progresso inicial de um flashcard
+export async function createFlashcardProgress(userId: string, flashcardId: number) {
+  const supabase = await getSupabase()
+  console.log(`🧠 [Server Action] Criando progresso inicial para flashcard ${flashcardId}`)
+
+  const { data, error } = await supabase
+    .from("flashcard_progress")
+    .insert({
+      user_id: userId,
+      flashcard_id: flashcardId,
+      ease_factor: 2.5,
+      interval_days: 1,
+      repetitions: 0,
+      quality: 0,
+      next_review: new Date().toISOString(),
+      status: 'new'
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar progresso:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Progresso criado: ${data.id}`)
+  return { success: true, data }
+}
+
+// Função para atualizar progresso usando algoritmo SM2
+export async function updateFlashcardProgressSM2(
+  userId: string,
+  flashcardId: number,
+  quality: number // 0-5 (qualidade da resposta)
+) {
+  const supabase = await getSupabase()
+  console.log(`🧠 [Server Action] Atualizando progresso SM2 para flashcard ${flashcardId}, qualidade: ${quality}`)
+
+  try {
+    // Buscar progresso atual
+    const { data: currentProgress, error: fetchError } = await supabase
+      .from("flashcard_progress")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("flashcard_id", flashcardId)
+      .single()
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("❌ [Server Action] Erro ao buscar progresso atual:", fetchError)
+      return { success: false, error: fetchError.message }
+    }
+
+    let progressData: FlashcardProgress
+
+    if (!currentProgress) {
+      // Criar progresso inicial
+      const createResult = await createFlashcardProgress(userId, flashcardId)
+      if (!createResult.success) {
+        return createResult
+      }
+      progressData = createResult.data
+    } else {
+      progressData = currentProgress
+    }
+
+    // Calcular novo progresso usando algoritmo SM2
+    const { newInterval, newEaseFactor, newRepetitions } = calculateSM2Interval(
+      progressData.ease_factor,
+      progressData.interval_days,
+      progressData.repetitions,
+      quality
+    )
+
+    // Determinar novo status
+    let newStatus: 'new' | 'learning' | 'review' | 'relearning' = progressData.status
+    
+    if (quality < 3) {
+      newStatus = progressData.status === 'review' ? 'relearning' : 'learning'
+    } else if (newRepetitions >= 2) {
+      newStatus = 'review'
+    } else {
+      newStatus = 'learning'
+    }
+
+    // Calcular próxima revisão
+    const nextReview = new Date()
+    nextReview.setDate(nextReview.getDate() + newInterval)
+
+    // Atualizar progresso
+    const { data: updatedProgress, error: updateError } = await supabase
+      .from("flashcard_progress")
+      .update({
+        ease_factor: newEaseFactor,
+        interval_days: newInterval,
+        repetitions: newRepetitions,
+        quality: quality,
+        last_reviewed: new Date().toISOString(),
+        next_review: nextReview.toISOString(),
+        status: newStatus
+      })
+      .eq("user_id", userId)
+      .eq("flashcard_id", flashcardId)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error("❌ [Server Action] Erro ao atualizar progresso:", updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    console.log(`✅ [Server Action] Progresso SM2 atualizado:`, {
+      easeFactor: newEaseFactor,
+      interval: newInterval,
+      repetitions: newRepetitions,
+      status: newStatus
+    })
+
+    return { success: true, data: updatedProgress }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao atualizar progresso SM2:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// Função para obter cards para revisão
+export async function getCardsForReview(userId: string, topicId?: string, limit: number = 20) {
+  const supabase = await getSupabase()
+  console.log(`🧠 [Server Action] Buscando cards para revisão do usuário ${userId}`)
+
+  try {
+    let query = supabase
+      .from("flashcard_progress")
+      .select(`
+        *,
+        flashcards (
+          id,
+          topic_id,
+          question,
+          answer
+        )
+      `)
+      .eq("user_id", userId)
+      .lte("next_review", new Date().toISOString())
+      .order("next_review", { ascending: true })
+      .limit(limit)
+
+    if (topicId) {
+      query = query.eq("flashcards.topic_id", topicId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar cards para revisão:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ [Server Action] Cards para revisão encontrados: ${data?.length || 0}`)
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao buscar cards para revisão:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// Função para obter estatísticas de progresso
+export async function getFlashcardProgressStats(userId: string, topicId?: string) {
+  const supabase = await getSupabase()
+  console.log(`📊 [Server Action] Buscando estatísticas de progresso para usuário ${userId}`)
+
+  try {
+    let query = supabase
+      .from("flashcard_progress")
+      .select(`
+        status,
+        flashcards!inner (
+          topic_id
+        )
+      `)
+      .eq("user_id", userId)
+
+    if (topicId) {
+      query = query.eq("flashcards.topic_id", topicId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar estatísticas:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Contar por status
+    const stats = {
+      new: 0,
+      learning: 0,
+      review: 0,
+      relearning: 0,
+      total: data?.length || 0
+    }
+
+    data?.forEach(item => {
+      stats[item.status as keyof typeof stats]++
+    })
+
+    console.log(`✅ [Server Action] Estatísticas calculadas:`, stats)
+    return { success: true, data: stats }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao calcular estatísticas:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// Função para obter cards novos (nunca estudados)
+export async function getNewCards(userId: string, topicId?: string, limit: number = 10) {
+  const supabase = await getSupabase()
+  console.log(`🆕 [Server Action] Buscando cards novos para usuário ${userId}`)
+
+  try {
+    // Buscar flashcards que não têm progresso
+    let query = supabase
+      .from("flashcards")
+      .select(`
+        id,
+        topic_id,
+        question,
+        answer
+      `)
+      .not("id", "in", `(
+        SELECT flashcard_id 
+        FROM flashcard_progress 
+        WHERE user_id = '${userId}'
+      )`)
+      .order("id", { ascending: true })
+      .limit(limit)
+
+    if (topicId) {
+      query = query.eq("topic_id", topicId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar cards novos:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ [Server Action] Cards novos encontrados: ${data?.length || 0}`)
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao buscar cards novos:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
 // Cache buster - Build: ab44064 - Force cache clear - SERVER ACTIONS FILE
