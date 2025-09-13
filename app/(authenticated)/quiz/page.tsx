@@ -44,7 +44,13 @@ import {
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
 import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "../../server-actions"
+import { createClient } from '@supabase/supabase-js'
 import Link from "next/link"
+
+// Configuração do Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -178,17 +184,17 @@ export default function QuizPage() {
     }
   }
 
-  const loadQuestions = async (topicId: string) => {
+  const loadQuestions = async (quizId: string) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando questões do Supabase para quiz ${topicId}...`)
+      console.log(`📚 Carregando questões do Supabase para quiz ${quizId}...`)
       
       if (!profile?.user_id) {
         console.error("❌ Usuário não autenticado")
         return
       }
       
-      const result = await getAllQuizzesByTopic(topicId)
+      const result = await getAllQuizzesByTopic(quizId)
       console.log("🔍 Resultado da busca:", result)
       
       if (result && result.length > 0) {
@@ -212,6 +218,34 @@ export default function QuizPage() {
     } catch (error) {
       console.error("❌ Erro ao carregar questões:", error)
       setQuestions([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const loadQuizzesForTopic = async (topicId: string) => {
+    try {
+      setIsLoading(true)
+      console.log(`📚 Carregando quizzes para tópico ${topicId}...`)
+      
+      // Buscar quizzes que pertencem a este tópico
+      const { data: quizzes, error } = await supabase
+        .from("quizzes")
+        .select("*")
+        .eq("topic_id", topicId)
+        .order("id")
+      
+      if (error) {
+        console.error("❌ Erro ao buscar quizzes:", error)
+        return []
+      }
+      
+      console.log(`✅ Quizzes encontrados para tópico ${topicId}:`, quizzes?.length || 0)
+      return quizzes || []
+      
+    } catch (error) {
+      console.error("❌ Erro inesperado ao buscar quizzes:", error)
+      return []
     } finally {
       setIsLoading(false)
     }
@@ -408,9 +442,39 @@ export default function QuizPage() {
     }
   }
 
-  const startQuiz = (topicId: string, timeLimit: number = 0) => {
+  const startQuiz = async (topicId: string, timeLimit: number = 0) => {
     setSelectedTopic(topicId)
-    loadQuestions(topicId)
+    
+    // Primeiro, buscar quizzes disponíveis para este tópico
+    const availableQuizzes = await loadQuizzesForTopic(topicId)
+    
+    if (availableQuizzes.length === 0) {
+      console.log("❌ Nenhum quiz encontrado para este tópico")
+      setQuestions([])
+      setQuizMode("quiz") // Vai mostrar a tela de "nenhuma questão disponível"
+      return
+    }
+    
+    // Encontrar o primeiro quiz que tenha questões
+    let selectedQuizId = null
+    for (const quiz of availableQuizzes) {
+      const questions = await getAllQuizzesByTopic(quiz.id.toString())
+      if (questions && questions.length > 0) {
+        selectedQuizId = quiz.id.toString()
+        console.log(`✅ Quiz selecionado: ${quiz.title} (ID: ${quiz.id}) com ${questions.length} questões`)
+        break
+      }
+    }
+    
+    if (!selectedQuizId) {
+      console.log("❌ Nenhum quiz com questões encontrado para este tópico")
+      setQuestions([])
+      setQuizMode("quiz") // Vai mostrar a tela de "nenhuma questão disponível"
+      return
+    }
+    
+    // Carregar questões do quiz selecionado
+    await loadQuestions(selectedQuizId)
     setQuizMode("quiz")
     setCurrentQuestionIndex(0)
     setSelectedAnswer(null)
@@ -789,6 +853,55 @@ export default function QuizPage() {
             </Card>
           )}
     </div>
+      </RoleGuard>
+    )
+  }
+
+  // Modo de quiz - sem questões
+  if (quizMode === "quiz" && safeQuestions.length === 0) {
+    return (
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <div className="space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={resetQuiz}
+              className="flex items-center gap-2"
+            >
+              <ArrowRight className="h-4 w-4 rotate-180" />
+              Voltar
+            </Button>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {safeTopics.find(t => t.id === selectedTopic)?.name}
+              </h1>
+            </div>
+            <div className="w-32"></div>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <Card className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+              <CardContent>
+                <div className="p-6 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 mx-auto mb-6 w-fit">
+                  <BookOpenText className="h-16 w-16 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">
+                  Nenhuma questão disponível
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed max-w-md mx-auto mb-6">
+                  Não há questões disponíveis para este tópico no momento. Tente outro tópico ou aguarde mais conteúdo.
+                </p>
+                <Button 
+                  onClick={resetQuiz}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3"
+                >
+                  <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
+                  Voltar aos Tópicos
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </RoleGuard>
     )
   }
