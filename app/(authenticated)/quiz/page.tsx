@@ -39,7 +39,8 @@ import {
   Eye,
   EyeOff,
   Users,
-  Shield
+  Shield,
+  BookOpenText
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
