@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { useAuth } from '@/context/auth-context'
 import { 
   getAllAudioCourses, 
@@ -52,14 +53,20 @@ import AudioOnlyHLSPlayer from '@/components/evercast/audio-only-hls-player'
 import { AudioPlayer } from '@/components/evercast/audio-player'
 import PandaVideoManager from '@/components/evercast/panda-video-manager'
 import MobileModuleAccordion from '@/components/evercast/mobile-module-accordion'
+import { CrudModal } from '@/components/evercast/crud-modal'
+import { SearchFilters } from '@/components/evercast/search-filters'
+import { LoadingStates, InlineLoading, SkeletonList } from '@/components/evercast/loading-states'
+import { StatsOverview } from '@/components/evercast/stats-overview'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import Hls from 'hls.js'
 
 export default function EverCastPage() {
   const { user, profile } = useAuth()
   const [courses, setCourses] = useState<AudioCourse[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<AudioCourse[]>([])
   const [currentCourse, setCurrentCourse] = useState<AudioCourse | null>(null)
   const [currentModule, setCurrentModule] = useState<AudioModule | null>(null)
   const [currentLesson, setCurrentLesson] = useState<AudioLesson | null>(null)
@@ -70,6 +77,8 @@ export default function EverCastPage() {
   const [isMuted, setIsMuted] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<'course' | 'module' | 'lesson' | null>(null)
+  const [editingData, setEditingData] = useState<AudioCourse | AudioModule | AudioLesson | null>(null)
+  const [parentItem, setParentItem] = useState<AudioCourse | AudioModule | null>(null)
   const [isLooping, setIsLooping] = useState(false)
   const [showPandaVideoManager, setShowPandaVideoManager] = useState(false)
   const [extractedAudio, setExtractedAudio] = useState<{ title: string; blob: Blob } | null>(null)
@@ -87,6 +96,7 @@ export default function EverCastPage() {
         setLoading(true)
         const coursesData = await getAllAudioCourses()
         setCourses(coursesData)
+        setFilteredCourses(coursesData)
         
         // Selecionar o primeiro curso se houver
         if (coursesData.length > 0) {
@@ -94,6 +104,7 @@ export default function EverCastPage() {
         }
       } catch (error) {
         console.error('Erro ao carregar cursos:', error)
+        toast.error('Erro ao carregar cursos. Tente novamente.')
       } finally {
         setLoading(false)
       }
@@ -103,6 +114,44 @@ export default function EverCastPage() {
       loadCourses()
     }
   }, [user, profile])
+
+  // Função para recarregar cursos após operações CRUD
+  const handleCrudSuccess = async () => {
+    try {
+      const coursesData = await getAllAudioCourses()
+      setCourses(coursesData)
+      setFilteredCourses(coursesData)
+      
+      // Manter o curso atual selecionado se ainda existir
+      if (currentCourse) {
+        const updatedCourse = coursesData.find(c => c.id === currentCourse.id)
+        if (updatedCourse) {
+          setCurrentCourse(updatedCourse)
+        } else if (coursesData.length > 0) {
+          setCurrentCourse(coursesData[0])
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar cursos:', error)
+      toast.error('Erro ao atualizar lista de cursos')
+    }
+  }
+
+  // Função para abrir modal de criação/edição
+  const openModal = (type: 'course' | 'module' | 'lesson', item?: any, parent?: any) => {
+    setEditingItem(type)
+    setEditingData(item || null)
+    setParentItem(parent || null)
+    setShowModal(true)
+  }
+
+  // Função para fechar modal
+  const closeModal = () => {
+    setShowModal(false)
+    setEditingItem(null)
+    setEditingData(null)
+    setParentItem(null)
+  }
 
   // Funções de manipulação de áudio (da versão antiga)
   const handleNext = () => {
@@ -153,7 +202,8 @@ export default function EverCastPage() {
   const canEdit = profile.role === 'teacher' || profile.role === 'admin'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50 dark:from-slate-900 dark:via-orange-900 dark:to-slate-900">
+    <PagePermissionGuard pageName="evercast">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50 dark:from-slate-900 dark:via-orange-900 dark:to-slate-900">
       {/* Header */}
       <div className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-b border-gray-200 dark:border-white/10">
         <div className="container mx-auto px-6 py-4">
@@ -182,6 +232,23 @@ export default function EverCastPage() {
 
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Estatísticas e Visão Geral */}
+          {!loading && courses.length > 0 && (
+            <StatsOverview 
+              courses={courses} 
+              currentCourse={currentCourse}
+            />
+          )}
+
+          {/* Sistema de Busca e Filtros */}
+          {!loading && courses.length > 0 && (
+            <SearchFilters
+              courses={courses}
+              onFilteredCourses={setFilteredCourses}
+              searchPlaceholder="Buscar cursos, módulos ou aulas..."
+            />
+          )}
+
           {/* Card Principal - Estilo Spotify */}
           <Card className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-gray-200 dark:border-white/10">
             <CardHeader>
@@ -191,15 +258,12 @@ export default function EverCastPage() {
                     Cursos de Áudio
                   </CardTitle>
                   <p className="text-gray-600 dark:text-gray-300">
-                    Selecione um curso para começar
+                    {filteredCourses.length} curso{filteredCourses.length !== 1 ? 's' : ''} encontrado{filteredCourses.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 {canEdit && (
                   <Button
-                    onClick={() => {
-                      setEditingItem('course')
-                      setShowModal(true)
-                    }}
+                    onClick={() => openModal('course')}
                     className="bg-orange-600 hover:bg-orange-700 text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -210,28 +274,33 @@ export default function EverCastPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
+                <LoadingStates type="courses" />
+              ) : filteredCourses.length === 0 ? (
                 <div className="text-center py-12">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    Carregando cursos...
+                    {courses.length === 0 ? 'Nenhum curso encontrado' : 'Nenhum curso corresponde aos filtros'}
                   </h2>
                   <p className="text-gray-600 dark:text-gray-300">
-                    Aguarde enquanto carregamos seus cursos de áudio
+                    {courses.length === 0 
+                      ? 'Não há cursos de áudio disponíveis no momento'
+                      : 'Tente ajustar os filtros de busca'
+                    }
                   </p>
-                </div>
-              ) : courses.length === 0 ? (
-                <div className="text-center py-12">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    Nenhum curso encontrado
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Não há cursos de áudio disponíveis no momento
-                  </p>
+                  {canEdit && courses.length === 0 && (
+                    <Button
+                      onClick={() => openModal('course')}
+                      className="mt-4 bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar Primeiro Curso
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Seletor de Cursos */}
                   <div className="flex flex-wrap gap-2">
-                    {courses.map((course) => (
+                    {filteredCourses.map((course) => (
                       <Button
                         key={course.id}
                         variant={currentCourse?.id === course.id ? "default" : "outline"}
@@ -268,10 +337,7 @@ export default function EverCastPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setEditingItem('course')
-                                setShowModal(true)
-                              }}
+                              onClick={() => openModal('course', currentCourse)}
                             >
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
@@ -279,13 +345,10 @@ export default function EverCastPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                // Implementar exclusão
-                              }}
-                              className="text-red-600 hover:text-red-700"
+                              onClick={() => openModal('module', null, currentCourse)}
                             >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Excluir
+                              <Plus className="w-4 h-4 mr-2" />
+                              Novo Módulo
                             </Button>
                           </div>
                         )}
@@ -322,13 +385,18 @@ export default function EverCastPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => {
-                                          setCurrentModule(module)
-                                          setEditingItem('module')
-                                          setShowModal(true)
-                                        }}
+                                        onClick={() => openModal('module', module, currentCourse)}
+                                        title="Editar módulo"
                                       >
                                         <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openModal('lesson', null, module)}
+                                        title="Nova aula"
+                                      >
+                                        <Plus className="w-4 h-4" />
                                       </Button>
                                     </div>
                                   )}
@@ -370,11 +438,8 @@ export default function EverCastPage() {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => {
-                                              setCurrentLesson(lesson)
-                                              setEditingItem('lesson')
-                                              setShowModal(true)
-                                            }}
+                                            onClick={() => openModal('lesson', lesson, module)}
+                                            title="Editar aula"
                                           >
                                             <Edit className="w-4 h-4" />
                                           </Button>
@@ -470,6 +535,20 @@ export default function EverCastPage() {
           preload="metadata"
         />
       )}
-    </div>
+
+      {/* Modal CRUD */}
+      {showModal && editingItem && user && (
+        <CrudModal
+          isOpen={showModal}
+          onClose={closeModal}
+          type={editingItem}
+          item={editingData}
+          parentItem={parentItem}
+          onSuccess={handleCrudSuccess}
+          userUuid={user.id}
+        />
+      )}
+      </div>
+    </PagePermissionGuard>
   )
 }

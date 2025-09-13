@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useTransition } from "react"
+import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -1042,7 +1043,7 @@ export default function QuizPage() {
   console.log("🔧 [Debug] Estado do modal de tópico:", { isTopicDialogOpen, editingTopic })
 
   return (
-    <>
+    <PagePermissionGuard pageName="quiz">
       {/* Modal de Edição de Tópico */}
       {isTopicDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1215,6 +1216,6 @@ export default function QuizPage() {
           </div>
         </div>
       )}
-    </>
+    </PagePermissionGuard>
   )
 }

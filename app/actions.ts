@@ -1918,3 +1918,620 @@ export async function getTentativasProfessor() {
     throw error
   }
 }
+
+// Funções para Dashboard - Dados Reais
+export async function getTotalUsers() {
+  try {
+    const supabase = await getSupabase()
+    const { count, error } = await supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact', head: true })
+
+    if (error) {
+      console.error('❌ Erro ao contar usuários:', error)
+      return { count: 0 }
+    }
+
+    return { count: count || 0 }
+  } catch (error) {
+    console.error('❌ Erro inesperado ao contar usuários:', error)
+    return { count: 0 }
+  }
+}
+
+export async function getTotalContent() {
+  try {
+    const supabase = await getSupabase()
+    
+    const [flashcardsResult, quizzesResult, coursesResult] = await Promise.all([
+      supabase.from('flashcards').select('*', { count: 'exact', head: true }),
+      supabase.from('quizzes').select('*', { count: 'exact', head: true }),
+      supabase.from('audio_courses').select('*', { count: 'exact', head: true })
+    ])
+    
+    const total = (flashcardsResult.count || 0) + 
+                  (quizzesResult.count || 0) + 
+                  (coursesResult.count || 0)
+
+    return { count: total }
+  } catch (error) {
+    console.error('❌ Erro inesperado ao contar conteúdo:', error)
+    return { count: 0 }
+  }
+}
+
+export async function getTotalTests() {
+  try {
+    const supabase = await getSupabase()
+    const { count, error } = await supabase
+      .from('quiz_attempts')
+      .select('*', { count: 'exact', head: true })
+
+    if (error) {
+      console.error('❌ Erro ao contar tentativas de quiz:', error)
+      return { count: 0 }
+    }
+
+    return { count: count || 0 }
+  } catch (error) {
+    console.error('❌ Erro inesperado ao contar tentativas:', error)
+    return { count: 0 }
+  }
+}
+
+export async function getUserRanking(userId: string) {
+  try {
+    const supabase = await getSupabase()
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('rank_position')
+      .eq('user_id', userId)
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao buscar ranking do usuário:', error)
+      return { position: 'N/A' }
+    }
+
+    return { position: data?.rank_position || 'N/A' }
+  } catch (error) {
+    console.error('❌ Erro inesperado ao buscar ranking:', error)
+    return { position: 'N/A' }
+  }
+}
+
+export async function getCalendarEvents() {
+  try {
+    const supabase = await getSupabase()
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .gte('event_date', new Date().toISOString().split('T')[0])
+      .order('event_date', { ascending: true })
+
+    if (error) {
+      console.error('❌ Erro ao carregar eventos:', error)
+      return []
+    }
+
+    // Mapear os campos da tabela real para o formato esperado pelo frontend
+    const mappedEvents = (data || []).map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: event.event_date,
+      time: event.event_time,
+      location: event.location,
+      type: event.event_type,
+      participants: event.max_participants || 0,
+      duration_minutes: event.duration_minutes,
+      instructor: event.instructor,
+      is_mandatory: event.is_mandatory
+    }))
+
+    return mappedEvents
+  } catch (error) {
+    console.error('❌ Erro inesperado ao carregar eventos:', error)
+    return []
+  }
+}
+
+export async function importEaofCronograma(userId: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se o usuário tem permissão
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single()
+
+    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+      throw new Error('Acesso negado. Apenas professores e administradores podem importar cronogramas.')
+    }
+
+    // Dados do cronograma EAOF 2026
+    const cronogramaEvents = [
+      // MENTORIAS
+      { title: 'Mentoria 01 - Aula Inaugural', description: 'Aula inaugural do curso EAOF 2026', event_date: '2026-05-26', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 02 - Acentuação Gráfica, Ortografia, Estrutura e Formação', description: 'Revisão completa de acentuação gráfica e ortografia', event_date: '2026-06-02', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 03 - Substantivo, Adjetivo e Artigo', description: 'Estudo detalhado de substantivos, adjetivos e artigos', event_date: '2026-06-16', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 04 - Pronomes, Numeral, Advérbio e Preposição', description: 'Revisão de pronomes, numerais, advérbios e preposições', event_date: '2026-06-30', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 05 - Conjunções', description: 'Estudo completo das conjunções', event_date: '2026-07-14', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 06 - Verbo', description: 'Revisão detalhada de verbos', event_date: '2026-08-11', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 07 - Sintaxe: Período Simples', description: 'Estudo da sintaxe do período simples', event_date: '2026-08-25', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 08 - Período Composto e Pontuação', description: 'Sintaxe do período composto e pontuação', event_date: '2026-09-22', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 09 - Sintaxe de Colocação de Concordância', description: 'Concordância verbal e nominal', event_date: '2026-10-06', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 10 - Regência e Crase', description: 'Regência verbal, nominal e uso da crase', event_date: '2026-11-03', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 11 - Compreensão Interpretação', description: 'Técnicas de compreensão e interpretação de texto', event_date: '2026-11-17', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 12 - Tipos e Gêneros', description: 'Tipos textuais e gêneros literários', event_date: '2026-12-01', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 13 - Coesão e Coerência', description: 'Elementos de coesão e coerência textual', event_date: '2026-12-15', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 14 - Denotação, Conotação e Análise do Discurso', description: 'Denotação, conotação e análise do discurso', event_date: '2027-01-12', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Prof. Português', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Mentoria 15 - Live Final', description: 'Aula final de revisão geral', event_date: '2027-01-26', event_time: '19:00:00', event_type: 'mentoria', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      
+      // SIMULADOS
+      { title: 'Simulado 01 - Diagnóstico', description: 'Simulado diagnóstico para avaliar conhecimentos iniciais', event_date: '2026-05-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 02 - Conteúdo das Mentorias 2 e 3', description: 'Simulado sobre acentuação, ortografia, substantivos e adjetivos', event_date: '2026-06-28', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 03 - Conteúdo das Mentorias 2, 3, 4 e 5', description: 'Simulado sobre morfologia completa', event_date: '2026-07-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 04 - Conteúdo das Mentorias 2, 3, 4, 5 e 6', description: 'Simulado sobre morfologia e verbos', event_date: '2026-08-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 05 - Conteúdo das Mentorias 2, 3, 4, 5, 6, 7 e 8', description: 'Simulado sobre morfologia e sintaxe básica', event_date: '2026-09-28', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 06 - Conteúdo das Mentorias 2, 3, 4, 5, 6, 7, 8 e 9', description: 'Simulado sobre morfologia, sintaxe e concordância', event_date: '2026-10-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 07 - Conteúdo das Mentorias 2 a 11', description: 'Simulado sobre morfologia, sintaxe e interpretação', event_date: '2026-11-28', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 08 - Conteúdo das Mentorias 2 a 13', description: 'Simulado sobre todo conteúdo até coesão e coerência', event_date: '2026-12-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 09 - Conteúdo das Mentorias 2 a 14', description: 'Simulado sobre todo conteúdo até análise do discurso', event_date: '2027-01-29', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      { title: 'Simulado 10 - TODO CONTEÚDO', description: 'Simulado final com todo o conteúdo do curso', event_date: '2027-02-15', event_time: '14:00:00', event_type: 'simulado', duration_minutes: 240, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: true, max_participants: 100 },
+      
+      // RESOLUÇÕES
+      { title: 'Resolução 01 - Simulado Diagnóstico', description: 'Resolução comentada do simulado diagnóstico', event_date: '2026-05-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 02 - Simulado Mentorias 2 e 3', description: 'Resolução comentada do simulado 02', event_date: '2026-06-29', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 03 - Simulado Mentorias 2 a 5', description: 'Resolução comentada do simulado 03', event_date: '2026-07-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 04 - Simulado Mentorias 2 a 6', description: 'Resolução comentada do simulado 04', event_date: '2026-08-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 05 - Simulado Mentorias 2 a 8', description: 'Resolução comentada do simulado 05', event_date: '2026-09-30', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 06 - Simulado Mentorias 2 a 9', description: 'Resolução comentada do simulado 06', event_date: '2026-10-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 07 - Simulado Mentorias 2 a 11', description: 'Resolução comentada do simulado 07', event_date: '2026-11-30', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 08 - Simulado Mentorias 2 a 13', description: 'Resolução comentada do simulado 08', event_date: '2026-12-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      { title: 'Resolução 09 - Simulado Mentorias 2 a 14', description: 'Resolução comentada do simulado 09', event_date: '2027-01-31', event_time: '19:00:00', event_type: 'resolucao', duration_minutes: 120, instructor: 'Equipe Everest', location: 'Sala Virtual', is_mandatory: false, max_participants: 100 },
+      
+      // ENTREGAS DE REDAÇÃO
+      { title: 'Entrega TEMA 01', description: 'Entrega da redação do tema 01', event_date: '2026-06-15', event_time: '23:59:00', event_type: 'entrega', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: true, max_participants: 100 },
+      { title: 'Recebimento TEMA 01', description: 'Recebimento da correção da redação tema 01', event_date: '2026-06-22', event_time: '18:00:00', event_type: 'recebimento', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: false, max_participants: 100 },
+      { title: 'Entrega TEMA 02', description: 'Entrega da redação do tema 02', event_date: '2026-07-15', event_time: '23:59:00', event_type: 'entrega', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: true, max_participants: 100 },
+      { title: 'Recebimento TEMA 02', description: 'Recebimento da correção da redação tema 02', event_date: '2026-07-22', event_time: '18:00:00', event_type: 'recebimento', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: false, max_participants: 100 },
+      { title: 'Entrega TEMA 03', description: 'Entrega da redação do tema 03', event_date: '2026-08-15', event_time: '23:59:00', event_type: 'entrega', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: true, max_participants: 100 },
+      { title: 'Recebimento TEMA 03', description: 'Recebimento da correção da redação tema 03', event_date: '2026-08-22', event_time: '18:00:00', event_type: 'recebimento', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: false, max_participants: 100 },
+      { title: 'Entrega TEMA 04', description: 'Entrega da redação do tema 04', event_date: '2026-09-15', event_time: '23:59:00', event_type: 'entrega', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: true, max_participants: 100 },
+      { title: 'Recebimento TEMA 04', description: 'Recebimento da correção da redação tema 04', event_date: '2026-09-22', event_time: '18:00:00', event_type: 'recebimento', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: false, max_participants: 100 },
+      { title: 'Entrega TEMA 05', description: 'Entrega da redação do tema 05', event_date: '2026-10-15', event_time: '23:59:00', event_type: 'entrega', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: true, max_participants: 100 },
+      { title: 'Recebimento TEMA 05', description: 'Recebimento da correção da redação tema 05', event_date: '2026-10-22', event_time: '18:00:00', event_type: 'recebimento', duration_minutes: 0, instructor: 'Prof. Redação', location: 'Plataforma', is_mandatory: false, max_participants: 100 }
+    ]
+
+    // Inserir todos os eventos
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .insert(cronogramaEvents.map(event => ({
+        ...event,
+        created_by: userId
+      })))
+
+    if (error) {
+      console.error('❌ Erro ao importar cronograma:', error)
+      throw error
+    }
+
+    console.log(`✅ Cronograma EAOF 2026 importado com sucesso! ${cronogramaEvents.length} eventos criados.`)
+    return { success: true, count: cronogramaEvents.length }
+  } catch (error) {
+    console.error('❌ Erro inesperado ao importar cronograma:', error)
+    throw error
+  }
+}
+
+// ===== GESTÃO DE MEMBROS/ALUNOS =====
+
+export async function getAllMembers() {
+  try {
+    const supabase = await getSupabase()
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select(`
+        *,
+        classes(name),
+        student_subscriptions(
+          *,
+          access_plans(name, duration_months, features),
+          classes(name)
+        )
+      `)
+      .eq('role', 'student')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('❌ Erro ao carregar membros:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('❌ Erro inesperado ao carregar membros:', error)
+    return []
+  }
+}
+
+export async function getAllClasses() {
+  try {
+    const supabase = await getSupabase()
+    
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('❌ Erro ao carregar turmas:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('❌ Erro inesperado ao carregar turmas:', error)
+    return []
+  }
+}
+
+export async function getAllAccessPlans() {
+  try {
+    const supabase = await getSupabase()
+    
+    const { data, error } = await supabase
+      .from('access_plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('duration_months', { ascending: true })
+
+    if (error) {
+      console.error('❌ Erro ao carregar planos de acesso:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('❌ Erro inesperado ao carregar planos de acesso:', error)
+    return []
+  }
+}
+
+export async function createMember(memberData: {
+  email: string
+  name: string
+  class_id?: string
+  access_plan_id: string
+  start_date: string
+  end_date: string
+  page_permissions: Record<string, boolean>
+}, createdBy: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se o usuário tem permissão
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', createdBy)
+      .single()
+
+    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+      throw new Error('Acesso negado. Apenas professores e administradores podem criar membros.')
+    }
+
+    // Criar usuário no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: memberData.email,
+      password: generateTemporaryPassword(),
+      email_confirm: true
+    })
+
+    if (authError || !authData.user) {
+      throw new Error('Erro ao criar usuário: ' + (authError?.message || 'Usuário não criado'))
+    }
+
+    const userId = authData.user.id
+
+    // Criar perfil do usuário
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .insert({
+        user_id: userId,
+        name: memberData.name,
+        email: memberData.email,
+        role: 'student',
+        class_id: memberData.class_id,
+        access_expires_at: memberData.end_date,
+        must_change_password: true,
+        created_by: createdBy
+      })
+
+    if (profileError) {
+      // Se falhar, deletar o usuário criado
+      await supabase.auth.admin.deleteUser(userId)
+      throw new Error('Erro ao criar perfil: ' + profileError.message)
+    }
+
+    // Criar assinatura
+    const { error: subscriptionError } = await supabase
+      .from('student_subscriptions')
+      .insert({
+        user_id: userId,
+        access_plan_id: memberData.access_plan_id,
+        class_id: memberData.class_id,
+        start_date: memberData.start_date,
+        end_date: memberData.end_date,
+        created_by: createdBy
+      })
+
+    if (subscriptionError) {
+      console.error('Erro ao criar assinatura:', subscriptionError)
+    }
+
+    // Criar permissões de página
+    const pagePermissions = Object.entries(memberData.page_permissions).map(([page, hasAccess]) => ({
+      user_id: userId,
+      page_name: page,
+      has_access: hasAccess,
+      granted_by: createdBy,
+      expires_at: memberData.end_date
+    }))
+
+    if (pagePermissions.length > 0) {
+      const { error: permissionsError } = await supabase
+        .from('page_permissions')
+        .insert(pagePermissions)
+
+      if (permissionsError) {
+        console.error('Erro ao criar permissões:', permissionsError)
+      }
+    }
+
+    // Criar senha provisória
+    const tempPassword = generateTemporaryPassword()
+    const { error: tempPasswordError } = await supabase
+      .from('temporary_passwords')
+      .insert({
+        user_id: userId,
+        temporary_password: tempPassword,
+        created_by: createdBy
+      })
+
+    if (tempPasswordError) {
+      console.error('Erro ao criar senha provisória:', tempPasswordError)
+    }
+
+    console.log(`✅ Membro criado com sucesso: ${memberData.name} (${memberData.email})`)
+    return { 
+      success: true, 
+      userId, 
+      temporaryPassword: tempPassword,
+      message: 'Membro criado com sucesso!'
+    }
+  } catch (error) {
+    console.error('❌ Erro ao criar membro:', error)
+    throw error
+  }
+}
+
+export async function updateMember(memberId: string, updateData: {
+  name?: string
+  class_id?: string
+  access_plan_id?: string
+  start_date?: string
+  end_date?: string
+  page_permissions?: Record<string, boolean>
+}, updatedBy: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se o usuário tem permissão
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', updatedBy)
+      .single()
+
+    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+      throw new Error('Acesso negado. Apenas professores e administradores podem editar membros.')
+    }
+
+    // Atualizar perfil
+    const profileUpdate: any = {}
+    if (updateData.name) profileUpdate.name = updateData.name
+    if (updateData.class_id !== undefined) profileUpdate.class_id = updateData.class_id
+    if (updateData.end_date) profileUpdate.access_expires_at = updateData.end_date
+
+    if (Object.keys(profileUpdate).length > 0) {
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update(profileUpdate)
+        .eq('user_id', memberId)
+
+      if (profileError) {
+        throw new Error('Erro ao atualizar perfil: ' + profileError.message)
+      }
+    }
+
+    // Atualizar assinatura se necessário
+    if (updateData.access_plan_id || updateData.start_date || updateData.end_date) {
+      const subscriptionUpdate: any = {}
+      if (updateData.access_plan_id) subscriptionUpdate.access_plan_id = updateData.access_plan_id
+      if (updateData.class_id !== undefined) subscriptionUpdate.class_id = updateData.class_id
+      if (updateData.start_date) subscriptionUpdate.start_date = updateData.start_date
+      if (updateData.end_date) subscriptionUpdate.end_date = updateData.end_date
+
+      const { error: subscriptionError } = await supabase
+        .from('student_subscriptions')
+        .update(subscriptionUpdate)
+        .eq('user_id', memberId)
+        .eq('is_active', true)
+
+      if (subscriptionError) {
+        console.error('Erro ao atualizar assinatura:', subscriptionError)
+      }
+    }
+
+    // Atualizar permissões de página se necessário
+    if (updateData.page_permissions) {
+      // Deletar permissões existentes
+      await supabase
+        .from('page_permissions')
+        .delete()
+        .eq('user_id', memberId)
+
+      // Criar novas permissões
+      const pagePermissions = Object.entries(updateData.page_permissions).map(([page, hasAccess]) => ({
+        user_id: memberId,
+        page_name: page,
+        has_access: hasAccess,
+        granted_by: updatedBy,
+        expires_at: updateData.end_date
+      }))
+
+      if (pagePermissions.length > 0) {
+        const { error: permissionsError } = await supabase
+          .from('page_permissions')
+          .insert(pagePermissions)
+
+        if (permissionsError) {
+          console.error('Erro ao atualizar permissões:', permissionsError)
+        }
+      }
+    }
+
+    console.log(`✅ Membro atualizado com sucesso: ${memberId}`)
+    return { success: true, message: 'Membro atualizado com sucesso!' }
+  } catch (error) {
+    console.error('❌ Erro ao atualizar membro:', error)
+    throw error
+  }
+}
+
+export async function deleteMember(memberId: string, deletedBy: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se o usuário tem permissão
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', deletedBy)
+      .single()
+
+    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+      throw new Error('Acesso negado. Apenas professores e administradores podem deletar membros.')
+    }
+
+    // Deletar usuário do Supabase Auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(memberId)
+    
+    if (authError) {
+      console.error('Erro ao deletar usuário do auth:', authError)
+    }
+
+    // Deletar perfil e dados relacionados (cascade)
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .delete()
+      .eq('user_id', memberId)
+
+    if (profileError) {
+      throw new Error('Erro ao deletar perfil: ' + profileError.message)
+    }
+
+    console.log(`✅ Membro deletado com sucesso: ${memberId}`)
+    return { success: true, message: 'Membro deletado com sucesso!' }
+  } catch (error) {
+    console.error('❌ Erro ao deletar membro:', error)
+    throw error
+  }
+}
+
+export async function createTemporaryPassword(memberId: string, createdBy: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    // Verificar se o usuário tem permissão
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', createdBy)
+      .single()
+
+    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+      throw new Error('Acesso negado. Apenas professores e administradores podem criar senhas provisórias.')
+    }
+
+    const tempPassword = generateTemporaryPassword()
+    
+    // Criar senha provisória
+    const { error } = await supabase
+      .from('temporary_passwords')
+      .insert({
+        user_id: memberId,
+        temporary_password: tempPassword,
+        created_by: createdBy
+      })
+
+    if (error) {
+      throw new Error('Erro ao criar senha provisória: ' + error.message)
+    }
+
+    // Marcar que o usuário deve trocar a senha
+    await supabase
+      .from('user_profiles')
+      .update({ must_change_password: true })
+      .eq('user_id', memberId)
+
+    console.log(`✅ Senha provisória criada para: ${memberId}`)
+    return { success: true, temporaryPassword, message: 'Senha provisória criada com sucesso!' }
+  } catch (error) {
+    console.error('❌ Erro ao criar senha provisória:', error)
+    throw error
+  }
+}
+
+export async function getMemberPagePermissions(memberId: string) {
+  try {
+    const supabase = await getSupabase()
+    
+    const { data, error } = await supabase
+      .from('page_permissions')
+      .select('*')
+      .eq('user_id', memberId)
+
+    if (error) {
+      console.error('❌ Erro ao carregar permissões:', error)
+      return {}
+    }
+
+    // Converter para objeto com page_name como chave
+    const permissions: Record<string, boolean> = {}
+    data?.forEach(perm => {
+      permissions[perm.page_name] = perm.has_access
+    })
+
+    return permissions
+  } catch (error) {
+    console.error('❌ Erro inesperado ao carregar permissões:', error)
+    return {}
+  }
+}
+
+// Função auxiliar para gerar senha provisória
+function generateTemporaryPassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let password = ''
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
+}

@@ -1,12 +1,22 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRequireAuth } from "@/context/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, Users, BookOpen, Trophy } from "lucide-react"
+import { BarChart3, Users, BookOpen, Trophy, Loader2 } from "lucide-react"
 import ProgressWidget from "@/components/progress-widget"
+import { getTotalUsers, getTotalContent, getTotalTests, getUserRanking } from "@/actions"
 
 export default function DashboardPage() {
   const { user, profile } = useRequireAuth()
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalContent: 0,
+    totalTests: 0,
+    userRanking: 'N/A'
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const getWelcomeMessage = () => {
     switch (profile?.role) {
@@ -34,6 +44,36 @@ export default function DashboardPage() {
     }
   }
 
+  useEffect(() => {
+    loadDashboardStats()
+  }, [user?.id])
+
+  const loadDashboardStats = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const [usersResult, contentResult, testsResult, rankingResult] = await Promise.all([
+        getTotalUsers(),
+        getTotalContent(),
+        getTotalTests(),
+        user?.id ? getUserRanking(user.id) : Promise.resolve({ position: 'N/A' })
+      ])
+      
+      setStats({
+        totalUsers: usersResult.count,
+        totalContent: contentResult.count,
+        totalTests: testsResult.count,
+        userRanking: rankingResult.position
+      })
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error)
+      setError('Erro ao carregar dados do dashboard')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -50,10 +90,19 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% em relação ao mês passado
-            </p>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Carregando...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Usuários cadastrados
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         
@@ -63,10 +112,19 @@ export default function DashboardPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">567</div>
-            <p className="text-xs text-muted-foreground">
-              +12.5% em relação ao mês passado
-            </p>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Carregando...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalContent.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Flashcards, quizzes e cursos
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         
@@ -76,10 +134,19 @@ export default function DashboardPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,890</div>
-            <p className="text-xs text-muted-foreground">
-              +8.2% em relação ao mês passado
-            </p>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Carregando...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalTests.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  Tentativas de quiz
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         
@@ -89,13 +156,33 @@ export default function DashboardPage() {
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Top 10%</div>
-            <p className="text-xs text-muted-foreground">
-              Sua posição atual
-            </p>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Carregando...</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {stats.userRanking === 'N/A' ? 'N/A' : `#${stats.userRanking}`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sua posição atual
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Mensagem de Erro */}
+      {error && (
+        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
+          <CardContent className="p-4">
+            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Widget de Progresso para Estudantes */}
       {profile?.role === 'student' && (

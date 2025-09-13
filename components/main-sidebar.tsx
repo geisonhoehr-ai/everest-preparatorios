@@ -44,6 +44,7 @@ export function MainSidebar() {
     { title: "Calendário", href: "/calendario", icon: Calendar, access: "all" },
     { title: "Suporte", href: "/suporte", icon: Monitor, access: "all" },
     { title: "Configurações", href: "/settings", icon: Settings, access: "all" },
+    { title: "Membros", href: "/membros", icon: Users, access: "teacher" },
     { title: "Redação", href: "/redacao", icon: FileText, access: "teacher" },
     { title: "Provas", href: "/provas", icon: ClipboardList, access: "teacher" },
     { title: "Comunidade", href: "/community", icon: MessageSquare, access: "teacher" },

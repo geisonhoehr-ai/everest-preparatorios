@@ -1,67 +1,46 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, MapPin, Users, Edit } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, Edit, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
+import { getCalendarEvents } from "@/actions"
+import { CronogramaViewer } from "@/components/calendar/cronograma-viewer"
+import { CronogramaImporter } from "@/components/calendar/cronograma-importer"
 
 export default function CalendarioPage() {
   const { user, profile } = useAuth()
+  const [events, setEvents] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
   // Debug: verificar dados do usuário
   console.log('🔍 Debug Calendário - User:', user)
   console.log('🔍 Debug Calendário - Profile:', profile)
   console.log('🔍 Debug Calendário - Profile Role:', profile?.role)
-  
-  const events = [
-    {
-      id: 1,
-      title: "Simulado ENEM",
-      date: "2024-01-15",
-      time: "08:00",
-      location: "Auditório Principal",
-      type: "Simulado",
-      participants: 150
-    },
-    {
-      id: 2,
-      title: "Aula de Revisão - Matemática",
-      date: "2024-01-16",
-      time: "14:00",
-      location: "Sala 201",
-      type: "Aula",
-      participants: 30
-    },
-    {
-      id: 3,
-      title: "Workshop de Redação",
-      date: "2024-01-18",
-      time: "09:00",
-      location: "Laboratório de Informática",
-      type: "Workshop",
-      participants: 25
-    },
-    {
-      id: 4,
-      title: "Prova de Física",
-      date: "2024-01-20",
-      time: "10:00",
-      location: "Sala 105",
-      type: "Prova",
-      participants: 45
-    },
-    {
-      id: 5,
-      title: "Palestra Motivacional",
-      date: "2024-01-22",
-      time: "19:00",
-      location: "Auditório Principal",
-      type: "Palestra",
-      participants: 200
+
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  const loadEvents = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const eventsData = await getCalendarEvents()
+      setEvents(eventsData)
+    } catch (error) {
+      console.error('Erro ao carregar eventos:', error)
+      setError('Erro ao carregar eventos do calendário')
+    } finally {
+      setIsLoading(false)
     }
-  ];
+  }
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -91,7 +70,8 @@ export default function CalendarioPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PagePermissionGuard pageName="calendario">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
@@ -116,6 +96,18 @@ export default function CalendarioPage() {
         )}
       </div>
 
+      {/* Importador de Cronograma (apenas para professores e admins) */}
+      {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+        <CronogramaImporter 
+          onImportComplete={loadEvents}
+          userRole={profile.role}
+          userId={user?.id || ''}
+        />
+      )}
+
+      {/* Visualizador de Cronograma EAOF 2026 */}
+      <CronogramaViewer events={events} />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Próximos Eventos */}
         <div className="lg:col-span-2">
@@ -128,41 +120,87 @@ export default function CalendarioPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {events.map((event) => (
-                  <div key={event.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                          {event.title}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(event.date)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{event.time}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{event.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge className={getTypeColor(event.type)}>
-                        {event.type}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{event.participants} participantes</span>
-                      </div>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Carregando eventos...</span>
                     </div>
                   </div>
-                ))}
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+                    <Button onClick={loadEvents} variant="outline">
+                      Tentar Novamente
+                    </Button>
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Nenhum evento encontrado
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Não há eventos programados no momento.
+                    </p>
+                    {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+                      <Button className="mt-4" asChild>
+                        <Link href="/calendario/edit">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Criar Primeiro Evento
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  events.map((event) => (
+                    <div key={event.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                            {event.title}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(event.date)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{event.time}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{event.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className={getTypeColor(event.type)}>
+                          {event.type}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{event.participants} participantes</span>
+                        </div>
+                        {event.duration_minutes && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{event.duration_minutes} min</span>
+                          </div>
+                        )}
+                        {event.instructor && (
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span>{event.instructor}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -208,6 +246,7 @@ export default function CalendarioPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </PagePermissionGuard>
   )
 }
