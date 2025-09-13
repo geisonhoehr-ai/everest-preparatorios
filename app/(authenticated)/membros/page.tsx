@@ -9,8 +9,8 @@ import {
   createMember, 
   updateMember, 
   deleteMember, 
-  createTemporaryPassword,
-  getMemberPagePermissions
+  createTemporaryPassword, 
+  getMemberPagePermissions 
 } from "@/actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
