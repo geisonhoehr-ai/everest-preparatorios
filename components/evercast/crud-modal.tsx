@@ -87,7 +87,7 @@ export function CrudModal({
     if (isOpen) {
       if (item) {
         setFormData({
-          name: item.name || item.title || '',
+          name: item.title || '',
           description: item.description || '',
           duration: item.duration || '',
           duration_seconds: item.duration_seconds || 0,
