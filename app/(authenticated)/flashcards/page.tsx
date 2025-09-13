@@ -172,6 +172,21 @@ export default function FlashcardsPage() {
     answer: ''
   })
   const [isAdminMode, setIsAdminMode] = useState(false)
+  
+  // Estados para funcionalidades avançadas
+  const [selectedCardCount, setSelectedCardCount] = useState(10)
+  const [showCardCountSelector, setShowCardCountSelector] = useState(false)
+  const [studyResults, setStudyResults] = useState({
+    totalCards: 0,
+    correctAnswers: 0,
+    incorrectAnswers: 0,
+    accuracy: 0,
+    score: 0,
+    timeSpent: 0,
+    wrongCards: [] as Flashcard[]
+  })
+  const [showResultsModal, setShowResultsModal] = useState(false)
+  const [studyWrongCards, setStudyWrongCards] = useState(false)
 
   // Carregar subjects quando o componente for montado
   useEffect(() => {
@@ -335,7 +350,7 @@ export default function FlashcardsPage() {
     }
   }
 
-  const loadFlashcards = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review") => {
+  const loadFlashcards = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review", cardCount?: number) => {
     try {
       setIsLoading(true)
       console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}, tipo: ${type}...`)
@@ -349,7 +364,7 @@ export default function FlashcardsPage() {
 
       switch (type) {
         case "review":
-          const reviewResult = await getCardsForReview(user.id, topicId, 20)
+          const reviewResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
           if (reviewResult.success && reviewResult.data) {
             flashcardsData = reviewResult.data.map((item: any) => ({
               id: item.flashcards.id,
@@ -361,14 +376,14 @@ export default function FlashcardsPage() {
           }
           break
         case "new":
-          const newResult = await getNewCards(user.id, topicId, 10)
+          const newResult = await getNewCards(user.id, topicId, cardCount || selectedCardCount)
           if (newResult.success && newResult.data) {
             flashcardsData = newResult.data
           }
           break
         case "learning":
           // Para learning, buscar cards com status 'learning' ou 'relearning'
-          const learningResult = await getCardsForReview(user.id, topicId, 15)
+          const learningResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
           if (learningResult.success && learningResult.data) {
             flashcardsData = learningResult.data
               .filter((item: any) => item.status === 'learning' || item.status === 'relearning')
@@ -405,7 +420,16 @@ export default function FlashcardsPage() {
     setSelectedTopic(topicId)
     setStudyType(type)
     setStudyModeConfig(prev => ({ ...prev, type: modeType }))
-    loadFlashcards(topicId, type)
+    
+    // Mostrar seletor de quantidade de cards
+    setShowCardCountSelector(true)
+  }
+
+  const confirmStudyStart = async () => {
+    if (!selectedTopic || !user?.id) return
+    
+    setShowCardCountSelector(false)
+    await loadFlashcards(selectedTopic, studyType, selectedCardCount)
     setStudyMode("study")
     setCurrentCardIndex(0)
     setShowAnswer(false)
@@ -414,13 +438,13 @@ export default function FlashcardsPage() {
     // Criar sessão de rastreamento
     try {
       const sessionResult = await createStudySession(user.id, {
-        topic_id: topicId,
+        topic_id: selectedTopic,
         start_time: new Date().toISOString(),
         cards_studied: 0,
         correct_answers: 0,
         incorrect_answers: 0,
         xp_gained: 0,
-        session_type: modeType === 'standard' ? type : modeType,
+        session_type: studyModeConfig.type === 'standard' ? studyType : studyModeConfig.type,
         study_mode_config: studyModeConfig
       })
       
@@ -433,12 +457,12 @@ export default function FlashcardsPage() {
     }
     
     // Iniciar sessão baseada no modo
-    if (modeType !== 'standard') {
-      startStudySession(modeType)
+    if (studyModeConfig.type !== 'standard') {
+      startStudySession(studyModeConfig.type)
     }
     
     // Shuffle cards se necessário
-    if (modeType === 'custom' && studyModeConfig.customSettings.shuffleCards) {
+    if (studyModeConfig.type === 'custom' && studyModeConfig.customSettings.shuffleCards) {
       setTimeout(() => shuffleFlashcards(), 100)
     }
   }
@@ -535,9 +559,25 @@ export default function FlashcardsPage() {
         setIsAnimating(false)
       }, 150)
     } else {
+      // Calcular resultados finais
+      const totalCards = sessionStats.correct + sessionStats.incorrect
+      const accuracy = totalCards > 0 ? (sessionStats.correct / totalCards) * 100 : 0
+      const score = Math.round((sessionStats.correct * 10) + (accuracy * 0.5))
+      
+      setStudyResults({
+        totalCards,
+        correctAnswers: sessionStats.correct,
+        incorrectAnswers: sessionStats.incorrect,
+        accuracy,
+        score,
+        timeSpent: sessionTimer,
+        wrongCards: [] // Será preenchido com os cards errados
+      })
+      
+      setShowResultsModal(true)
       setStudyMode("finished")
     }
-  }, [currentCardIndex, safeFlashcards.length])
+  }, [currentCardIndex, safeFlashcards.length, sessionStats, sessionTimer])
 
   const previousCard = useCallback(() => {
     if (currentCardIndex > 0) {
@@ -732,6 +772,9 @@ export default function FlashcardsPage() {
     setSessionStats({ correct: 0, incorrect: 0 })
     setStudyModeConfig(prev => ({ ...prev, type: 'standard' }))
     setCurrentSessionId(null)
+    setShowResultsModal(false)
+    setStudyWrongCards(false)
+    setShowCardCountSelector(false)
   }
 
   // Funções para carregar dados de rastreamento
@@ -1622,6 +1665,55 @@ export default function FlashcardsPage() {
 
   return (
     <PagePermissionGuard pageName="flashcards">
+      {/* Modal de Seleção de Quantidade de Cards */}
+      <Dialog open={showCardCountSelector} onOpenChange={setShowCardCountSelector}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Quantos flashcards estudar?
+            </DialogTitle>
+            <DialogDescription>
+              Escolha quantos flashcards você quer estudar nesta sessão.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {[5, 10, 15, 20, 25, 30].map((count) => (
+                <Button
+                  key={count}
+                  variant={selectedCardCount === count ? "default" : "outline"}
+                  onClick={() => setSelectedCardCount(count)}
+                  className="h-12 text-lg font-semibold"
+                >
+                  {count}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                <strong>{selectedCardCount} flashcards</strong> selecionados
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Tempo estimado: {Math.ceil(selectedCardCount * 1.5)} minutos
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCardCountSelector(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmStudyStart} className="bg-orange-500 hover:bg-orange-600">
+              <Play className="h-4 w-4 mr-2" />
+              Começar Estudo
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Edição de Flashcard - Versão Simplificada */}
       {isEditDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2212,6 +2304,130 @@ export default function FlashcardsPage() {
             <Button onClick={() => setShowHistory(false)}>
               Fechar
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Resultados do Estudo */}
+      <Dialog open={showResultsModal} onOpenChange={setShowResultsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-center justify-center">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+              Resultados da Sessão
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Parabéns por completar sua sessão de estudo!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Pontuação Principal */}
+            <div className="text-center p-6 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 rounded-lg">
+              <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                {studyResults.score} pontos
+              </div>
+              <div className="text-lg text-gray-600 dark:text-gray-400">
+                {studyResults.accuracy >= 80 ? "🎉 Excelente!" : 
+                 studyResults.accuracy >= 60 ? "👍 Muito bom!" : 
+                 studyResults.accuracy >= 40 ? "📚 Continue estudando!" : 
+                 "💪 Você consegue melhorar!"}
+              </div>
+            </div>
+
+            {/* Estatísticas Detalhadas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {studyResults.correctAnswers}
+                </div>
+                <div className="text-sm text-green-700 dark:text-green-300">Acertos</div>
+              </div>
+              <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {studyResults.incorrectAnswers}
+                </div>
+                <div className="text-sm text-red-700 dark:text-red-300">Erros</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {studyResults.accuracy.toFixed(1)}%
+                </div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">Precisão</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {Math.floor(studyResults.timeSpent / 60)}m
+                </div>
+                <div className="text-sm text-purple-700 dark:text-purple-300">Tempo</div>
+              </div>
+            </div>
+
+            {/* Mensagem Motivacional */}
+            <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border-l-4 border-orange-500">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">
+                  {studyResults.accuracy >= 80 ? "🌟" : 
+                   studyResults.accuracy >= 60 ? "🎯" : 
+                   studyResults.accuracy >= 40 ? "📖" : "💪"}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                    {studyResults.accuracy >= 80 ? "Parabéns! Você está dominando o conteúdo!" :
+                     studyResults.accuracy >= 60 ? "Ótimo progresso! Continue assim!" :
+                     studyResults.accuracy >= 40 ? "Bom começo! Pratique mais para melhorar!" :
+                     "Não desista! Cada erro é uma oportunidade de aprender!"}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {studyResults.accuracy >= 80 ? "Sua dedicação está rendendo frutos. Continue estudando para manter esse nível!" :
+                     studyResults.accuracy >= 60 ? "Você está no caminho certo. Revise os erros e tente novamente!" :
+                     studyResults.accuracy >= 40 ? "Com mais prática, você pode melhorar significativamente!" :
+                     "A persistência é a chave do sucesso. Estude os cards que errou e tente novamente!"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Opções de Ação */}
+            <div className="space-y-3">
+              {studyResults.incorrectAnswers > 0 && (
+                <Button 
+                  onClick={() => {
+                    setStudyWrongCards(true)
+                    setShowResultsModal(false)
+                    // TODO: Implementar estudo apenas dos cards errados
+                  }}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Estudar Apenas os Cards Errados ({studyResults.incorrectAnswers})
+                </Button>
+              )}
+              
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  onClick={() => {
+                    setShowResultsModal(false)
+                    resetStudy()
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Nova Sessão
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowResultsModal(false)
+                    setSelectedSubject(null)
+                  }}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Escolher Tópico
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
