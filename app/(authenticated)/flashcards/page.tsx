@@ -357,7 +357,7 @@ export default function FlashcardsPage() {
     
     try {
       const result = await getFlashcardProgressStats(user.id, topicId)
-      if (result.success) {
+      if (result.success && result.data) {
         setProgressStats(result.data)
       }
     } catch (error) {
