@@ -1960,6 +1960,7 @@ export default function FlashcardsPage() {
   // Debug: verificar estado do modal
   console.log("🔧 [Debug] Estado do modal:", { isEditDialogOpen, editingFlashcard })
   console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)
+  console.log("🔍 Modal deve aparecer?", showCardCountSelector ? "SIM" : "NÃO")
 
   return (
     <PagePermissionGuard pageName="flashcards">
