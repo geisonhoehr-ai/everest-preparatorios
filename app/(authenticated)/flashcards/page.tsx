@@ -1876,11 +1876,11 @@ export default function FlashcardsPage() {
 
   // Debug: verificar estado do modal
   console.log("🔧 [Debug] Estado do modal:", { isEditDialogOpen, editingFlashcard })
+  console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)
 
   return (
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Seleção de Quantidade de Cards */}
-      {console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)}
       <Dialog open={showCardCountSelector} onOpenChange={setShowCardCountSelector}>
         <DialogContent className="max-w-md">
           <DialogHeader>
