@@ -2774,4 +2774,50 @@ function generateTemporaryPassword(): string {
   return password
 }
 
+// Função para atualizar progresso do flashcard
+export async function updateFlashcardProgress(
+  userId: string,
+  topicId: string,
+  isCorrect: boolean,
+  timeSpent: number = 0
+) {
+  const supabase = await getSupabase()
+  console.log(`📊 [Server Action] Atualizando progresso do flashcard para usuário: ${userId}`)
+
+  try {
+    // Calcular XP baseado na performance
+    const baseXP = isCorrect ? 5 : 1 // 5 XP por acerto, 1 XP por tentativa
+    const timeBonus = timeSpent > 0 ? Math.max(0, 2 - Math.floor(timeSpent / 30)) : 0 // Bônus por velocidade
+    const xpGained = baseXP + timeBonus
+
+    // Inserir ou atualizar progresso
+    const { data, error } = await supabase
+      .from("user_progress")
+      .upsert({
+        user_id: userId,
+        topic_id: topicId,
+        correct_answers: isCorrect ? 1 : 0,
+        total_questions: 1,
+        accuracy: isCorrect ? 100 : 0,
+        time_spent: timeSpent,
+        xp_gained: xpGained,
+        last_attempt: new Date().toISOString()
+      }, { onConflict: 'user_id,topic_id' })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao atualizar progresso:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ [Server Action] Progresso atualizado: +${xpGained} XP`)
+    revalidatePath("/flashcards")
+    return { success: true, xpGained, data }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao atualizar progresso:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
 // Cache buster - Build: ab44064 - Force cache clear - SERVER ACTIONS FILE
