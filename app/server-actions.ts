@@ -1074,15 +1074,15 @@ export async function getTopicsBySubject(subjectId: number) {
   return data || []
 }
 
-// Função para buscar questões de quiz diretamente por tópico
-export async function getAllQuizzesByTopic(topicId: string) {
+// Função para buscar questões de quiz por quiz_id
+export async function getAllQuizzesByTopic(quizId: string) {
   const supabase = await getSupabase()
-  console.log(`❓ [Server Action] Buscando questões do tópico: ${topicId}`)
+  console.log(`❓ [Server Action] Buscando questões do quiz: ${quizId}`)
 
   const { data, error } = await supabase
     .from("quiz_questions")
-    .select("id, topic_id, quiz_id, question_text, options, correct_answer, explanation")
-    .eq("topic_id", topicId)
+    .select("id, quiz_id, question_text, options, correct_answer, explanation")
+    .eq("quiz_id", quizId)
     .order("id")
 
   if (error) {
@@ -1096,19 +1096,19 @@ export async function getAllQuizzesByTopic(topicId: string) {
 
 // Função para criar uma nova questão de quiz
 export async function createQuiz(userId: string, quizData: {
-  topic_id: string
+  quiz_id: string
   question_text: string
   options: string[]
   correct_answer: string
   explanation: string
 }) {
   const supabase = await getSupabase()
-  console.log(`📝 [Server Action] Criando questão de quiz para tópico: ${quizData.topic_id}`)
+  console.log(`📝 [Server Action] Criando questão de quiz para quiz: ${quizData.quiz_id}`)
 
   const { data, error } = await supabase
     .from("quiz_questions")
     .insert({
-      topic_id: quizData.topic_id,
+      quiz_id: quizData.quiz_id,
       question_text: quizData.question_text,
       options: quizData.options,
       correct_answer: quizData.correct_answer,
@@ -1259,7 +1259,7 @@ export async function deleteTopic(userId: string, topicId: string) {
 // Função para atualizar progresso do quiz
 export async function updateQuizProgress(
   userId: string,
-  topicId: string,
+  quizId: string,
   correctAnswers: number,
   totalQuestions: number,
   timeSpent: number
@@ -1279,14 +1279,14 @@ export async function updateQuizProgress(
       .from("user_progress")
       .upsert({
         user_id: userId,
-        topic_id: topicId,
+        quiz_id: quizId,
         correct_answers: correctAnswers,
         total_questions: totalQuestions,
         accuracy: accuracy,
         time_spent: timeSpent,
         xp_gained: xpGained,
         last_attempt: new Date().toISOString()
-      }, { onConflict: 'user_id,topic_id' })
+      }, { onConflict: 'user_id,quiz_id' })
       .select()
       .single()
 
