@@ -94,6 +94,10 @@ export default function FlashcardsPage() {
   console.log('🔍 Debug Flashcards - User:', user)
   console.log('🔍 Debug Flashcards - Profile:', profile)
   console.log('🔍 Debug Flashcards - Profile Role:', profile?.role)
+  console.log('🔍 Debug Flashcards - selectedSubject:', selectedSubject)
+  console.log('🔍 Debug Flashcards - studyMode:', studyMode)
+  console.log('🔍 Debug Flashcards - safeSubjects:', safeSubjects)
+  console.log('🔍 Debug Flashcards - safeTopics:', safeTopics)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
@@ -208,6 +212,7 @@ export default function FlashcardsPage() {
       
       const subjectsData = await getAllSubjects()
       console.log("✅ Matérias carregadas:", subjectsData.length)
+      console.log("📋 Dados das matérias:", subjectsData)
       
       // Adicionar descrições padrão baseadas no nome
       const subjectsWithDescription = subjectsData.map((subject: any) => ({
@@ -219,6 +224,7 @@ export default function FlashcardsPage() {
           : `Estude e pratique seus conhecimentos em ${subject.name}`
       }))
       
+      console.log("🔄 Matérias formatadas:", subjectsWithDescription)
       setSubjects(subjectsWithDescription)
       
     } catch (error) {
@@ -236,6 +242,7 @@ export default function FlashcardsPage() {
       
       const topicsData = await getTopicsBySubject(subjectId)
       console.log("✅ Tópicos carregados:", topicsData.length)
+      console.log("📋 Dados dos tópicos:", topicsData)
       
       // Converter para o formato esperado
       const formattedTopics = topicsData.map(topic => ({
@@ -244,6 +251,7 @@ export default function FlashcardsPage() {
         description: `Estude e pratique ${topic.name.toLowerCase()}`
       }))
       
+      console.log("🔄 Tópicos formatados:", formattedTopics)
       setTopics(formattedTopics)
       
     } catch (error) {
