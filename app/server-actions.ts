@@ -3217,6 +3217,7 @@ interface StudyAnalytics {
 // Função para criar uma nova sessão de estudo
 export async function createStudySession(userUuid: string, sessionData: Omit<StudySession, 'id' | 'user_id' | 'created_at'>) {
   try {
+    const supabase = await getSupabase()
     const { data, error } = await supabase
       .from('study_sessions')
       .insert([{
@@ -3248,6 +3249,7 @@ export async function endStudySession(sessionId: number, endData: {
   xp_gained: number
 }) {
   try {
+    const supabase = await getSupabase()
     const { data, error } = await supabase
       .from('study_sessions')
       .update(endData)
@@ -3270,6 +3272,7 @@ export async function endStudySession(sessionId: number, endData: {
 // Função para obter histórico de sessões
 export async function getStudySessionsHistory(userUuid: string, limit: number = 50) {
   try {
+    const supabase = await getSupabase()
     const { data, error } = await supabase
       .from('study_sessions')
       .select(`
@@ -3302,6 +3305,7 @@ export async function getStudySessionsHistory(userUuid: string, limit: number = 
 // Função para obter analytics detalhados
 export async function getStudyAnalytics(userUuid: string, days: number = 30) {
   try {
+    const supabase = await getSupabase()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
@@ -3493,6 +3497,7 @@ export async function getStudyAnalytics(userUuid: string, days: number = 30) {
 // Função para criar meta de estudo
 export async function createStudyGoal(userUuid: string, goalData: Omit<StudyGoal, 'id' | 'user_id' | 'current_value' | 'is_completed' | 'created_at' | 'updated_at'>) {
   try {
+    const supabase = await getSupabase()
     const { data, error } = await supabase
       .from('study_goals')
       .insert([{
@@ -3519,6 +3524,7 @@ export async function createStudyGoal(userUuid: string, goalData: Omit<StudyGoal
 // Função para obter metas de estudo
 export async function getStudyGoals(userUuid: string) {
   try {
+    const supabase = await getSupabase()
     const { data, error } = await supabase
       .from('study_goals')
       .select('*')
@@ -3540,6 +3546,7 @@ export async function getStudyGoals(userUuid: string) {
 // Função para atualizar progresso de meta
 export async function updateStudyGoalProgress(userUuid: string, goalId: number, newValue: number) {
   try {
+    const supabase = await getSupabase()
     // Primeiro, obter a meta atual
     const { data: goal, error: fetchError } = await supabase
       .from('study_goals')
