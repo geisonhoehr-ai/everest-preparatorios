@@ -293,7 +293,7 @@ export default function FlashcardsPage() {
       switch (type) {
         case "review":
           const reviewResult = await getCardsForReview(user.id, topicId, 20)
-          if (reviewResult.success) {
+          if (reviewResult.success && reviewResult.data) {
             flashcardsData = reviewResult.data.map((item: any) => ({
               id: item.flashcards.id,
               topic_id: item.flashcards.topic_id,
@@ -305,14 +305,14 @@ export default function FlashcardsPage() {
           break
         case "new":
           const newResult = await getNewCards(user.id, topicId, 10)
-          if (newResult.success) {
+          if (newResult.success && newResult.data) {
             flashcardsData = newResult.data
           }
           break
         case "learning":
           // Para learning, buscar cards com status 'learning' ou 'relearning'
           const learningResult = await getCardsForReview(user.id, topicId, 15)
-          if (learningResult.success) {
+          if (learningResult.success && learningResult.data) {
             flashcardsData = learningResult.data
               .filter((item: any) => item.status === 'learning' || item.status === 'relearning')
               .map((item: any) => ({
