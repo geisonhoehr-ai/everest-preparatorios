@@ -14,7 +14,7 @@ import {
   Users
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { importEaofCronograma } from '@/server-actions'
+import { importEaofCronograma } from '../../app/server-actions'
 
 interface CronogramaImporterProps {
   onImportComplete: () => void
