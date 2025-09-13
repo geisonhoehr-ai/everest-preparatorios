@@ -253,7 +253,7 @@ export default function MembrosPage() {
         name: member.name,
         email: member.email,
         class_id: member.class_id || '',
-        access_plan_id: member.student_subscriptions?.[0]?.access_plan_id || '',
+        access_plan_id: member.student_subscriptions?.[0]?.access_plans?.id || '',
         start_date: member.student_subscriptions?.[0]?.start_date || '',
         end_date: member.student_subscriptions?.[0]?.end_date || '',
         page_permissions: {
