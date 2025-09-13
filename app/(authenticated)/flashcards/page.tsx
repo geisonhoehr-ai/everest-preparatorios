@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress, getAllFlashcardsByTopic } from "../../server-actions"
+import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress, getAllFlashcardsByTopicSimple } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -411,7 +411,7 @@ export default function FlashcardsPage() {
         case "all":
         default:
           try {
-            const allResult = await getAllFlashcardsByTopic(topicId, 50)
+            const allResult = await getAllFlashcardsByTopicSimple(topicId, 50)
             if (allResult.success && allResult.data) {
               flashcardsData = allResult.data
             } else {

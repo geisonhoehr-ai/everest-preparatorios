@@ -3092,8 +3092,8 @@ export async function getCardsForReview(userId: string, topicId?: string, limit:
   }
 }
 
-// Função para obter todos os flashcards de um tópico
-export async function getAllFlashcardsByTopic(topicId: string, limit: number = 50) {
+// Função para obter todos os flashcards de um tópico (versão simplificada)
+export async function getAllFlashcardsByTopicSimple(topicId: string, limit: number = 50) {
   const supabase = await getSupabase()
   console.log(`📚 [Server Action] Buscando todos os flashcards do tópico ${topicId}`)
 
