@@ -3027,24 +3027,54 @@ export async function getCardsForReview(userId: string, topicId?: string, limit:
   console.log(`🧠 [Server Action] Buscando cards para revisão do usuário ${userId}`)
 
   try {
-    let query = supabase
+    // Primeiro, verificar se o usuário tem algum progresso
+    const { data: progressData, error: progressError } = await supabase
       .from("flashcard_progress")
-      .select(`
-        *,
-        flashcards (
+      .select("flashcard_id")
+      .eq("user_id", userId)
+      .limit(1)
+
+    let query
+
+    if (progressError || !progressData || progressData.length === 0) {
+      // Se não há progresso, buscar todos os flashcards do tópico como "novos"
+      console.log("🧠 [Server Action] Usuário sem progresso, buscando todos os flashcards como novos")
+      query = supabase
+        .from("flashcards")
+        .select(`
           id,
           topic_id,
           question,
           answer
-        )
-      `)
-      .eq("user_id", userId)
-      .lte("next_review", new Date().toISOString())
-      .order("next_review", { ascending: true })
-      .limit(limit)
+        `)
+        .order("id", { ascending: true })
+        .limit(limit)
+    } else {
+      // Se há progresso, buscar cards que precisam de revisão
+      console.log("🧠 [Server Action] Usuário com progresso, buscando cards para revisão")
+      query = supabase
+        .from("flashcard_progress")
+        .select(`
+          *,
+          flashcards (
+            id,
+            topic_id,
+            question,
+            answer
+          )
+        `)
+        .eq("user_id", userId)
+        .lte("next_review", new Date().toISOString())
+        .order("next_review", { ascending: true })
+        .limit(limit)
+    }
 
     if (topicId) {
-      query = query.eq("flashcards.topic_id", topicId)
+      if (progressError || !progressData || progressData.length === 0) {
+        query = query.eq("topic_id", topicId)
+      } else {
+        query = query.eq("flashcards.topic_id", topicId)
+      }
     }
 
     const { data, error } = await query
@@ -3058,6 +3088,99 @@ export async function getCardsForReview(userId: string, topicId?: string, limit:
     return { success: true, data: data || [] }
   } catch (error) {
     console.error("❌ [Server Action] Erro inesperado ao buscar cards para revisão:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// Função para obter todos os flashcards de um tópico
+export async function getAllFlashcardsByTopic(topicId: string, limit: number = 50) {
+  const supabase = await getSupabase()
+  console.log(`📚 [Server Action] Buscando todos os flashcards do tópico ${topicId}`)
+
+  try {
+    const { data, error } = await supabase
+      .from("flashcards")
+      .select(`
+        id,
+        topic_id,
+        question,
+        answer
+      `)
+      .eq("topic_id", topicId)
+      .order("id", { ascending: true })
+      .limit(limit)
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar todos os flashcards:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ [Server Action] Todos os flashcards encontrados: ${data?.length || 0}`)
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao buscar todos os flashcards:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
+// Função para inicializar progresso de flashcards para um usuário
+export async function initializeFlashcardProgress(userId: string, topicId?: string) {
+  const supabase = await getSupabase()
+  console.log(`🔄 [Server Action] Inicializando progresso de flashcards para usuário ${userId}`)
+
+  try {
+    // Buscar flashcards do tópico (ou todos se não especificado)
+    let query = supabase
+      .from("flashcards")
+      .select("id")
+      .not("id", "in", `(
+        SELECT flashcard_id 
+        FROM flashcard_progress 
+        WHERE user_id = '${userId}'
+      )`)
+
+    if (topicId) {
+      query = query.eq("topic_id", topicId)
+    }
+
+    const { data: flashcards, error: flashcardsError } = await query
+
+    if (flashcardsError) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards:", flashcardsError)
+      return { success: false, error: flashcardsError.message }
+    }
+
+    if (!flashcards || flashcards.length === 0) {
+      console.log("✅ [Server Action] Nenhum flashcard novo para inicializar")
+      return { success: true, data: { initialized: 0 } }
+    }
+
+    // Criar registros de progresso para cada flashcard
+    const progressRecords = flashcards.map(flashcard => ({
+      user_id: userId,
+      flashcard_id: flashcard.id,
+      status: 'new',
+      ease_factor: 2.5,
+      interval: 1,
+      repetitions: 0,
+      next_review: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }))
+
+    const { data: insertedData, error: insertError } = await supabase
+      .from("flashcard_progress")
+      .insert(progressRecords)
+
+    if (insertError) {
+      console.error("❌ [Server Action] Erro ao inserir progresso:", insertError)
+      return { success: false, error: insertError.message }
+    }
+
+    console.log(`✅ [Server Action] Progresso inicializado para ${flashcards.length} flashcards`)
+    return { success: true, data: { initialized: flashcards.length } }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao inicializar progresso:", error)
     return { success: false, error: "Erro inesperado" }
   }
 }
@@ -3116,22 +3239,47 @@ export async function getNewCards(userId: string, topicId?: string, limit: numbe
   console.log(`🆕 [Server Action] Buscando cards novos para usuário ${userId}`)
 
   try {
-    // Buscar flashcards que não têm progresso
-    let query = supabase
-      .from("flashcards")
-      .select(`
-        id,
-        topic_id,
-        question,
-        answer
-      `)
-      .not("id", "in", `(
-        SELECT flashcard_id 
-        FROM flashcard_progress 
-        WHERE user_id = '${userId}'
-      )`)
-      .order("id", { ascending: true })
-      .limit(limit)
+    // Primeiro, verificar se o usuário tem algum progresso
+    const { data: progressData, error: progressError } = await supabase
+      .from("flashcard_progress")
+      .select("flashcard_id")
+      .eq("user_id", userId)
+      .limit(1)
+
+    let query
+
+    if (progressError || !progressData || progressData.length === 0) {
+      // Se não há progresso, buscar todos os flashcards do tópico
+      console.log("🆕 [Server Action] Usuário sem progresso, buscando todos os flashcards")
+      query = supabase
+        .from("flashcards")
+        .select(`
+          id,
+          topic_id,
+          question,
+          answer
+        `)
+        .order("id", { ascending: true })
+        .limit(limit)
+    } else {
+      // Se há progresso, buscar flashcards que não têm progresso
+      console.log("🆕 [Server Action] Usuário com progresso, buscando cards não estudados")
+      query = supabase
+        .from("flashcards")
+        .select(`
+          id,
+          topic_id,
+          question,
+          answer
+        `)
+        .not("id", "in", `(
+          SELECT flashcard_id 
+          FROM flashcard_progress 
+          WHERE user_id = '${userId}'
+        )`)
+        .order("id", { ascending: true })
+        .limit(limit)
+    }
 
     if (topicId) {
       query = query.eq("topic_id", topicId)

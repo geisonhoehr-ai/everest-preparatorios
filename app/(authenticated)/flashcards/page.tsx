@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress } from "../../server-actions"
+import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress, getAllFlashcardsByTopic } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -411,8 +411,13 @@ export default function FlashcardsPage() {
         case "all":
         default:
           try {
-            const allResult = await getFlashcardsForReview(topicId, 50)
-            flashcardsData = allResult || []
+            const allResult = await getAllFlashcardsByTopic(topicId, 50)
+            if (allResult.success && allResult.data) {
+              flashcardsData = allResult.data
+            } else {
+              console.warn("⚠️ Nenhum flashcard encontrado para o tópico")
+              setFlashcardError("Nenhum flashcard encontrado para este tópico")
+            }
           } catch (allError) {
             console.error("❌ Erro ao carregar todos os flashcards:", allError)
             setFlashcardError("Erro ao carregar flashcards")
