@@ -862,7 +862,7 @@ export default function FlashcardsPage() {
   if (!selectedSubject) {
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
@@ -927,7 +927,7 @@ export default function FlashcardsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {safeSubjects.map((subject, index) => (
               <Card 
                 key={subject.id || index} 
@@ -1000,7 +1000,7 @@ export default function FlashcardsPage() {
   if (studyMode === "select") {
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <Button 
@@ -1038,36 +1038,36 @@ export default function FlashcardsPage() {
           </div>
 
           {/* Dashboard de Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
             <Card className="text-center">
-              <CardContent className="p-3 sm:p-4">
-                <div className="text-xl sm:text-2xl font-bold text-blue-600">{progressStats.new}</div>
+              <CardContent className="p-2 sm:p-3 md:p-4">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{progressStats.new}</div>
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Novos</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-3 sm:p-4">
-                <div className="text-xl sm:text-2xl font-bold text-orange-600">{progressStats.learning}</div>
+              <CardContent className="p-2 sm:p-3 md:p-4">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-orange-600">{progressStats.learning}</div>
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Aprendendo</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-3 sm:p-4">
-                <div className="text-xl sm:text-2xl font-bold text-green-600">{progressStats.review}</div>
+              <CardContent className="p-2 sm:p-3 md:p-4">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{progressStats.review}</div>
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Revisão</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-3 sm:p-4">
-                <div className="text-xl sm:text-2xl font-bold text-red-600">{progressStats.relearning}</div>
+              <CardContent className="p-2 sm:p-3 md:p-4">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600">{progressStats.relearning}</div>
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Reaprendendo</div>
               </CardContent>
             </Card>
           </div>
 
           {/* Seção de Busca e Filtros */}
-          <Card className="mb-6">
-            <CardContent className="p-4 sm:p-6">
+          <Card className="mb-4 sm:mb-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <div className="flex-1 w-full">
@@ -1178,7 +1178,7 @@ export default function FlashcardsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
@@ -1301,7 +1301,7 @@ export default function FlashcardsPage() {
 
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
             <Button 
               variant="outline" 
@@ -1371,8 +1371,8 @@ export default function FlashcardsPage() {
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto px-4 sm:px-0">
-            <Card className={`min-h-[300px] sm:min-h-[400px] flex flex-col justify-center relative transition-all duration-300 ${
+          <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-0">
+            <Card className={`min-h-[250px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center relative transition-all duration-300 ${
               isAnimating 
                 ? cardFlipDirection === 'next' 
                   ? 'transform translate-x-4 opacity-50' 
@@ -1427,14 +1427,14 @@ export default function FlashcardsPage() {
                 </div>
               )}
               
-              <CardContent className="p-4 sm:p-6 md:p-8 text-center">
-                <div className="mb-6 sm:mb-8">
+              <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8 text-center">
+                <div className="mb-4 sm:mb-6 md:mb-8">
                   <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight">
                     {currentCard.question}
                   </h2>
                   
                   {showAnswer && (
-                    <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="mt-3 sm:mt-4 md:mt-6 p-3 sm:p-4 md:p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
                         Resposta:
                       </h3>
@@ -1511,7 +1511,7 @@ export default function FlashcardsPage() {
               </CardContent>
             </Card>
 
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-3 sm:mt-4 md:mt-6 gap-3 sm:gap-4 md:gap-0">
               <Button 
                 onClick={previousCard}
                 disabled={currentCardIndex === 0 || isAnimating}
@@ -1554,7 +1554,7 @@ export default function FlashcardsPage() {
 
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="text-center">
             <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
               <Trophy className="h-16 w-16 text-white" />
