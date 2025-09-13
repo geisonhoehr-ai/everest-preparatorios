@@ -1961,10 +1961,13 @@ export default function FlashcardsPage() {
   console.log("🔧 [Debug] Estado do modal:", { isEditDialogOpen, editingFlashcard })
   console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)
   console.log("🔍 Modal deve aparecer?", showCardCountSelector ? "SIM" : "NÃO")
+  console.log("🔍 Tipo de showCardCountSelector:", typeof showCardCountSelector)
+  console.log("🔍 Valor exato:", JSON.stringify(showCardCountSelector))
 
   return (
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Seleção de Quantidade de Cards - VERSÃO SIMPLES */}
+      {console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)}
       {showCardCountSelector && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
