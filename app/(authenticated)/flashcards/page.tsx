@@ -534,16 +534,24 @@ export default function FlashcardsPage() {
     setStudyModeConfig(prev => ({ ...prev, type: modeType }))
     console.log("✅ Estados atualizados - topicId:", topicId, "type:", type, "modeType:", modeType)
     
-    // Mostrar seletor de quantidade de cards
-    console.log("📊 Mostrando seletor de quantidade de cards")
+    // TESTE SIMPLES: Forçar modal a aparecer
+    console.log("📊 TESTE: Forçando modal a aparecer")
     console.log("🔍 Estado atual showCardCountSelector:", showCardCountSelector)
-    setShowCardCountSelector(true)
-    console.log("✅ Seletor de cards ativado - novo estado:", true)
     
-    // Verificar se o estado foi atualizado
+    // Tentar múltiplas formas de ativar o modal
+    setShowCardCountSelector(true)
+    console.log("✅ setShowCardCountSelector(true) chamado")
+    
+    // Forçar re-render
     setTimeout(() => {
-      console.log("🔍 Estado showCardCountSelector após 100ms:", showCardCountSelector)
-    }, 100)
+      console.log("🔍 Estado após 50ms:", showCardCountSelector)
+      setShowCardCountSelector(false)
+      setTimeout(() => {
+        console.log("🔍 Estado após 100ms:", showCardCountSelector)
+        setShowCardCountSelector(true)
+        console.log("✅ Modal re-ativado")
+      }, 50)
+    }, 50)
   }
 
   const confirmStudyStart = async () => {
@@ -1260,33 +1268,44 @@ export default function FlashcardsPage() {
           <Card className="mb-4 sm:mb-6">
             <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <div className="flex-1 w-full">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
-                      <Input
-                        placeholder="Buscar flashcards..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8 sm:pl-10 text-sm sm:text-base"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm("")
-                      setSelectedCategory(null)
-                      setSelectedTag(null)
-                      setDifficultyFilter(null)
-                      setSortBy("newest")
-                    }}
-                    className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto text-xs sm:text-sm"
-                  >
-                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
-                    Limpar
-                  </Button>
-                </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1 w-full">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
+                <Input
+                  placeholder="Buscar flashcards..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 sm:pl-10 text-sm sm:text-base"
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("")
+                setSelectedCategory(null)
+                setSelectedTag(null)
+                setDifficultyFilter(null)
+                setSortBy("newest")
+              }}
+              className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto text-xs sm:text-sm"
+            >
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+              Limpar
+            </Button>
+            {/* BOTÃO DE TESTE DO MODAL */}
+            <Button
+              onClick={() => {
+                console.log("🧪 TESTE: Botão de teste clicado")
+                setShowCardCountSelector(true)
+                console.log("🧪 TESTE: Modal ativado")
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              🧪 Testar Modal
+            </Button>
+          </div>
                 
                 <div className="flex flex-wrap gap-2 sm:gap-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
@@ -1373,9 +1392,48 @@ export default function FlashcardsPage() {
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
-                  className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500"
+                  className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500 relative"
                   onClick={() => startStudy(topic.id)}
                 >
+                  {/* Botões de edição para admin/teacher */}
+                  {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                    <div className="absolute top-2 right-2 flex gap-1 z-10">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🔧 [Debug] Editar tópico clicado:", topic)
+                          // TODO: Implementar edição de tópico
+                          alert("Edição de tópico será implementada em breve")
+                        }}
+                        className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                        type="button"
+                      >
+                        <Edit className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🔧 [Debug] Gerenciar flashcards do tópico:", topic)
+                          // Abrir modal de gerenciamento de flashcards
+                          setSelectedTopic(topic.id)
+                          setEditForm({ question: '', answer: '' })
+                          setEditingFlashcard(null)
+                          setIsEditDialogOpen(true)
+                        }}
+                        className="h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900"
+                        type="button"
+                      >
+                        <Settings className="h-3 w-3 text-green-600 dark:text-green-400" />
+                      </Button>
+                    </div>
+                  )}
+                  
                   <CardHeader className="text-center pb-3 sm:pb-4">
                     <div className="mx-auto mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
                       <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
@@ -1880,54 +1938,54 @@ export default function FlashcardsPage() {
 
   return (
     <PagePermissionGuard pageName="flashcards">
-      {/* Modal de Seleção de Quantidade de Cards */}
-      <Dialog open={showCardCountSelector} onOpenChange={setShowCardCountSelector}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* Modal de Seleção de Quantidade de Cards - VERSÃO SIMPLES */}
+      {showCardCountSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Target className="h-5 w-5" />
               Quantos flashcards estudar?
-            </DialogTitle>
-            <DialogDescription>
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Escolha quantos flashcards você quer estudar nesta sessão.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {[5, 10, 15, 20, 25, 30].map((count) => (
-                <Button
-                  key={count}
-                  variant={selectedCardCount === count ? "default" : "outline"}
-                  onClick={() => setSelectedCardCount(count)}
-                  className="h-12 text-lg font-semibold"
-                >
-                  {count}
-                </Button>
-              ))}
+            </p>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {[5, 10, 15, 20, 25, 30].map((count) => (
+                  <Button
+                    key={count}
+                    variant={selectedCardCount === count ? "default" : "outline"}
+                    onClick={() => setSelectedCardCount(count)}
+                    className="h-12 text-lg font-semibold"
+                  >
+                    {count}
+                  </Button>
+                ))}
+              </div>
+              
+              <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  <strong>{selectedCardCount} flashcards</strong> selecionados
+                </p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                  Tempo estimado: {Math.ceil(selectedCardCount * 1.5)} minutos
+                </p>
+              </div>
             </div>
             
-            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <p className="text-sm text-orange-700 dark:text-orange-300">
-                <strong>{selectedCardCount} flashcards</strong> selecionados
-              </p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                Tempo estimado: {Math.ceil(selectedCardCount * 1.5)} minutos
-              </p>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowCardCountSelector(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={confirmStudyStart} className="bg-orange-500 hover:bg-orange-600">
+                <Play className="h-4 w-4 mr-2" />
+                Começar Estudo
+              </Button>
             </div>
           </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowCardCountSelector(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmStudyStart} className="bg-orange-500 hover:bg-orange-600">
-              <Play className="h-4 w-4 mr-2" />
-              Começar Estudo
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Modal de Edição de Flashcard - Versão Simplificada */}
       {isEditDialogOpen && (
