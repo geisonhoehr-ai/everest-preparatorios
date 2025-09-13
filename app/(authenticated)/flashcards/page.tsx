@@ -187,6 +187,7 @@ export default function FlashcardsPage() {
   })
   const [showResultsModal, setShowResultsModal] = useState(false)
   const [studyWrongCards, setStudyWrongCards] = useState(false)
+  const [flashcardError, setFlashcardError] = useState<string | null>(null)
 
   // Carregar subjects quando o componente for montado
   useEffect(() => {
@@ -353,10 +354,12 @@ export default function FlashcardsPage() {
   const loadFlashcards = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review", cardCount?: number) => {
     try {
       setIsLoading(true)
+      setFlashcardError(null)
       console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}, tipo: ${type}...`)
       
       if (!user?.id) {
         console.error("❌ Usuário não autenticado")
+        setFlashcardError("Usuário não autenticado")
         return
       }
 
@@ -373,12 +376,18 @@ export default function FlashcardsPage() {
               answer: item.flashcards.answer,
               progress: item // Incluir dados de progresso
             }))
+          } else {
+            console.warn("⚠️ Nenhum card para revisão encontrado")
+            setFlashcardError("Nenhum card para revisão encontrado")
           }
           break
         case "new":
           const newResult = await getNewCards(user.id, topicId, cardCount || selectedCardCount)
           if (newResult.success && newResult.data) {
             flashcardsData = newResult.data
+          } else {
+            console.warn("⚠️ Nenhum card novo encontrado")
+            setFlashcardError("Nenhum card novo encontrado")
           }
           break
         case "learning":
@@ -394,20 +403,37 @@ export default function FlashcardsPage() {
                 answer: item.flashcards.answer,
                 progress: item
               }))
+          } else {
+            console.warn("⚠️ Nenhum card em aprendizado encontrado")
+            setFlashcardError("Nenhum card em aprendizado encontrado")
           }
           break
         case "all":
         default:
-          const allResult = await getFlashcardsForReview(topicId, 50)
-          flashcardsData = allResult
+          try {
+            const allResult = await getFlashcardsForReview(topicId, 50)
+            flashcardsData = allResult || []
+          } catch (allError) {
+            console.error("❌ Erro ao carregar todos os flashcards:", allError)
+            setFlashcardError("Erro ao carregar flashcards")
+          }
           break
       }
       
       console.log(`✅ Flashcards carregados (${type}):`, flashcardsData.length)
+      
+      // Verificar se há flashcards válidos
+      if (flashcardsData.length === 0) {
+        setFlashcardError("Nenhum flashcard disponível para este tópico")
+      } else {
+        setFlashcardError(null)
+      }
+      
       setFlashcards(flashcardsData)
       
     } catch (error) {
       console.error("❌ Erro ao carregar flashcards:", error)
+      setFlashcardError("Erro ao carregar flashcards. Tente novamente.")
       setFlashcards([])
     } finally {
       setIsLoading(false)
@@ -415,21 +441,42 @@ export default function FlashcardsPage() {
   }
 
   const startStudy = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review", modeType: 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom' = 'standard') => {
-    if (!user?.id) return
+    console.log("🎯 startStudy chamado")
+    console.log("📋 topicId:", topicId)
+    console.log("📚 type:", type)
+    console.log("⚙️ modeType:", modeType)
+    console.log("👤 user?.id:", user?.id)
+    
+    if (!user?.id) {
+      console.error("❌ Usuário não autenticado")
+      return
+    }
     
     setSelectedTopic(topicId)
     setStudyType(type)
     setStudyModeConfig(prev => ({ ...prev, type: modeType }))
     
     // Mostrar seletor de quantidade de cards
+    console.log("📊 Mostrando seletor de quantidade de cards")
     setShowCardCountSelector(true)
   }
 
   const confirmStudyStart = async () => {
-    if (!selectedTopic || !user?.id) return
+    console.log("🚀 confirmStudyStart chamado")
+    console.log("📋 selectedTopic:", selectedTopic)
+    console.log("👤 user?.id:", user?.id)
+    console.log("📚 studyType:", studyType)
+    console.log("🔢 selectedCardCount:", selectedCardCount)
+    
+    if (!selectedTopic || !user?.id) {
+      console.error("❌ Falha na validação: selectedTopic ou user.id não disponível")
+      return
+    }
     
     setShowCardCountSelector(false)
+    console.log("📚 Carregando flashcards...")
     await loadFlashcards(selectedTopic, studyType, selectedCardCount)
+    console.log("✅ Flashcards carregados, iniciando estudo...")
     setStudyMode("study")
     setCurrentCardIndex(0)
     setShowAnswer(false)
@@ -1470,10 +1517,19 @@ export default function FlashcardsPage() {
                 </div>
               )}
               
-              <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8 text-center">
+              <CardContent className={`p-3 sm:p-4 md:p-6 lg:p-8 text-center ${
+                (!currentCard.question || !currentCard.answer || 
+                 currentCard.question.trim() === '' || currentCard.answer.trim() === '') 
+                  ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20' 
+                  : ''
+              }`}>
                 <div className="mb-4 sm:mb-6 md:mb-8">
                   <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight">
-                    {currentCard.question}
+                    {currentCard.question || (
+                      <span className="text-red-500 italic">
+                        ⚠️ Pergunta não disponível
+                      </span>
+                    )}
                   </h2>
                   
                   {showAnswer && (
@@ -1482,7 +1538,11 @@ export default function FlashcardsPage() {
                         Resposta:
                       </h3>
                       <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
-                        {currentCard.answer}
+                        {currentCard.answer || (
+                          <span className="text-red-500 italic">
+                            ⚠️ Resposta não disponível
+                          </span>
+                        )}
                       </p>
                     </div>
                   )}
@@ -1584,6 +1644,59 @@ export default function FlashcardsPage() {
                 <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
+          </div>
+        </div>
+      </RoleGuard>
+    )
+  }
+
+  // Tratar quando não há flashcards disponíveis
+  if (studyMode === "study" && safeFlashcards.length === 0) {
+    return (
+      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={resetStudy}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 rotate-180" />
+              <span className="text-sm sm:text-base">Voltar</span>
+            </Button>
+          </div>
+
+          <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-0">
+            <Card className="min-h-[250px] sm:min-h-[300px] md:min-h-[400px] border-2 border-red-500 bg-red-50 dark:bg-red-900/20">
+              <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8 text-center flex flex-col items-center justify-center h-full">
+                <div className="text-6xl mb-4">⚠️</div>
+                <h2 className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+                  Nenhum Flashcard Disponível
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+                  {flashcardError || "Não há flashcards disponíveis para este tópico no momento."}
+                </p>
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => {
+                      setStudyMode("select")
+                      setSelectedSubject(null)
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Escolher Outro Tópico
+                  </Button>
+                  <Button 
+                    onClick={resetStudy}
+                    variant="outline"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Tentar Novamente
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </RoleGuard>
