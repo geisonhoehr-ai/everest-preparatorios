@@ -422,7 +422,7 @@ export function CrudModal({
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDelete}
         title={`Excluir ${getTypeLabel(type)}`}
-        message={`Tem certeza que deseja excluir "${item?.name || item?.title || 'este item'}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir "${(item as any)?.name || (item as any)?.title || 'este item'}"? Esta ação não pode ser desfeita.`}
         confirmText="Excluir"
         cancelText="Cancelar"
         type="danger"
