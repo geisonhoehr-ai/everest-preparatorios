@@ -517,8 +517,10 @@ export default function FlashcardsPage() {
     console.log("📋 topicId:", topicId)
     console.log("📚 type:", type)
     console.log("⚙️ modeType:", modeType)
+    console.log("👤 user:", user)
     console.log("👤 user?.id:", user?.id)
     console.log("👤 profile:", profile)
+    console.log("👤 profile?.role:", profile?.role)
     
     if (!user?.id) {
       console.error("❌ Usuário não autenticado")

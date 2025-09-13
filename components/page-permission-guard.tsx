@@ -36,6 +36,14 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
       return
     }
 
+    // Páginas com acesso livre para todos os usuários autenticados
+    const freeAccessPages = ['flashcards', 'quiz']
+    if (freeAccessPages.includes(pageName)) {
+      setHasAccess(true)
+      setIsLoading(false)
+      return
+    }
+
     // Verificar se o acesso não expirou
     if ((profile as any).access_expires_at && new Date((profile as any).access_expires_at) < new Date()) {
       setHasAccess(false)
