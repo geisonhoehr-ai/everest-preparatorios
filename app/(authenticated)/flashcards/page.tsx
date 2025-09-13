@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
+import { useState, useEffect, useTransition, useCallback } from "react"
 import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -126,6 +126,12 @@ export default function FlashcardsPage() {
   const [tags, setTags] = useState<FlashcardTag[]>([])
   const [isCategoryTagDialogOpen, setIsCategoryTagDialogOpen] = useState(false)
   const [selectedFlashcardForTags, setSelectedFlashcardForTags] = useState<Flashcard | null>(null)
+  
+  // Estados para UI/UX
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [cardFlipDirection, setCardFlipDirection] = useState<'next' | 'prev'>('next')
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   
   // Estados para edição inline (admin/teacher)
   const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
@@ -456,21 +462,40 @@ export default function FlashcardsPage() {
     }
   }
 
-  const nextCard = () => {
+  const nextCard = useCallback(() => {
     if (currentCardIndex < safeFlashcards.length - 1) {
-      setCurrentCardIndex(currentCardIndex + 1)
-      setShowAnswer(false)
+      setIsAnimating(true)
+      setCardFlipDirection('next')
+      setTimeout(() => {
+        setCurrentCardIndex(currentCardIndex + 1)
+        setShowAnswer(false)
+        setIsAnimating(false)
+      }, 150)
     } else {
       setStudyMode("finished")
     }
-  }
+  }, [currentCardIndex, safeFlashcards.length])
 
-  const previousCard = () => {
+  const previousCard = useCallback(() => {
     if (currentCardIndex > 0) {
-      setCurrentCardIndex(currentCardIndex - 1)
-      setShowAnswer(false)
+      setIsAnimating(true)
+      setCardFlipDirection('prev')
+      setTimeout(() => {
+        setCurrentCardIndex(currentCardIndex - 1)
+        setShowAnswer(false)
+        setIsAnimating(false)
+      }, 150)
     }
-  }
+  }, [currentCardIndex])
+
+  // Função para animação suave ao mostrar resposta
+  const toggleAnswer = useCallback(() => {
+    setIsAnimating(true)
+    setTimeout(() => {
+      setShowAnswer(!showAnswer)
+      setIsAnimating(false)
+    }, 100)
+  }, [showAnswer])
 
   const markCorrect = async () => {
     setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }))
@@ -559,6 +584,60 @@ export default function FlashcardsPage() {
       loadProgressStats(selectedTopic)
     }
   }, [selectedTopic, user?.id])
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (studyMode !== "study") return
+
+      switch (event.key) {
+        case 'ArrowRight':
+        case ' ':
+          event.preventDefault()
+          if (!showAnswer) {
+            toggleAnswer()
+          } else {
+            nextCard()
+          }
+          break
+        case 'ArrowLeft':
+          event.preventDefault()
+          if (showAnswer) {
+            toggleAnswer()
+          } else {
+            previousCard()
+          }
+          break
+        case 'Escape':
+          event.preventDefault()
+          resetStudy()
+          break
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+          if (showAnswer) {
+            event.preventDefault()
+            rateQuality(parseInt(event.key))
+          }
+          break
+        case '?':
+          event.preventDefault()
+          setShowKeyboardShortcuts(!showKeyboardShortcuts)
+          break
+        case 'd':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault()
+            setIsDarkMode(!isDarkMode)
+          }
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [studyMode, showAnswer, nextCard, previousCard, toggleAnswer, resetStudy, rateQuality, showKeyboardShortcuts, isDarkMode])
 
   if (isLoading && studyMode === "select") {
     return (
@@ -963,13 +1042,28 @@ export default function FlashcardsPage() {
                 </div>
               )}
             </div>
-            <div className="w-32">
-              <Progress value={progress} className="h-2" />
+            <div className="w-32 flex items-center gap-2">
+              <Progress value={progress} className="h-2 flex-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
+                className="h-8 w-8 p-0"
+                title="Atalhos de teclado (? para alternar)"
+              >
+                <Keyboard className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <Card className="min-h-[400px] flex flex-col justify-center relative">
+            <Card className={`min-h-[400px] flex flex-col justify-center relative transition-all duration-300 ${
+              isAnimating 
+                ? cardFlipDirection === 'next' 
+                  ? 'transform translate-x-4 opacity-50' 
+                  : 'transform -translate-x-4 opacity-50'
+                : 'transform translate-x-0 opacity-100'
+            }`}>
               {/* Ícones de edição para admin/teacher */}
               {(profile?.role === 'admin' || profile?.role === 'teacher') && (
                 <div className="absolute top-4 right-4 flex gap-2 z-10">
@@ -1039,11 +1133,12 @@ export default function FlashcardsPage() {
                 <div className="flex gap-4 justify-center">
                   {!showAnswer ? (
                     <Button 
-                      onClick={() => setShowAnswer(true)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 text-lg"
+                      onClick={toggleAnswer}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 text-lg transition-all duration-300 transform hover:scale-105"
                     >
                       <Eye className="mr-2 h-5 w-5" />
                       Mostrar Resposta
+                      <span className="ml-2 text-xs opacity-70">(Espaço)</span>
                     </Button>
                   ) : (
                     <div className="space-y-4">
@@ -1058,10 +1153,10 @@ export default function FlashcardsPage() {
                               onClick={() => rateQuality(quality)}
                               variant={quality >= 3 ? "default" : "destructive"}
                               size="sm"
-                              className={`w-12 h-12 rounded-full ${
+                              className={`w-12 h-12 rounded-full transition-all duration-200 hover:scale-110 ${
                                 quality >= 3 
-                                  ? "bg-green-500 hover:bg-green-600 text-white" 
-                                  : "bg-red-500 hover:bg-red-600 text-white"
+                                  ? "bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-green-500/25" 
+                                  : "bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-red-500/25"
                               }`}
                             >
                               {quality}
@@ -1081,14 +1176,14 @@ export default function FlashcardsPage() {
                         <Button 
                           onClick={() => rateQuality(2)}
                           variant="destructive"
-                          className="px-6 py-2 text-sm"
+                          className="px-6 py-2 text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-red-500/25"
                         >
                           <XCircle className="mr-2 h-4 w-4" />
                           Errei
                         </Button>
                         <Button 
                           onClick={() => rateQuality(4)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 text-sm"
+                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-green-500/25"
                         >
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Acertei
@@ -1103,11 +1198,13 @@ export default function FlashcardsPage() {
             <div className="flex justify-between items-center mt-6">
               <Button 
                 onClick={previousCard}
-                disabled={currentCardIndex === 0}
+                disabled={currentCardIndex === 0 || isAnimating}
                 variant="outline"
+                className="transition-all duration-200 hover:scale-105"
               >
                 <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
                 Anterior
+                <span className="ml-2 text-xs opacity-70">(←)</span>
               </Button>
               
               <div className="text-center">
@@ -1119,11 +1216,13 @@ export default function FlashcardsPage() {
               
               <Button 
                 onClick={nextCard}
-                disabled={currentCardIndex === safeFlashcards.length - 1}
+                disabled={currentCardIndex === safeFlashcards.length - 1 || isAnimating}
                 variant="outline"
+                className="transition-all duration-200 hover:scale-105"
               >
                 Próximo
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <span className="mr-2 text-xs opacity-70">(→)</span>
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -1382,6 +1481,71 @@ export default function FlashcardsPage() {
           
           <div className="flex justify-end">
             <Button onClick={() => setIsCategoryTagDialogOpen(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Atalhos de Teclado */}
+      <Dialog open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Keyboard className="h-5 w-5" />
+              Atalhos de Teclado
+            </DialogTitle>
+            <DialogDescription>
+              Use estes atalhos para navegar mais rapidamente pelos flashcards.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Mostrar/Ocultar Resposta:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">Espaço</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Próximo Card:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">→</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Card Anterior:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">←</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sair do Estudo:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">Esc</kbd>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Avaliar (1-5):</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">1-5</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Atalhos:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">?</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tema Escuro:</span>
+                  <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">Ctrl+D</kbd>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                💡 Dica: Pressione <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">?</kbd> a qualquer momento para ver estes atalhos!
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button onClick={() => setShowKeyboardShortcuts(false)}>
               Fechar
             </Button>
           </div>
