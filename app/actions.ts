@@ -2495,7 +2495,7 @@ export async function createTemporaryPassword(memberId: string, createdBy: strin
       .eq('user_id', memberId)
 
     console.log(`✅ Senha provisória criada para: ${memberId}`)
-    return { success: true, temporaryPassword, message: 'Senha provisória criada com sucesso!' }
+    return { success: true, temporaryPassword: tempPassword, message: 'Senha provisória criada com sucesso!' }
   } catch (error) {
     console.error('❌ Erro ao criar senha provisória:', error)
     throw error

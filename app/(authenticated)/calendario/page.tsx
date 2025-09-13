@@ -8,7 +8,7 @@ import { Calendar, Clock, MapPin, Users, Edit, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
-import { getCalendarEvents } from "@/actions"
+import { getAllCalendarEvents } from "@/actions"
 import { CronogramaViewer } from "@/components/calendar/cronograma-viewer"
 import { CronogramaImporter } from "@/components/calendar/cronograma-importer"
 
@@ -32,7 +32,7 @@ export default function CalendarioPage() {
       setIsLoading(true)
       setError(null)
       
-      const eventsData = await getCalendarEvents()
+      const eventsData = await getAllCalendarEvents()
       setEvents(eventsData)
     } catch (error) {
       console.error('Erro ao carregar eventos:', error)
