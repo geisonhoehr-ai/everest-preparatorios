@@ -1968,7 +1968,8 @@ export default function FlashcardsPage() {
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Seleção de Quantidade de Cards - VERSÃO SIMPLES */}
       {console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)}
-      {showCardCountSelector && (
+      {/* TESTE: Modal sempre visível para debug */}
+      {true && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           style={{ zIndex: 9999 }}
