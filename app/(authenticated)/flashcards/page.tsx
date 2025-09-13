@@ -514,8 +514,8 @@ export default function FlashcardsPage() {
           flashcard.id === flashcardId 
             ? { 
                 ...flashcard, 
-                categories: Array.isArray(result.data?.categories) ? result.data.categories : [],
-                tags: Array.isArray(result.data?.tags) ? result.data.tags : []
+                categories: Array.isArray(result.data?.categories) ? result.data.categories.flat() : [],
+                tags: Array.isArray(result.data?.tags) ? result.data.tags.flat() : []
               }
             : flashcard
         ))
