@@ -88,15 +88,15 @@ export function CrudModal({
       if (item) {
         setFormData({
           name: (item as any).name || (item as any).title || '',
-          description: item.description || '',
-          duration: item.duration || '',
-          duration_seconds: item.duration_seconds || 0,
-          order_index: item.order_index || 0,
-          is_preview: item.is_preview || false,
-          audio_url: item.audio_url || '',
-          hls_url: item.hls_url || '',
-          soundcloud_url: item.soundcloud_url || '',
-          embed_url: item.embed_url || ''
+          description: (item as any).description || '',
+          duration: (item as any).duration || '',
+          duration_seconds: (item as any).duration_seconds || 0,
+          order_index: (item as any).order_index || 0,
+          is_preview: (item as any).is_preview || false,
+          audio_url: (item as any).audio_url || '',
+          hls_url: (item as any).hls_url || '',
+          soundcloud_url: (item as any).soundcloud_url || '',
+          embed_url: (item as any).embed_url || ''
         })
       } else {
         setFormData({
