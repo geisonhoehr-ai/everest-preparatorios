@@ -139,12 +139,12 @@ export function MainSidebar() {
       </div>
 
       {/* Navegação */}
-      <div className="flex-1 p-4 pt-6">
+      <div className="flex-1 p-4 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
         <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
           Navegação
         </h3>
         
-        <nav className="space-y-2">
+        <nav className="space-y-2 pb-4">
           {filteredNavigationItems.map((item) => {
             const IconComponent = item.icon
             const isActive = pathname === item.href
@@ -184,7 +184,7 @@ export function MainSidebar() {
       </div>
 
       {/* Footer com Informações de Autenticação */}
-      <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800">
+      <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800 flex-shrink-0">
         {user && profile ? (
           <div className="space-y-3">
             {/* Informações do Usuário */}
