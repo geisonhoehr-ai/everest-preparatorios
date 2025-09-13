@@ -863,39 +863,40 @@ export default function FlashcardsPage() {
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 Escolha a Matéria
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                 Selecione a matéria que deseja estudar com flashcards
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               {/* Botões de Analytics e Rastreamento */}
               <Button 
                 variant="outline"
                 onClick={() => setShowAnalytics(true)}
-                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                className="flex items-center gap-1 sm:gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs sm:text-sm"
               >
-                <TrendingUp className="h-4 w-4" />
-                Analytics
+                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Stats</span>
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => setShowHistory(true)}
-                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                className="flex items-center gap-1 sm:gap-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs sm:text-sm"
               >
-                <Clock className="h-4 w-4" />
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                 Histórico
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => setShowGoals(true)}
-                className="flex items-center gap-2 border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                className="flex items-center gap-1 sm:gap-2 border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-xs sm:text-sm"
               >
-                <Target className="h-4 w-4" />
+                <Target className="h-3 w-3 sm:h-4 sm:w-4" />
                 Metas
               </Button>
               
@@ -904,27 +905,29 @@ export default function FlashcardsPage() {
                   <Button 
                     variant={isAdminMode ? "default" : "outline"}
                     onClick={() => setIsAdminMode(!isAdminMode)}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <Shield className="h-4 w-4" />
-                    {isAdminMode ? "Modo Admin" : "Modo Normal"}
+                    <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">{isAdminMode ? "Modo Admin" : "Modo Normal"}</span>
+                    <span className="sm:hidden">{isAdminMode ? "Admin" : "Normal"}</span>
                   </Button>
                   <Button 
                     onClick={() => {
                       // TODO: Implementar criação de matéria
                       alert("Funcionalidade de adicionar matéria será implementada em breve")
                     }}
-                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                    className="flex items-center gap-1 sm:gap-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm"
                   >
-                    <Plus className="h-4 w-4" />
-                    Adicionar Matéria
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Adicionar Matéria</span>
+                    <span className="sm:hidden">Adicionar</span>
                   </Button>
                 </>
               )}
             </div>
           </div>
 
-          <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {safeSubjects.map((subject, index) => (
               <Card 
                 key={subject.id || index} 
@@ -934,39 +937,39 @@ export default function FlashcardsPage() {
                   loadTopics(subject.id)
                 }}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-orange-500 to-blue-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
-                    <BookOpenText className="h-8 w-8 text-white" />
+                <CardHeader className="text-center pb-3 sm:pb-4">
+                  <div className="mx-auto mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-orange-500 to-blue-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
+                    <BookOpenText className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <CardTitle className="text-xl font-bold group-hover:text-orange-600 transition-colors duration-300">
+                  <CardTitle className="text-lg sm:text-xl font-bold group-hover:text-orange-600 transition-colors duration-300">
                     {subject.name}
                   </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">
+                  <CardDescription className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                     {subject.description || "Estude e pratique seus conhecimentos"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <BookOpen className="h-4 w-4" />
+                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-400">
+                        <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
                         <span>Tópicos</span>
                       </span>
                       <span className="font-medium">
                         -
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Play className="h-4 w-4" />
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-400">
+                        <Play className="h-3 w-3 sm:h-4 sm:w-4" />
                         <span>Flashcards</span>
                       </span>
                       <span className="font-medium">0</span>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-medium py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
-                    <Play className="mr-3 h-6 w-6" />
-                    Estudar {subject.name}
+                  <Button className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-medium py-2 sm:py-3 text-sm sm:text-base rounded-lg transition-all duration-300 transform hover:scale-105">
+                    <Play className="mr-2 sm:mr-3 h-4 w-4 sm:h-6 sm:w-6" />
+                    <span className="hidden sm:inline">Estudar </span>{subject.name}
                   </Button>
                 </CardContent>
               </Card>
@@ -998,21 +1001,21 @@ export default function FlashcardsPage() {
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <Button 
                 variant="outline" 
                 onClick={() => setSelectedSubject(null)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
               >
-                <ArrowRight className="h-4 w-4 rotate-180" />
-                Voltar
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 rotate-180" />
+                <span className="text-sm sm:text-base">Voltar</span>
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                   {safeSubjects.find(s => s.id === selectedSubject)?.name}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                   Escolha um tópico para estudar
                 </p>
               </div>
@@ -1025,55 +1028,56 @@ export default function FlashcardsPage() {
                   setEditingFlashcard(null)
                   setIsEditDialogOpen(true)
                 }}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                className="flex items-center gap-1 sm:gap-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4" />
-                Novo Flashcard
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Novo Flashcard</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             )}
           </div>
 
           {/* Dashboard de Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <Card className="text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">{progressStats.new}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Novos</div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{progressStats.new}</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Novos</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">{progressStats.learning}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Aprendendo</div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl font-bold text-orange-600">{progressStats.learning}</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Aprendendo</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">{progressStats.review}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Revisão</div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">{progressStats.review}</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Revisão</div>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-red-600">{progressStats.relearning}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Reaprendendo</div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{progressStats.relearning}</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Reaprendendo</div>
               </CardContent>
             </Card>
           </div>
 
           {/* Seção de Busca e Filtros */}
           <Card className="mb-6">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex-1 w-full">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
                       <Input
                         placeholder="Buscar flashcards..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-8 sm:pl-10 text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -1086,22 +1090,22 @@ export default function FlashcardsPage() {
                       setDifficultyFilter(null)
                       setSortBy("newest")
                     }}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto text-xs sm:text-sm"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
                     Limpar
                   </Button>
                 </div>
                 
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="flex flex-wrap gap-2 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                       Ordenar por:
                     </label>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                      className="px-2 sm:px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-xs sm:text-sm"
                     >
                       <option value="newest">Mais recentes</option>
                       <option value="oldest">Mais antigos</option>
@@ -1110,14 +1114,14 @@ export default function FlashcardsPage() {
                     </select>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                       Dificuldade:
                     </label>
                     <select
                       value={difficultyFilter || ""}
                       onChange={(e) => setDifficultyFilter(e.target.value || null)}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                      className="px-2 sm:px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-xs sm:text-sm"
                     >
                       <option value="">Todas</option>
                       <option value="easy">Fácil</option>
@@ -1126,14 +1130,14 @@ export default function FlashcardsPage() {
                     </select>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                       Categoria:
                     </label>
                     <select
                       value={selectedCategory || ""}
                       onChange={(e) => setSelectedCategory(e.target.value || null)}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                      className="px-2 sm:px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-xs sm:text-sm"
                     >
                       <option value="">Todas</option>
                       {categories.map((category) => (
@@ -1144,14 +1148,14 @@ export default function FlashcardsPage() {
                     </select>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                       Tag:
                     </label>
                     <select
                       value={selectedTag || ""}
                       onChange={(e) => setSelectedTag(e.target.value || null)}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                      className="px-2 sm:px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-xs sm:text-sm"
                     >
                       <option value="">Todas</option>
                       {tags.map((tag) => (
@@ -1174,47 +1178,47 @@ export default function FlashcardsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
                   className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500"
                   onClick={() => startStudy(topic.id)}
                 >
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
-                      <Brain className="h-8 w-8 text-white" />
+                  <CardHeader className="text-center pb-3 sm:pb-4">
+                    <div className="mx-auto mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-fit group-hover:scale-110 transition-transform duration-300">
+                      <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                     </div>
-                    <CardTitle className="text-xl font-bold group-hover:text-orange-600 transition-colors duration-300">
+                    <CardTitle className="text-lg sm:text-xl font-bold group-hover:text-orange-600 transition-colors duration-300">
                       {topic.name}
                     </CardTitle>
-                    <CardDescription className="text-gray-600 dark:text-gray-400">
+                    <CardDescription className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                       {topic.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2">
                       <Button 
                         onClick={() => startStudy(topic.id, "review")}
-                        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 rounded-lg transition-all duration-300"
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 text-sm sm:text-base rounded-lg transition-all duration-300"
                       >
-                        <RefreshCw className="mr-2 h-4 w-4" />
+                        <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Revisão
                       </Button>
                       <Button 
                         onClick={() => startStudy(topic.id, "new")}
                         variant="outline"
-                        className="w-full border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                        className="w-full border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-sm sm:text-base py-2"
                       >
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Novos
                       </Button>
                       <Button 
                         onClick={() => startStudy(topic.id, "learning")}
                         variant="outline"
-                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm sm:text-base py-2"
                       >
-                        <Brain className="mr-2 h-4 w-4" />
+                        <Brain className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Aprendendo
                       </Button>
                       
@@ -1226,16 +1230,17 @@ export default function FlashcardsPage() {
                             onClick={() => startStudy(topic.id, "review", "timer")}
                             variant="outline"
                             size="sm"
-                            className="text-xs border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                            className="text-xs border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 py-1 px-2"
                           >
                             <Timer className="mr-1 h-3 w-3" />
-                            Cronômetro
+                            <span className="hidden sm:inline">Cronômetro</span>
+                            <span className="sm:hidden">Timer</span>
                           </Button>
                           <Button 
                             onClick={() => startStudy(topic.id, "review", "goals")}
                             variant="outline"
                             size="sm"
-                            className="text-xs border-pink-500 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                            className="text-xs border-pink-500 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 py-1 px-2"
                           >
                             <Target className="mr-1 h-3 w-3" />
                             Metas
@@ -1244,19 +1249,21 @@ export default function FlashcardsPage() {
                             onClick={() => startStudy(topic.id, "review", "intensive")}
                             variant="outline"
                             size="sm"
-                            className="text-xs border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            className="text-xs border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 py-1 px-2"
                           >
                             <Flame className="mr-1 h-3 w-3" />
-                            Intensivo
+                            <span className="hidden sm:inline">Intensivo</span>
+                            <span className="sm:hidden">Intenso</span>
                           </Button>
                           <Button 
                             onClick={() => setShowStudyModeConfig(true)}
                             variant="outline"
                             size="sm"
-                            className="text-xs border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            className="text-xs border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 py-1 px-2"
                           >
                             <Settings className="mr-1 h-3 w-3" />
-                            Personalizar
+                            <span className="hidden sm:inline">Personalizar</span>
+                            <span className="sm:hidden">Custom</span>
                           </Button>
                         </div>
                       </div>
@@ -1295,20 +1302,20 @@ export default function FlashcardsPage() {
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-6 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
             <Button 
               variant="outline" 
               onClick={resetStudy}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
-              <ArrowRight className="h-4 w-4 rotate-180" />
-              Voltar
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 rotate-180" />
+              <span className="text-sm sm:text-base">Voltar</span>
             </Button>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-center order-first sm:order-none">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                 {safeTopics.find(t => t.id === selectedTopic)?.name}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 Flashcard {currentCardIndex + 1} de {safeFlashcards.length}
               </p>
               <div className="mt-2 flex flex-wrap justify-center gap-2">
@@ -1350,22 +1357,22 @@ export default function FlashcardsPage() {
                 )}
               </div>
             </div>
-            <div className="w-32 flex items-center gap-2">
+            <div className="w-full sm:w-32 flex items-center gap-2 order-last sm:order-none">
               <Progress value={progress} className="h-2 flex-1" />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
-                className="h-8 w-8 p-0"
+                className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                 title="Atalhos de teclado (? para alternar)"
               >
-                <Keyboard className="h-4 w-4" />
+                <Keyboard className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <Card className={`min-h-[400px] flex flex-col justify-center relative transition-all duration-300 ${
+          <div className="max-w-4xl mx-auto px-4 sm:px-0">
+            <Card className={`min-h-[300px] sm:min-h-[400px] flex flex-col justify-center relative transition-all duration-300 ${
               isAnimating 
                 ? cardFlipDirection === 'next' 
                   ? 'transform translate-x-4 opacity-50' 
@@ -1420,33 +1427,34 @@ export default function FlashcardsPage() {
                 </div>
               )}
               
-              <CardContent className="p-8 text-center">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              <CardContent className="p-4 sm:p-6 md:p-8 text-center">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 leading-tight">
                     {currentCard.question}
                   </h2>
                   
                   {showAnswer && (
-                    <div className="mt-6 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                    <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
                         Resposta:
                       </h3>
-                      <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
+                      <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
                         {currentCard.answer}
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-4 justify-center">
+                <div className="flex gap-2 sm:gap-4 justify-center">
                   {!showAnswer ? (
                     <Button 
                       onClick={toggleAnswer}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 text-lg transition-all duration-300 transform hover:scale-105"
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 text-sm sm:text-base md:text-lg transition-all duration-300 transform hover:scale-105"
                     >
-                      <Eye className="mr-2 h-5 w-5" />
-                      Mostrar Resposta
-                      <span className="ml-2 text-xs opacity-70">(Espaço)</span>
+                      <Eye className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="hidden sm:inline">Mostrar Resposta</span>
+                      <span className="sm:hidden">Resposta</span>
+                      <span className="ml-1 sm:ml-2 text-xs opacity-70 hidden md:inline">(Espaço)</span>
                     </Button>
                   ) : (
                     <div className="space-y-4">
@@ -1454,14 +1462,14 @@ export default function FlashcardsPage() {
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                           Como foi sua resposta?
                         </p>
-                        <div className="flex gap-2 justify-center">
+                        <div className="flex gap-1 sm:gap-2 justify-center">
                           {[0, 1, 2, 3, 4, 5].map((quality) => (
                             <Button
                               key={quality}
                               onClick={() => rateQuality(quality)}
                               variant={quality >= 3 ? "default" : "destructive"}
                               size="sm"
-                              className={`w-12 h-12 rounded-full transition-all duration-200 hover:scale-110 ${
+                              className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full transition-all duration-200 hover:scale-110 text-xs sm:text-sm ${
                                 quality >= 3 
                                   ? "bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-green-500/25" 
                                   : "bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-red-500/25"
@@ -1480,20 +1488,20 @@ export default function FlashcardsPage() {
                       </div>
                       
                       {/* Botões alternativos para compatibilidade */}
-                      <div className="flex gap-4 justify-center">
+                      <div className="flex gap-2 sm:gap-4 justify-center">
                         <Button 
                           onClick={() => rateQuality(2)}
                           variant="destructive"
-                          className="px-6 py-2 text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-red-500/25"
+                          className="px-3 sm:px-4 md:px-6 py-2 text-xs sm:text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-red-500/25"
                         >
-                          <XCircle className="mr-2 h-4 w-4" />
+                          <XCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                           Errei
                         </Button>
                         <Button 
                           onClick={() => rateQuality(4)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-green-500/25"
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 md:px-6 py-2 text-xs sm:text-sm transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-green-500/25"
                         >
-                          <CheckCircle className="mr-2 h-4 w-4" />
+                          <CheckCircle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                           Acertei
                         </Button>
                       </div>
@@ -1503,22 +1511,22 @@ export default function FlashcardsPage() {
               </CardContent>
             </Card>
 
-            <div className="flex justify-between items-center mt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 gap-4 sm:gap-0">
               <Button 
                 onClick={previousCard}
                 disabled={currentCardIndex === 0 || isAnimating}
                 variant="outline"
-                className="transition-all duration-200 hover:scale-105"
+                className="transition-all duration-200 hover:scale-105 w-full sm:w-auto"
               >
-                <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
-                Anterior
-                <span className="ml-2 text-xs opacity-70">(←)</span>
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 rotate-180 mr-1 sm:mr-2" />
+                <span className="text-sm sm:text-base">Anterior</span>
+                <span className="ml-1 sm:ml-2 text-xs opacity-70 hidden sm:inline">(←)</span>
               </Button>
               
-              <div className="text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Acertos: <span className="font-bold text-green-600">{sessionStats.correct}</span> | 
-                  Erros: <span className="font-bold text-red-600">{sessionStats.incorrect}</span>
+              <div className="text-center order-first sm:order-none">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-bold text-green-600">{sessionStats.correct}</span> acertos | 
+                  <span className="font-bold text-red-600"> {sessionStats.incorrect}</span> erros
                 </p>
               </div>
               
@@ -1526,11 +1534,11 @@ export default function FlashcardsPage() {
                 onClick={nextCard}
                 disabled={currentCardIndex === safeFlashcards.length - 1 || isAnimating}
                 variant="outline"
-                className="transition-all duration-200 hover:scale-105"
+                className="transition-all duration-200 hover:scale-105 w-full sm:w-auto"
               >
-                Próximo
-                <span className="mr-2 text-xs opacity-70">(→)</span>
-                <ArrowRight className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Próximo</span>
+                <span className="mr-1 sm:mr-2 text-xs opacity-70 hidden sm:inline">(→)</span>
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
@@ -1616,8 +1624,8 @@ export default function FlashcardsPage() {
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Edição de Flashcard - Versão Simplificada */}
       {isEditDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingFlashcard ? 'Editar Flashcard' : 'Novo Flashcard'}
             </h2>
@@ -1699,7 +1707,7 @@ export default function FlashcardsPage() {
 
       {/* Modal para gerenciar categorias e tags */}
       <Dialog open={isCategoryTagDialogOpen} onOpenChange={setIsCategoryTagDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Gerenciar Categorias e Tags</DialogTitle>
             <DialogDescription>
@@ -1733,11 +1741,11 @@ export default function FlashcardsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleAddCategoryToFlashcard(selectedFlashcardForTags.id, category.id)}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                         style={{ borderColor: category.color, color: category.color }}
                       >
                         <div 
-                          className="w-3 h-3 rounded-full" 
+                          className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" 
                           style={{ backgroundColor: category.color }}
                         />
                         {category.name}
@@ -1771,11 +1779,11 @@ export default function FlashcardsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleAddTagToFlashcard(selectedFlashcardForTags.id, tag.id)}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                         style={{ borderColor: tag.color, color: tag.color }}
                       >
                         <div 
-                          className="w-3 h-3 rounded-full" 
+                          className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" 
                           style={{ backgroundColor: tag.color }}
                         />
                         {tag.name}
@@ -1862,7 +1870,7 @@ export default function FlashcardsPage() {
 
       {/* Modal de Configuração de Modo Personalizado */}
       <Dialog open={showStudyModeConfig} onOpenChange={setShowStudyModeConfig}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
@@ -2014,7 +2022,7 @@ export default function FlashcardsPage() {
 
       {/* Modal de Analytics */}
       <Dialog open={showAnalytics} onOpenChange={setShowAnalytics}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -2146,7 +2154,7 @@ export default function FlashcardsPage() {
 
       {/* Modal de Histórico */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
@@ -2210,7 +2218,7 @@ export default function FlashcardsPage() {
 
       {/* Modal de Metas */}
       <Dialog open={showGoals} onOpenChange={setShowGoals}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
