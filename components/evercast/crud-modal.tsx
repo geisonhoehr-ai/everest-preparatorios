@@ -71,6 +71,15 @@ export function CrudModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'course': return 'Curso'
+      case 'module': return 'Módulo'
+      case 'lesson': return 'Aula'
+      default: return 'Item'
+    }
+  }
+
   const isEditing = !!item
   const title = isEditing ? `Editar ${getTypeLabel(type)}` : `Criar ${getTypeLabel(type)}`
 
@@ -106,15 +115,6 @@ export function CrudModal({
       setErrors({})
     }
   }, [isOpen, item])
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'course': return 'Curso'
-      case 'module': return 'Módulo'
-      case 'lesson': return 'Aula'
-      default: return 'Item'
-    }
-  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
