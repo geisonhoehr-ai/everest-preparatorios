@@ -90,14 +90,6 @@ interface FlashcardTag {
 export default function FlashcardsPage() {
   const { user, profile } = useAuth()
   
-  // Debug: verificar dados do usuário
-  console.log('🔍 Debug Flashcards - User:', user)
-  console.log('🔍 Debug Flashcards - Profile:', profile)
-  console.log('🔍 Debug Flashcards - Profile Role:', profile?.role)
-  console.log('🔍 Debug Flashcards - selectedSubject:', selectedSubject)
-  console.log('🔍 Debug Flashcards - studyMode:', studyMode)
-  console.log('🔍 Debug Flashcards - safeSubjects:', safeSubjects)
-  console.log('🔍 Debug Flashcards - safeTopics:', safeTopics)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
@@ -204,6 +196,15 @@ export default function FlashcardsPage() {
   const safeSubjects = Array.isArray(subjects) ? subjects : []
   const safeTopics = Array.isArray(topics) ? topics : []
   const safeFlashcards = Array.isArray(flashcards) ? flashcards : []
+
+  // Debug: verificar dados do usuário e estados
+  console.log('🔍 Debug Flashcards - User:', user)
+  console.log('🔍 Debug Flashcards - Profile:', profile)
+  console.log('🔍 Debug Flashcards - Profile Role:', profile?.role)
+  console.log('🔍 Debug Flashcards - selectedSubject:', selectedSubject)
+  console.log('🔍 Debug Flashcards - studyMode:', studyMode)
+  console.log('🔍 Debug Flashcards - safeSubjects:', safeSubjects)
+  console.log('🔍 Debug Flashcards - safeTopics:', safeTopics)
 
   const loadSubjects = async () => {
     try {
