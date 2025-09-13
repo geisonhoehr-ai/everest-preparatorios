@@ -1963,11 +1963,11 @@ export default function FlashcardsPage() {
   console.log("🔍 Modal deve aparecer?", showCardCountSelector ? "SIM" : "NÃO")
   console.log("🔍 Tipo de showCardCountSelector:", typeof showCardCountSelector)
   console.log("🔍 Valor exato:", JSON.stringify(showCardCountSelector))
+  console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)
 
   return (
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Seleção de Quantidade de Cards - VERSÃO SIMPLES */}
-      {console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)}
       {/* TESTE: Modal sempre visível para debug */}
       {true && (
         <div 
