@@ -1074,6 +1074,240 @@ export async function getTopicsBySubject(subjectId: number) {
   return data || []
 }
 
+// Função para buscar questões de quiz diretamente por tópico
+export async function getAllQuizzesByTopic(topicId: string) {
+  const supabase = await getSupabase()
+  console.log(`❓ [Server Action] Buscando questões do tópico: ${topicId}`)
+
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .select("id, topic_id, question_text, options, correct_answer, explanation")
+    .eq("topic_id", topicId)
+    .order("id")
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar questões:", error)
+    return []
+  }
+
+  console.log(`✅ [Server Action] Questões encontradas: ${data?.length}`)
+  return data || []
+}
+
+// Função para criar um novo quiz
+export async function createQuiz(userId: string, quizData: {
+  topic_id: string
+  question_text: string
+  options: string[]
+  correct_answer: string
+  explanation: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Criando quiz para tópico: ${quizData.topic_id}`)
+
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .insert({
+      topic_id: quizData.topic_id,
+      question_text: quizData.question_text,
+      options: quizData.options,
+      correct_answer: quizData.correct_answer,
+      explanation: quizData.explanation,
+      created_by: userId
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Quiz criado: ${data.id}`)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+// Função para atualizar um quiz
+export async function updateQuiz(userId: string, quizId: string, updateData: {
+  question_text: string
+  options: string[]
+  correct_answer: string
+  explanation: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Atualizando quiz: ${quizId}`)
+
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .update({
+      question_text: updateData.question_text,
+      options: updateData.options,
+      correct_answer: updateData.correct_answer,
+      explanation: updateData.explanation,
+      updated_by: userId
+    })
+    .eq("id", quizId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao atualizar quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Quiz atualizado: ${data.id}`)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+// Função para deletar um quiz
+export async function deleteQuiz(userId: string, quizId: string) {
+  const supabase = await getSupabase()
+  console.log(`🗑️ [Server Action] Deletando quiz: ${quizId}`)
+
+  const { error } = await supabase
+    .from("quiz_questions")
+    .delete()
+    .eq("id", quizId)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao deletar quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Quiz deletado: ${quizId}`)
+  revalidatePath("/quiz")
+  return { success: true }
+}
+
+// Função para criar um novo tópico
+export async function createTopic(userId: string, topicData: {
+  subject_id: number
+  name: string
+  description: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Criando tópico: ${topicData.name}`)
+
+  const { data, error } = await supabase
+    .from("topics")
+    .insert({
+      subject_id: topicData.subject_id,
+      name: topicData.name,
+      description: topicData.description,
+      created_by: userId
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar tópico:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tópico criado: ${data.id}`)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+// Função para atualizar um tópico
+export async function updateTopic(userId: string, topicId: string, updateData: {
+  name: string
+  description: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`📝 [Server Action] Atualizando tópico: ${topicId}`)
+
+  const { data, error } = await supabase
+    .from("topics")
+    .update({
+      name: updateData.name,
+      description: updateData.description,
+      updated_by: userId
+    })
+    .eq("id", topicId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao atualizar tópico:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tópico atualizado: ${data.id}`)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+// Função para deletar um tópico
+export async function deleteTopic(userId: string, topicId: string) {
+  const supabase = await getSupabase()
+  console.log(`🗑️ [Server Action] Deletando tópico: ${topicId}`)
+
+  const { error } = await supabase
+    .from("topics")
+    .delete()
+    .eq("id", topicId)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao deletar tópico:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tópico deletado: ${topicId}`)
+  revalidatePath("/quiz")
+  return { success: true }
+}
+
+// Função para atualizar progresso do quiz
+export async function updateQuizProgress(
+  userId: string,
+  topicId: string,
+  correctAnswers: number,
+  totalQuestions: number,
+  timeSpent: number
+) {
+  const supabase = await getSupabase()
+  console.log(`📊 [Server Action] Atualizando progresso do quiz para usuário: ${userId}`)
+
+  try {
+    // Calcular XP baseado na performance
+    const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0
+    const baseXP = Math.floor(accuracy / 10) * 10 // 10 XP por 10% de acerto
+    const timeBonus = timeSpent > 0 ? Math.max(0, 5 - Math.floor(timeSpent / 60)) : 0 // Bônus por velocidade
+    const xpGained = baseXP + timeBonus
+
+    // Inserir ou atualizar progresso
+    const { data, error } = await supabase
+      .from("user_progress")
+      .upsert({
+        user_id: userId,
+        topic_id: topicId,
+        correct_answers: correctAnswers,
+        total_questions: totalQuestions,
+        accuracy: accuracy,
+        time_spent: timeSpent,
+        xp_gained: xpGained,
+        last_attempt: new Date().toISOString()
+      }, { onConflict: 'user_id,topic_id' })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao atualizar progresso:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ [Server Action] Progresso atualizado: +${xpGained} XP`)
+    revalidatePath("/quiz")
+    return { success: true, xpGained, data }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao atualizar progresso:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
 // Função para obter a role do usuário no servidor
 export async function getUserRoleServer(userUuid: string): Promise<"student" | "teacher" | "admin" | null> {
   const supabase = await getSupabase()
