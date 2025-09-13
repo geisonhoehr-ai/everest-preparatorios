@@ -962,6 +962,11 @@ export default function FlashcardsPage() {
     }
   }, [user?.id])
 
+  // Carregar subjects sempre, independente do usuário (como no quiz)
+  useEffect(() => {
+    loadSubjects()
+  }, [])
+
   useEffect(() => {
     if (selectedTopic && user?.id) {
       loadProgressStats(selectedTopic)

@@ -201,9 +201,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hint: error.hint
         })
         
-        // Se não existir perfil, criar um padrão
-        console.log('🔄 Tentando criar perfil padrão...')
-        await createDefaultProfile(userId)
+        // Se não existir perfil, criar um padrão local
+        console.log('🔄 Criando perfil padrão local...')
+        const defaultProfile = {
+          id: userId,
+          user_id: userId,
+          role: 'student' as const,
+          display_name: 'Usuário',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        setProfile(defaultProfile)
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(defaultProfile))
+        return
       } else {
         console.log('✅ Perfil encontrado no servidor:', data)
         setProfile(data)
