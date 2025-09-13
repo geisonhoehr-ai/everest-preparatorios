@@ -14,7 +14,7 @@ import { CronogramaImporter } from "@/components/calendar/cronograma-importer"
 
 export default function CalendarioPage() {
   const { user, profile } = useAuth()
-  const [events, setEvents] = useState([])
+  const [events, setEvents] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
