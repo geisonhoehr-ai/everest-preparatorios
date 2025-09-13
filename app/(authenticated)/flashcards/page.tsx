@@ -1964,6 +1964,7 @@ export default function FlashcardsPage() {
   console.log("🔍 Tipo de showCardCountSelector:", typeof showCardCountSelector)
   console.log("🔍 Valor exato:", JSON.stringify(showCardCountSelector))
   console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)
+  console.log("🟣 MODAL SENDO RENDERIZADO!")
 
   return (
     <PagePermissionGuard pageName="flashcards">
@@ -1988,7 +1989,9 @@ export default function FlashcardsPage() {
               e.stopPropagation()
             }}
           >
-            {console.log("🟣 MODAL SENDO RENDERIZADO!")}
+            <div style={{backgroundColor: 'red', color: 'white', padding: '10px', position: 'fixed', top: '10px', left: '10px', zIndex: 10000}}>
+              🟣 MODAL VISÍVEL - TESTE
+            </div>
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Target className="h-5 w-5" />
               Quantos flashcards estudar?
