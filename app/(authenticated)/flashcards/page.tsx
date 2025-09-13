@@ -445,8 +445,8 @@ export default function FlashcardsPage() {
           flashcard.id === flashcardId 
             ? { 
                 ...flashcard, 
-                categories: result.data.categories,
-                tags: result.data.tags
+                categories: result.data?.categories || [],
+                tags: result.data?.tags || []
               }
             : flashcard
         ))
