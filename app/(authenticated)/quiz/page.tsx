@@ -43,7 +43,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "@/actions"
+import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -181,7 +181,7 @@ export default function QuizPage() {
   const loadQuestions = async (topicId: string) => {
     try {
       setIsLoading(true)
-      console.log(`📚 Carregando questões do Supabase para tópico ${topicId}...`)
+      console.log(`📚 Carregando questões do Supabase para quiz ${topicId}...`)
       
       if (!profile?.user_id) {
         console.error("❌ Usuário não autenticado")
@@ -189,21 +189,23 @@ export default function QuizPage() {
       }
       
       const result = await getAllQuizzesByTopic(topicId)
+      console.log("🔍 Resultado da busca:", result)
       
       if (result && result.length > 0) {
         // Converter quizzes para o formato de questões esperado
         const formattedQuestions = result.map((quiz: any) => ({
           id: quiz.id,
           question: quiz.question_text,
-          options: quiz.options || [],
-          correct_answer: quiz.options?.indexOf(quiz.correct_answer) || 0,
+          options: Array.isArray(quiz.options) ? quiz.options : [],
+          correct_answer: Array.isArray(quiz.options) ? quiz.options.indexOf(quiz.correct_answer) : 0,
           explanation: quiz.explanation || "Explicação não disponível"
         }))
         
+        console.log("✅ Questões formatadas:", formattedQuestions)
         setQuestions(formattedQuestions)
         console.log("✅ Questões carregadas:", formattedQuestions.length)
       } else {
-        console.log("ℹ️ Nenhuma questão encontrada para este tópico")
+        console.log("ℹ️ Nenhuma questão encontrada para este quiz")
         setQuestions([])
       }
       
@@ -264,7 +266,7 @@ export default function QuizPage() {
         }
         
         const result = await createQuiz(profile.user_id, {
-          topic_id: selectedTopic,
+          quiz_id: selectedTopic,
           question_text: editForm.question,
           options: editForm.options,
           correct_answer: editForm.options[editForm.correct_answer],
