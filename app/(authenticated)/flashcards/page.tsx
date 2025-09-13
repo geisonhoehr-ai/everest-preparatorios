@@ -1448,14 +1448,27 @@ export default function FlashcardsPage() {
                   <CardContent className="pt-0">
                     <div className="space-y-1 sm:space-y-2">
                       <Button 
-                        onClick={() => startStudy(topic.id, "review")}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🔴 BOTÃO REVISÃO CLICADO!")
+                          console.log("🔴 Topic ID:", topic.id)
+                          console.log("🔴 User:", user)
+                          console.log("🔴 Profile:", profile)
+                          startStudy(topic.id, "review")
+                        }}
                         className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 text-sm sm:text-base rounded-lg transition-all duration-300"
                       >
                         <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Revisão
                       </Button>
                       <Button 
-                        onClick={() => startStudy(topic.id, "new")}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🟢 BOTÃO NOVOS CLICADO!")
+                          startStudy(topic.id, "new")
+                        }}
                         variant="outline"
                         className="w-full border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-sm sm:text-base py-2"
                       >
@@ -1463,7 +1476,12 @@ export default function FlashcardsPage() {
                         Novos
                       </Button>
                       <Button 
-                        onClick={() => startStudy(topic.id, "learning")}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log("🟠 BOTÃO APRENDENDO CLICADO!")
+                          startStudy(topic.id, "learning")
+                        }}
                         variant="outline"
                         className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm sm:text-base py-2"
                       >
