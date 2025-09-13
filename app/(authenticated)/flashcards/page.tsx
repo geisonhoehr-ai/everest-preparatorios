@@ -378,13 +378,27 @@ export default function FlashcardsPage() {
         case "review":
           const reviewResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
           if (reviewResult.success && reviewResult.data) {
-            flashcardsData = reviewResult.data.map((item: any) => ({
-              id: item.flashcards.id,
-              topic_id: item.flashcards.topic_id,
-              question: item.flashcards.question,
-              answer: item.flashcards.answer,
-              progress: item // Incluir dados de progresso
-            }))
+            flashcardsData = reviewResult.data.map((item: any) => {
+              // Se há progresso, item tem estrutura {flashcards: {...}, ...}
+              // Se não há progresso, item é diretamente o flashcard
+              if (item.flashcards) {
+                return {
+                  id: item.flashcards.id,
+                  topic_id: item.flashcards.topic_id,
+                  question: item.flashcards.question,
+                  answer: item.flashcards.answer,
+                  progress: item // Incluir dados de progresso
+                }
+              } else {
+                return {
+                  id: item.id,
+                  topic_id: item.topic_id,
+                  question: item.question,
+                  answer: item.answer,
+                  progress: null // Sem progresso
+                }
+              }
+            })
           } else {
             console.warn("⚠️ Nenhum card para revisão encontrado")
             setFlashcardError("Nenhum card para revisão encontrado")
@@ -393,7 +407,13 @@ export default function FlashcardsPage() {
         case "new":
           const newResult = await getNewCards(user.id, topicId, cardCount || selectedCardCount)
           if (newResult.success && newResult.data) {
-            flashcardsData = newResult.data
+            flashcardsData = newResult.data.map((item: any) => ({
+              id: item.id,
+              topic_id: item.topic_id,
+              question: item.question,
+              answer: item.answer,
+              progress: null // Cards novos não têm progresso
+            }))
           } else {
             console.warn("⚠️ Nenhum card novo encontrado")
             setFlashcardError("Nenhum card novo encontrado")
@@ -403,15 +423,25 @@ export default function FlashcardsPage() {
           // Para learning, buscar cards com status 'learning' ou 'relearning'
           const learningResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
           if (learningResult.success && learningResult.data) {
-            flashcardsData = learningResult.data
-              .filter((item: any) => item.status === 'learning' || item.status === 'relearning')
-              .map((item: any) => ({
-                id: item.flashcards.id,
-                topic_id: item.flashcards.topic_id,
-                question: item.flashcards.question,
-                answer: item.flashcards.answer,
-                progress: item
-              }))
+            flashcardsData = learningResult.data.map((item: any) => {
+              if (item.flashcards) {
+                return {
+                  id: item.flashcards.id,
+                  topic_id: item.flashcards.topic_id,
+                  question: item.flashcards.question,
+                  answer: item.flashcards.answer,
+                  progress: item
+                }
+              } else {
+                return {
+                  id: item.id,
+                  topic_id: item.topic_id,
+                  question: item.question,
+                  answer: item.answer,
+                  progress: null
+                }
+              }
+            })
           } else {
             console.warn("⚠️ Nenhum card em aprendizado encontrado")
             setFlashcardError("Nenhum card em aprendizado encontrado")
@@ -422,7 +452,13 @@ export default function FlashcardsPage() {
           try {
             const allResult = await getAllFlashcardsByTopicSimple(topicId, 50)
             if (allResult.success && allResult.data) {
-              flashcardsData = allResult.data
+              flashcardsData = allResult.data.map((item: any) => ({
+                id: item.id,
+                topic_id: item.topic_id,
+                question: item.question,
+                answer: item.answer,
+                progress: null
+              }))
             } else {
               console.warn("⚠️ Nenhum flashcard encontrado para o tópico")
               setFlashcardError("Nenhum flashcard encontrado para este tópico")
