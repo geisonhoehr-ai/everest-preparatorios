@@ -2036,6 +2036,9 @@ export async function getCalendarEvents() {
   }
 }
 
+// Alias para compatibilidade
+export const getAllCalendarEvents = getCalendarEvents
+
 export async function importEaofCronograma(userId: string) {
   try {
     const supabase = await getSupabase()
