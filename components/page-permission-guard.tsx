@@ -37,7 +37,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Verificar se o acesso não expirou
-    if (profile.access_expires_at && new Date(profile.access_expires_at) < new Date()) {
+    if ((profile as any).access_expires_at && new Date((profile as any).access_expires_at) < new Date()) {
       setHasAccess(false)
       setIsLoading(false)
       return
