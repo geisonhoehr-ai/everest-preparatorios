@@ -1393,7 +1393,14 @@ export default function FlashcardsPage() {
                 <Card 
                   key={topic.id || index} 
                   className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500 relative"
-                  onClick={() => startStudy(topic.id)}
+                  onClick={(e) => {
+                    console.log("🟡 CARD DO TÓPICO CLICADO!")
+                    console.log("🟡 Topic ID:", topic.id)
+                    console.log("🟡 Event target:", e.target)
+                    console.log("🟡 Event currentTarget:", e.currentTarget)
+                    // Chamar startStudy com tipo explícito
+                    startStudy(topic.id, "review", "standard")
+                  }}
                 >
                   {/* Botões de edição para admin/teacher */}
                   {(profile?.role === 'admin' || profile?.role === 'teacher') && (
