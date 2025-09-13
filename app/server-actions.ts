@@ -3153,6 +3153,432 @@ export async function getNewCards(userId: string, topicId?: string, limit: numbe
 }
 
 // ========================================
+// SISTEMA DE RASTREAMENTO DETALHADO DE PROGRESSO
+// ========================================
+
+// Interface para sessões de estudo
+interface StudySession {
+  id?: number
+  user_id: string
+  topic_id?: string
+  start_time: string
+  end_time?: string
+  duration_seconds?: number
+  cards_studied: number
+  correct_answers: number
+  incorrect_answers: number
+  xp_gained: number
+  session_type: 'review' | 'new' | 'learning' | 'test' | 'timer' | 'goals' | 'intensive' | 'custom'
+  study_mode_config?: any
+  created_at?: string
+}
+
+// Interface para metas de estudo
+interface StudyGoal {
+  id?: number
+  user_id: string
+  goal_type: 'daily_cards' | 'weekly_time' | 'accuracy' | 'streak' | 'xp'
+  target_value: number
+  current_value: number
+  is_completed: boolean
+  start_date: string
+  end_date?: string
+  created_at?: string
+  updated_at?: string
+}
+
+// Interface para analytics
+interface StudyAnalytics {
+  totalSessions: number
+  totalStudyTime: number
+  totalCardsStudied: number
+  averageAccuracy: number
+  currentStreak: number
+  longestStreak: number
+  weeklyProgress: Array<{
+    date: string
+    cardsStudied: number
+    studyTime: number
+    accuracy: number
+  }>
+  topTopics: Array<{
+    topicId: string
+    topicName: string
+    cardsStudied: number
+    accuracy: number
+  }>
+  studyPatterns: {
+    mostActiveHour: number
+    mostActiveDay: string
+    averageSessionLength: number
+  }
+}
+
+// Função para criar uma nova sessão de estudo
+export async function createStudySession(userUuid: string, sessionData: Omit<StudySession, 'id' | 'user_id' | 'created_at'>) {
+  try {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert([{
+        user_id: userUuid,
+        ...sessionData
+      }])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao criar sessão de estudo:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('❌ Erro ao criar sessão de estudo:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para finalizar uma sessão de estudo
+export async function endStudySession(sessionId: number, endData: {
+  end_time: string
+  duration_seconds: number
+  cards_studied: number
+  correct_answers: number
+  incorrect_answers: number
+  xp_gained: number
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .update(endData)
+      .eq('id', sessionId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao finalizar sessão de estudo:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('❌ Erro ao finalizar sessão de estudo:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para obter histórico de sessões
+export async function getStudySessionsHistory(userUuid: string, limit: number = 50) {
+  try {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select(`
+        *,
+        topics:topic_id (
+          id,
+          name,
+          subject_id,
+          subjects:subject_id (
+            name
+          )
+        )
+      `)
+      .eq('user_id', userUuid)
+      .order('start_time', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('❌ Erro ao obter histórico de sessões:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('❌ Erro ao obter histórico de sessões:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para obter analytics detalhados
+export async function getStudyAnalytics(userUuid: string, days: number = 30) {
+  try {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+
+    // Obter sessões dos últimos N dias
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('study_sessions')
+      .select(`
+        *,
+        topics:topic_id (
+          id,
+          name,
+          subject_id,
+          subjects:subject_id (
+            name
+          )
+        )
+      `)
+      .eq('user_id', userUuid)
+      .gte('start_time', startDate.toISOString())
+      .order('start_time', { ascending: true })
+
+    if (sessionsError) {
+      console.error('❌ Erro ao obter sessões para analytics:', sessionsError)
+      return { success: false, error: sessionsError.message }
+    }
+
+    const sessionsData = sessions || []
+
+    // Calcular estatísticas básicas
+    const totalSessions = sessionsData.length
+    const totalStudyTime = sessionsData.reduce((sum, session) => sum + (session.duration_seconds || 0), 0)
+    const totalCardsStudied = sessionsData.reduce((sum, session) => sum + session.cards_studied, 0)
+    const totalCorrect = sessionsData.reduce((sum, session) => sum + session.correct_answers, 0)
+    const totalIncorrect = sessionsData.reduce((sum, session) => sum + session.incorrect_answers, 0)
+    const averageAccuracy = totalCardsStudied > 0 ? (totalCorrect / totalCardsStudied) * 100 : 0
+
+    // Calcular streak atual
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let currentStreak = 0
+    let checkDate = new Date(today)
+    
+    while (true) {
+      const dayStart = new Date(checkDate)
+      const dayEnd = new Date(checkDate)
+      dayEnd.setHours(23, 59, 59, 999)
+      
+      const hasSession = sessionsData.some(session => {
+        const sessionDate = new Date(session.start_time)
+        return sessionDate >= dayStart && sessionDate <= dayEnd
+      })
+      
+      if (hasSession) {
+        currentStreak++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else {
+        break
+      }
+    }
+
+    // Calcular streak mais longo
+    let longestStreak = 0
+    let tempStreak = 0
+    const sortedSessions = [...sessionsData].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    
+    for (let i = 0; i < sortedSessions.length; i++) {
+      if (i === 0) {
+        tempStreak = 1
+      } else {
+        const prevDate = new Date(sortedSessions[i-1].start_time)
+        const currDate = new Date(sortedSessions[i].start_time)
+        const daysDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24))
+        
+        if (daysDiff === 1) {
+          tempStreak++
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak)
+          tempStreak = 1
+        }
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak)
+
+    // Calcular progresso semanal
+    const weeklyProgress = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dayStart = new Date(date)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(date)
+      dayEnd.setHours(23, 59, 59, 999)
+      
+      const daySessions = sessionsData.filter(session => {
+        const sessionDate = new Date(session.start_time)
+        return sessionDate >= dayStart && sessionDate <= dayEnd
+      })
+      
+      const dayCardsStudied = daySessions.reduce((sum, session) => sum + session.cards_studied, 0)
+      const dayStudyTime = daySessions.reduce((sum, session) => sum + (session.duration_seconds || 0), 0)
+      const dayCorrect = daySessions.reduce((sum, session) => sum + session.correct_answers, 0)
+      const dayIncorrect = daySessions.reduce((sum, session) => sum + session.incorrect_answers, 0)
+      const dayAccuracy = (dayCorrect + dayIncorrect) > 0 ? (dayCorrect / (dayCorrect + dayIncorrect)) * 100 : 0
+      
+      weeklyProgress.push({
+        date: date.toISOString().split('T')[0],
+        cardsStudied: dayCardsStudied,
+        studyTime: dayStudyTime,
+        accuracy: dayAccuracy
+      })
+    }
+
+    // Calcular tópicos mais estudados
+    const topicStats = new Map()
+    sessionsData.forEach(session => {
+      if (session.topics) {
+        const topicId = session.topics.id
+        const topicName = session.topics.name
+        const subjectName = session.topics.subjects?.name || 'Sem matéria'
+        
+        if (!topicStats.has(topicId)) {
+          topicStats.set(topicId, {
+            topicId,
+            topicName: `${topicName} (${subjectName})`,
+            cardsStudied: 0,
+            correctAnswers: 0,
+            incorrectAnswers: 0
+          })
+        }
+        
+        const stats = topicStats.get(topicId)
+        stats.cardsStudied += session.cards_studied
+        stats.correctAnswers += session.correct_answers
+        stats.incorrectAnswers += session.incorrect_answers
+      }
+    })
+
+    const topTopics = Array.from(topicStats.values())
+      .map(topic => ({
+        ...topic,
+        accuracy: (topic.correctAnswers + topic.incorrectAnswers) > 0 
+          ? (topic.correctAnswers / (topic.correctAnswers + topic.incorrectAnswers)) * 100 
+          : 0
+      }))
+      .sort((a, b) => b.cardsStudied - a.cardsStudied)
+      .slice(0, 5)
+
+    // Calcular padrões de estudo
+    const hourCounts = new Array(24).fill(0)
+    const dayCounts = new Array(7).fill(0)
+    const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    
+    sessionsData.forEach(session => {
+      const sessionDate = new Date(session.start_time)
+      const hour = sessionDate.getHours()
+      const day = sessionDate.getDay()
+      
+      hourCounts[hour]++
+      dayCounts[day]++
+    })
+
+    const mostActiveHour = hourCounts.indexOf(Math.max(...hourCounts))
+    const mostActiveDay = dayNames[dayCounts.indexOf(Math.max(...dayCounts))]
+    const averageSessionLength = totalSessions > 0 ? totalStudyTime / totalSessions : 0
+
+    const analytics: StudyAnalytics = {
+      totalSessions,
+      totalStudyTime,
+      totalCardsStudied,
+      averageAccuracy,
+      currentStreak,
+      longestStreak,
+      weeklyProgress,
+      topTopics,
+      studyPatterns: {
+        mostActiveHour,
+        mostActiveDay,
+        averageSessionLength
+      }
+    }
+
+    return { success: true, data: analytics }
+  } catch (error) {
+    console.error('❌ Erro ao calcular analytics:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para criar meta de estudo
+export async function createStudyGoal(userUuid: string, goalData: Omit<StudyGoal, 'id' | 'user_id' | 'current_value' | 'is_completed' | 'created_at' | 'updated_at'>) {
+  try {
+    const { data, error } = await supabase
+      .from('study_goals')
+      .insert([{
+        user_id: userUuid,
+        current_value: 0,
+        is_completed: false,
+        ...goalData
+      }])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao criar meta de estudo:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('❌ Erro ao criar meta de estudo:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para obter metas de estudo
+export async function getStudyGoals(userUuid: string) {
+  try {
+    const { data, error } = await supabase
+      .from('study_goals')
+      .select('*')
+      .eq('user_id', userUuid)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('❌ Erro ao obter metas de estudo:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('❌ Erro ao obter metas de estudo:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// Função para atualizar progresso de meta
+export async function updateStudyGoalProgress(userUuid: string, goalId: number, newValue: number) {
+  try {
+    // Primeiro, obter a meta atual
+    const { data: goal, error: fetchError } = await supabase
+      .from('study_goals')
+      .select('*')
+      .eq('id', goalId)
+      .eq('user_id', userUuid)
+      .single()
+
+    if (fetchError || !goal) {
+      return { success: false, error: 'Meta não encontrada' }
+    }
+
+    const isCompleted = newValue >= goal.target_value
+
+    const { data, error } = await supabase
+      .from('study_goals')
+      .update({
+        current_value: newValue,
+        is_completed: isCompleted,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', goalId)
+      .eq('user_id', userUuid)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Erro ao atualizar progresso da meta:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('❌ Erro ao atualizar progresso da meta:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}
+
+// ========================================
 // SISTEMA DE CATEGORIAS E TAGS
 // ========================================
 

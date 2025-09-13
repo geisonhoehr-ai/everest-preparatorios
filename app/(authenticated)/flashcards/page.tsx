@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags } from "../../server-actions"
+import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -152,6 +152,15 @@ export default function FlashcardsPage() {
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
   const [isTimerActive, setIsTimerActive] = useState(false)
   const [showStudyModeConfig, setShowStudyModeConfig] = useState(false)
+  
+  // Estados para rastreamento de progresso
+  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null)
+  const [studyHistory, setStudyHistory] = useState<any[]>([])
+  const [studyAnalytics, setStudyAnalytics] = useState<any>(null)
+  const [studyGoals, setStudyGoals] = useState<any[]>([])
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showGoals, setShowGoals] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   
   // Estados para edição inline (admin/teacher)
   const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
@@ -390,7 +399,9 @@ export default function FlashcardsPage() {
     }
   }
 
-  const startStudy = (topicId: string, type: "review" | "new" | "learning" | "all" = "review", modeType: 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom' = 'standard') => {
+  const startStudy = async (topicId: string, type: "review" | "new" | "learning" | "all" = "review", modeType: 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom' = 'standard') => {
+    if (!user?.id) return
+    
     setSelectedTopic(topicId)
     setStudyType(type)
     setStudyModeConfig(prev => ({ ...prev, type: modeType }))
@@ -399,6 +410,27 @@ export default function FlashcardsPage() {
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+    
+    // Criar sessão de rastreamento
+    try {
+      const sessionResult = await createStudySession(user.id, {
+        topic_id: topicId,
+        start_time: new Date().toISOString(),
+        cards_studied: 0,
+        correct_answers: 0,
+        incorrect_answers: 0,
+        xp_gained: 0,
+        session_type: modeType === 'standard' ? type : modeType,
+        study_mode_config: studyModeConfig
+      })
+      
+      if (sessionResult.success && sessionResult.data) {
+        setCurrentSessionId(sessionResult.data.id)
+        console.log("📊 Sessão de estudo criada:", sessionResult.data.id)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao criar sessão de estudo:", error)
+    }
     
     // Iniciar sessão baseada no modo
     if (modeType !== 'standard') {
@@ -669,7 +701,28 @@ export default function FlashcardsPage() {
     nextCard()
   }
 
-  const resetStudy = () => {
+  const resetStudy = async () => {
+    // Finalizar sessão de rastreamento se existir
+    if (currentSessionId && user?.id) {
+      try {
+        const totalCards = sessionStats.correct + sessionStats.incorrect
+        const endResult = await endStudySession(currentSessionId, {
+          end_time: new Date().toISOString(),
+          duration_seconds: sessionTimer,
+          cards_studied: totalCards,
+          correct_answers: sessionStats.correct,
+          incorrect_answers: sessionStats.incorrect,
+          xp_gained: xpGained
+        })
+        
+        if (endResult.success) {
+          console.log("📊 Sessão de estudo finalizada:", endResult.data)
+        }
+      } catch (error) {
+        console.error("❌ Erro ao finalizar sessão de estudo:", error)
+      }
+    }
+    
     stopStudySession()
     setStudyMode("select")
     setSelectedTopic(null)
@@ -678,6 +731,47 @@ export default function FlashcardsPage() {
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
     setStudyModeConfig(prev => ({ ...prev, type: 'standard' }))
+    setCurrentSessionId(null)
+  }
+
+  // Funções para carregar dados de rastreamento
+  const loadStudyHistory = async () => {
+    if (!user?.id) return
+    
+    try {
+      const result = await getStudySessionsHistory(user.id, 20)
+      if (result.success && result.data) {
+        setStudyHistory(result.data)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar histórico:", error)
+    }
+  }
+
+  const loadStudyAnalytics = async () => {
+    if (!user?.id) return
+    
+    try {
+      const result = await getStudyAnalytics(user.id, 30)
+      if (result.success && result.data) {
+        setStudyAnalytics(result.data)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar analytics:", error)
+    }
+  }
+
+  const loadStudyGoals = async () => {
+    if (!user?.id) return
+    
+    try {
+      const result = await getStudyGoals(user.id)
+      if (result.success && result.data) {
+        setStudyGoals(result.data)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar metas:", error)
+    }
   }
 
   useEffect(() => {
@@ -685,6 +779,9 @@ export default function FlashcardsPage() {
     loadCategoriesAndTags()
     if (user?.id) {
       loadProgressStats()
+      loadStudyHistory()
+      loadStudyAnalytics()
+      loadStudyGoals()
     }
   }, [user?.id])
 
@@ -775,28 +872,56 @@ export default function FlashcardsPage() {
                 Selecione a matéria que deseja estudar com flashcards
               </p>
             </div>
-            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
-              <div className="flex gap-2">
-                <Button 
-                  variant={isAdminMode ? "default" : "outline"}
-                  onClick={() => setIsAdminMode(!isAdminMode)}
-                  className="flex items-center gap-2"
-                >
-                  <Shield className="h-4 w-4" />
-                  {isAdminMode ? "Modo Admin" : "Modo Normal"}
-                </Button>
-                <Button 
-                  onClick={() => {
-                    // TODO: Implementar criação de matéria
-                    alert("Funcionalidade de adicionar matéria será implementada em breve")
-                  }}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  Adicionar Matéria
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              {/* Botões de Analytics e Rastreamento */}
+              <Button 
+                variant="outline"
+                onClick={() => setShowAnalytics(true)}
+                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Analytics
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowHistory(true)}
+                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+              >
+                <Clock className="h-4 w-4" />
+                Histórico
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowGoals(true)}
+                className="flex items-center gap-2 border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              >
+                <Target className="h-4 w-4" />
+                Metas
+              </Button>
+              
+              {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+                <>
+                  <Button 
+                    variant={isAdminMode ? "default" : "outline"}
+                    onClick={() => setIsAdminMode(!isAdminMode)}
+                    className="flex items-center gap-2"
+                  >
+                    <Shield className="h-4 w-4" />
+                    {isAdminMode ? "Modo Admin" : "Modo Normal"}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      // TODO: Implementar criação de matéria
+                      alert("Funcionalidade de adicionar matéria será implementada em breve")
+                    }}
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Matéria
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -1882,6 +2007,265 @@ export default function FlashcardsPage() {
               }
             }}>
               Iniciar Estudo Personalizado
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Analytics */}
+      <Dialog open={showAnalytics} onOpenChange={setShowAnalytics}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Analytics de Estudo
+            </DialogTitle>
+            <DialogDescription>
+              Visualize suas estatísticas detalhadas de estudo dos últimos 30 dias.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {studyAnalytics ? (
+            <div className="space-y-6">
+              {/* Estatísticas Principais */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Sessões</p>
+                      <p className="text-2xl font-bold">{studyAnalytics.totalSessions}</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Tempo Total</p>
+                      <p className="text-2xl font-bold">{Math.round(studyAnalytics.totalStudyTime / 60)}min</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Cards Estudados</p>
+                      <p className="text-2xl font-bold">{studyAnalytics.totalCardsStudied}</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Precisão</p>
+                      <p className="text-2xl font-bold">{Math.round(studyAnalytics.averageAccuracy)}%</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Streaks */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-red-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Sequência Atual</p>
+                      <p className="text-2xl font-bold">{studyAnalytics.currentStreak} dias</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Maior Sequência</p>
+                      <p className="text-2xl font-bold">{studyAnalytics.longestStreak} dias</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Tópicos Mais Estudados */}
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Tópicos Mais Estudados</h3>
+                <div className="space-y-2">
+                  {studyAnalytics.topTopics.map((topic: any, index: number) => (
+                    <div key={topic.topicId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="font-medium">{topic.topicName}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span>{topic.cardsStudied} cards</span>
+                        <span>{Math.round(topic.accuracy)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Padrões de Estudo */}
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Padrões de Estudo</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-gray-600">Hora Mais Ativa</p>
+                    <p className="text-lg font-bold">{studyAnalytics.studyPatterns.mostActiveHour}h</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Dia Mais Ativo</p>
+                    <p className="text-lg font-bold">{studyAnalytics.studyPatterns.mostActiveDay}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Duração Média</p>
+                    <p className="text-lg font-bold">{Math.round(studyAnalytics.studyPatterns.averageSessionLength / 60)}min</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando analytics...</p>
+            </div>
+          )}
+          
+          <div className="flex justify-end">
+            <Button onClick={() => setShowAnalytics(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Histórico */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Histórico de Sessões
+            </DialogTitle>
+            <DialogDescription>
+              Visualize todas as suas sessões de estudo recentes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {studyHistory.length > 0 ? (
+              studyHistory.map((session: any) => (
+                <Card key={session.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-blue-500 rounded-full flex items-center justify-center">
+                        <BookOpen className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">
+                          {session.topics?.name || 'Sessão Geral'}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {session.topics?.subjects?.name || 'Sem matéria'} • {new Date(session.start_time).toLocaleDateString('pt-BR')}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                          <span>{session.cards_studied} cards</span>
+                          <span>{Math.round(session.duration_seconds / 60)}min</span>
+                          <span>{Math.round((session.correct_answers / (session.correct_answers + session.incorrect_answers)) * 100)}% precisão</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="mb-2">
+                        {session.session_type}
+                      </Badge>
+                      <p className="text-sm text-gray-600">
+                        +{session.xp_gained} XP
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Nenhuma sessão encontrada</p>
+                <p className="text-sm text-gray-500">Comece a estudar para ver seu histórico aqui!</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end">
+            <Button onClick={() => setShowHistory(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Metas */}
+      <Dialog open={showGoals} onOpenChange={setShowGoals}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Metas de Estudo
+            </DialogTitle>
+            <DialogDescription>
+              Defina e acompanhe suas metas de estudo para manter a motivação.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {studyGoals.length > 0 ? (
+              studyGoals.map((goal: any) => (
+                <Card key={goal.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold capitalize">
+                        {goal.goal_type.replace('_', ' ')}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Meta: {goal.target_value} • Atual: {goal.current_value}
+                      </p>
+                      <Progress 
+                        value={(goal.current_value / goal.target_value) * 100} 
+                        className="mt-2"
+                      />
+                    </div>
+                    <div className="text-right">
+                      {goal.is_completed ? (
+                        <Badge className="bg-green-500">Concluída</Badge>
+                      ) : (
+                        <Badge variant="outline">Em andamento</Badge>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Nenhuma meta definida</p>
+                <p className="text-sm text-gray-500">Defina metas para acompanhar seu progresso!</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              // TODO: Implementar criação de metas
+              alert("Funcionalidade de criar metas será implementada em breve")
+            }}>
+              Nova Meta
+            </Button>
+            <Button onClick={() => setShowGoals(false)}>
+              Fechar
             </Button>
           </div>
         </DialogContent>
