@@ -185,12 +185,7 @@ export default function FlashcardsPage() {
   const [studyWrongCards, setStudyWrongCards] = useState(false)
   const [flashcardError, setFlashcardError] = useState<string | null>(null)
 
-  // Carregar subjects quando o componente for montado
-  useEffect(() => {
-    if (user?.id) {
-      loadSubjects()
-    }
-  }, [user?.id])
+  // Carregar subjects quando o componente for montado (removido - duplicado)
 
   // Garantir que subjects sempre seja um array válido
   const safeSubjects = Array.isArray(subjects) ? subjects : []
@@ -205,11 +200,14 @@ export default function FlashcardsPage() {
   console.log('🔍 Debug Flashcards - studyMode:', studyMode)
   console.log('🔍 Debug Flashcards - safeSubjects:', safeSubjects)
   console.log('🔍 Debug Flashcards - safeTopics:', safeTopics)
+  console.log('🔍 Debug Flashcards - isLoading:', isLoading)
 
   const loadSubjects = async () => {
     try {
       setIsLoading(true)
       console.log("📚 Carregando matérias do Supabase...")
+      console.log("🔍 User ID:", user?.id)
+      console.log("🔍 Profile:", profile)
       
       const subjectsData = await getAllSubjects()
       console.log("✅ Matérias carregadas:", subjectsData.length)
@@ -227,12 +225,14 @@ export default function FlashcardsPage() {
       
       console.log("🔄 Matérias formatadas:", subjectsWithDescription)
       setSubjects(subjectsWithDescription)
+      console.log("✅ Subjects state atualizado:", subjectsWithDescription.length)
       
     } catch (error) {
       console.error("❌ Erro ao carregar matérias:", error)
       setSubjects([])
     } finally {
       setIsLoading(false)
+      console.log("✅ Loading finalizado")
     }
   }
 
@@ -254,12 +254,14 @@ export default function FlashcardsPage() {
       
       console.log("🔄 Tópicos formatados:", formattedTopics)
       setTopics(formattedTopics)
+      console.log("✅ Topics state atualizado:", formattedTopics.length)
       
     } catch (error) {
       console.error("❌ Erro ao carregar tópicos:", error)
       setTopics([])
     } finally {
       setIsLoading(false)
+      console.log("✅ Topics loading finalizado")
     }
   }
 
@@ -365,6 +367,8 @@ export default function FlashcardsPage() {
       setIsLoading(true)
       setFlashcardError(null)
       console.log(`📚 Carregando flashcards do Supabase para tópico ${topicId}, tipo: ${type}...`)
+      console.log("🔍 User ID:", user?.id)
+      console.log("🔍 Profile:", profile)
       
       if (!user?.id) {
         console.error("❌ Usuário não autenticado")
@@ -373,10 +377,13 @@ export default function FlashcardsPage() {
       }
 
       let flashcardsData: any[] = []
+      console.log("🔍 Iniciando switch para tipo:", type)
 
       switch (type) {
         case "review":
+          console.log("🔍 Caso review - chamando getCardsForReview")
           const reviewResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
+          console.log("🔍 Resultado do getCardsForReview:", reviewResult)
           if (reviewResult.success && reviewResult.data) {
             flashcardsData = reviewResult.data.map((item: any) => {
               // Se há progresso, item tem estrutura {flashcards: {...}, ...}
@@ -399,13 +406,16 @@ export default function FlashcardsPage() {
                 }
               }
             })
+            console.log("✅ Flashcards mapeados para review:", flashcardsData.length)
           } else {
             console.warn("⚠️ Nenhum card para revisão encontrado")
             setFlashcardError("Nenhum card para revisão encontrado")
           }
           break
         case "new":
+          console.log("🔍 Caso new - chamando getNewCards")
           const newResult = await getNewCards(user.id, topicId, cardCount || selectedCardCount)
+          console.log("🔍 Resultado do getNewCards:", newResult)
           if (newResult.success && newResult.data) {
             flashcardsData = newResult.data.map((item: any) => ({
               id: item.id,
@@ -414,14 +424,17 @@ export default function FlashcardsPage() {
               answer: item.answer,
               progress: null // Cards novos não têm progresso
             }))
+            console.log("✅ Flashcards mapeados para new:", flashcardsData.length)
           } else {
             console.warn("⚠️ Nenhum card novo encontrado")
             setFlashcardError("Nenhum card novo encontrado")
           }
           break
         case "learning":
+          console.log("🔍 Caso learning - chamando getCardsForReview")
           // Para learning, buscar cards com status 'learning' ou 'relearning'
           const learningResult = await getCardsForReview(user.id, topicId, cardCount || selectedCardCount)
+          console.log("🔍 Resultado do getCardsForReview para learning:", learningResult)
           if (learningResult.success && learningResult.data) {
             flashcardsData = learningResult.data.map((item: any) => {
               if (item.flashcards) {
@@ -442,6 +455,7 @@ export default function FlashcardsPage() {
                 }
               }
             })
+            console.log("✅ Flashcards mapeados para learning:", flashcardsData.length)
           } else {
             console.warn("⚠️ Nenhum card em aprendizado encontrado")
             setFlashcardError("Nenhum card em aprendizado encontrado")
@@ -449,8 +463,10 @@ export default function FlashcardsPage() {
           break
         case "all":
         default:
+          console.log("🔍 Caso all - chamando getAllFlashcardsByTopicSimple")
           try {
             const allResult = await getAllFlashcardsByTopicSimple(topicId, 50)
+            console.log("🔍 Resultado do getAllFlashcardsByTopicSimple:", allResult)
             if (allResult.success && allResult.data) {
               flashcardsData = allResult.data.map((item: any) => ({
                 id: item.id,
@@ -459,6 +475,7 @@ export default function FlashcardsPage() {
                 answer: item.answer,
                 progress: null
               }))
+              console.log("✅ Flashcards mapeados para all:", flashcardsData.length)
             } else {
               console.warn("⚠️ Nenhum flashcard encontrado para o tópico")
               setFlashcardError("Nenhum flashcard encontrado para este tópico")
@@ -471,15 +488,19 @@ export default function FlashcardsPage() {
       }
       
       console.log(`✅ Flashcards carregados (${type}):`, flashcardsData.length)
+      console.log("🔍 Dados dos flashcards:", flashcardsData)
       
       // Verificar se há flashcards válidos
       if (flashcardsData.length === 0) {
+        console.log("⚠️ Nenhum flashcard encontrado")
         setFlashcardError("Nenhum flashcard disponível para este tópico")
       } else {
+        console.log("✅ Flashcards válidos encontrados")
         setFlashcardError(null)
       }
       
       setFlashcards(flashcardsData)
+      console.log("✅ Flashcards state atualizado:", flashcardsData.length)
       
     } catch (error) {
       console.error("❌ Erro ao carregar flashcards:", error)
@@ -487,6 +508,7 @@ export default function FlashcardsPage() {
       setFlashcards([])
     } finally {
       setIsLoading(false)
+      console.log("✅ Loading de flashcards finalizado")
     }
   }
 
@@ -496,26 +518,31 @@ export default function FlashcardsPage() {
     console.log("📚 type:", type)
     console.log("⚙️ modeType:", modeType)
     console.log("👤 user?.id:", user?.id)
+    console.log("👤 profile:", profile)
     
     if (!user?.id) {
       console.error("❌ Usuário não autenticado")
       return
     }
     
+    console.log("✅ Usuário autenticado, continuando...")
+    
     setSelectedTopic(topicId)
     setStudyType(type)
     setStudyModeConfig(prev => ({ ...prev, type: modeType }))
+    console.log("✅ Estados atualizados - topicId:", topicId, "type:", type, "modeType:", modeType)
     
     // Mostrar seletor de quantidade de cards
     console.log("📊 Mostrando seletor de quantidade de cards")
     setShowCardCountSelector(true)
+    console.log("✅ Seletor de cards ativado")
   }
 
   const confirmStudyStart = async () => {
     console.log("🚀 confirmStudyStart chamado")
     console.log("📋 selectedTopic:", selectedTopic)
-    console.log("👤 user?.id:", user?.id)
     console.log("📚 studyType:", studyType)
+    console.log("👤 user?.id:", user?.id)
     console.log("🔢 selectedCardCount:", selectedCardCount)
     
     if (!selectedTopic || !user?.id) {
@@ -523,14 +550,18 @@ export default function FlashcardsPage() {
       return
     }
     
+    console.log("✅ Validação passou, iniciando carregamento de flashcards...")
+    
     setShowCardCountSelector(false)
     console.log("📚 Carregando flashcards...")
     await loadFlashcards(selectedTopic, studyType, selectedCardCount)
     console.log("✅ Flashcards carregados, iniciando estudo...")
+    console.log("🔍 Flashcards carregados:", flashcards.length)
     setStudyMode("study")
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+    console.log("✅ Modo de estudo ativado")
     
     // Criar sessão de rastreamento
     try {
@@ -915,13 +946,17 @@ export default function FlashcardsPage() {
   }
 
   useEffect(() => {
-    loadSubjects()
-    loadCategoriesAndTags()
+    console.log("🔄 useEffect executado - user?.id:", user?.id)
     if (user?.id) {
+      console.log("✅ User ID encontrado, carregando dados...")
+      loadSubjects()
+      loadCategoriesAndTags()
       loadProgressStats()
       loadStudyHistory()
       loadStudyAnalytics()
       loadStudyGoals()
+    } else {
+      console.log("❌ User ID não encontrado")
     }
   }, [user?.id])
 
@@ -1000,6 +1035,7 @@ export default function FlashcardsPage() {
 
   // Seleção de matéria
   if (!selectedSubject) {
+    console.log("🎯 Renderizando seleção de matérias - selectedSubject:", selectedSubject)
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
@@ -1068,11 +1104,13 @@ export default function FlashcardsPage() {
           </div>
 
           <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {console.log("🎯 Renderizando subjects:", safeSubjects.length, safeSubjects)}
             {safeSubjects.map((subject, index) => (
               <Card 
                 key={subject.id || index} 
                 className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500"
                 onClick={() => {
+                  console.log("🎯 Clicou na matéria:", subject.name, "ID:", subject.id)
                   setSelectedSubject(subject.id)
                   loadTopics(subject.id)
                 }}
@@ -1138,6 +1176,7 @@ export default function FlashcardsPage() {
 
   // Seleção de tópico
   if (studyMode === "select") {
+    console.log("🎯 Renderizando seleção de tópicos - selectedSubject:", selectedSubject)
     return (
       <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
@@ -1319,6 +1358,7 @@ export default function FlashcardsPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {console.log("🎯 Renderizando topics:", safeTopics.length, safeTopics)}
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
