@@ -133,6 +133,26 @@ export default function FlashcardsPage() {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   
+  // Estados para modos de estudo avançados
+  const [studyModeConfig, setStudyModeConfig] = useState({
+    type: 'standard' as 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom',
+    timerMinutes: 15,
+    goalCards: 20,
+    goalAccuracy: 80,
+    customSettings: {
+      showHints: false,
+      autoAdvance: false,
+      shuffleCards: true,
+      showProgress: true,
+      timePerCard: 0 // 0 = sem limite
+    }
+  })
+  const [sessionTimer, setSessionTimer] = useState(0)
+  const [cardTimer, setCardTimer] = useState(0)
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
+  const [isTimerActive, setIsTimerActive] = useState(false)
+  const [showStudyModeConfig, setShowStudyModeConfig] = useState(false)
+  
   // Estados para edição inline (admin/teacher)
   const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -370,14 +390,25 @@ export default function FlashcardsPage() {
     }
   }
 
-  const startStudy = (topicId: string, type: "review" | "new" | "learning" | "all" = "review") => {
+  const startStudy = (topicId: string, type: "review" | "new" | "learning" | "all" = "review", modeType: 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom' = 'standard') => {
     setSelectedTopic(topicId)
     setStudyType(type)
+    setStudyModeConfig(prev => ({ ...prev, type: modeType }))
     loadFlashcards(topicId, type)
     setStudyMode("study")
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+    
+    // Iniciar sessão baseada no modo
+    if (modeType !== 'standard') {
+      startStudySession(modeType)
+    }
+    
+    // Shuffle cards se necessário
+    if (modeType === 'custom' && studyModeConfig.customSettings.shuffleCards) {
+      setTimeout(() => shuffleFlashcards(), 100)
+    }
   }
 
   const loadProgressStats = async (topicId?: string) => {
@@ -497,6 +528,82 @@ export default function FlashcardsPage() {
     }, 100)
   }, [showAnswer])
 
+  // Funções para modos de estudo avançados
+  const startStudySession = useCallback((modeType: 'standard' | 'timer' | 'goals' | 'intensive' | 'test' | 'custom') => {
+    setStudyModeConfig(prev => ({ ...prev, type: modeType }))
+    setSessionStartTime(new Date())
+    setSessionTimer(0)
+    setCardTimer(0)
+    setIsTimerActive(true)
+  }, [])
+
+  const stopStudySession = useCallback(() => {
+    setIsTimerActive(false)
+    setSessionStartTime(null)
+    setSessionTimer(0)
+    setCardTimer(0)
+  }, [])
+
+  const resetCardTimer = useCallback(() => {
+    setCardTimer(0)
+  }, [])
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (isTimerActive && sessionStartTime) {
+      interval = setInterval(() => {
+        const now = new Date()
+        const elapsed = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000)
+        setSessionTimer(elapsed)
+        setCardTimer(prev => prev + 1)
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isTimerActive, sessionStartTime])
+
+  // Auto-advance para modo customizado
+  useEffect(() => {
+    if (studyModeConfig.type === 'custom' && studyModeConfig.customSettings.autoAdvance && showAnswer) {
+      const timePerCard = studyModeConfig.customSettings.timePerCard
+      if (timePerCard > 0) {
+        const timer = setTimeout(() => {
+          nextCard()
+        }, timePerCard * 1000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [showAnswer, studyModeConfig, nextCard])
+
+  // Verificar metas
+  const checkGoals = useCallback(() => {
+    if (studyModeConfig.type === 'goals') {
+      const totalCards = sessionStats.correct + sessionStats.incorrect
+      const accuracy = totalCards > 0 ? (sessionStats.correct / totalCards) * 100 : 0
+      
+      if (totalCards >= studyModeConfig.goalCards && accuracy >= studyModeConfig.goalAccuracy) {
+        // Meta atingida!
+        console.log("🎯 Meta atingida!")
+        return true
+      }
+    }
+    return false
+  }, [studyModeConfig, sessionStats])
+
+  // Shuffle cards para modo customizado
+  const shuffleFlashcards = useCallback(() => {
+    if (studyModeConfig.customSettings.shuffleCards) {
+      setFlashcards(prev => {
+        const shuffled = [...prev].sort(() => Math.random() - 0.5)
+        return shuffled
+      })
+    }
+  }, [studyModeConfig.customSettings.shuffleCards])
+
   const markCorrect = async () => {
     setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }))
     
@@ -563,12 +670,14 @@ export default function FlashcardsPage() {
   }
 
   const resetStudy = () => {
+    stopStudySession()
     setStudyMode("select")
     setSelectedTopic(null)
     setFlashcards([])
     setCurrentCardIndex(0)
     setShowAnswer(false)
     setSessionStats({ correct: 0, incorrect: 0 })
+    setStudyModeConfig(prev => ({ ...prev, type: 'standard' }))
   }
 
   useEffect(() => {
@@ -983,6 +1092,49 @@ export default function FlashcardsPage() {
                         <Brain className="mr-2 h-4 w-4" />
                         Aprendendo
                       </Button>
+                      
+                      {/* Modos Avançados */}
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">Modos Avançados</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Button 
+                            onClick={() => startStudy(topic.id, "review", "timer")}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                          >
+                            <Timer className="mr-1 h-3 w-3" />
+                            Cronômetro
+                          </Button>
+                          <Button 
+                            onClick={() => startStudy(topic.id, "review", "goals")}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-pink-500 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                          >
+                            <Target className="mr-1 h-3 w-3" />
+                            Metas
+                          </Button>
+                          <Button 
+                            onClick={() => startStudy(topic.id, "review", "intensive")}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Flame className="mr-1 h-3 w-3" />
+                            Intensivo
+                          </Button>
+                          <Button 
+                            onClick={() => setShowStudyModeConfig(true)}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                          >
+                            <Settings className="mr-1 h-3 w-3" />
+                            Personalizar
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1034,13 +1186,44 @@ export default function FlashcardsPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 Flashcard {currentCardIndex + 1} de {safeFlashcards.length}
               </p>
-              {xpGained > 0 && (
-                <div className="mt-2">
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                {xpGained > 0 && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                     ⭐ +{xpGained} XP
                   </span>
-                </div>
-              )}
+                )}
+                {/* Indicador do modo de estudo */}
+                {studyModeConfig.type === 'timer' && (
+                  <Badge className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
+                    <Timer className="mr-1 h-3 w-3" />
+                    Cronômetro
+                  </Badge>
+                )}
+                {studyModeConfig.type === 'goals' && (
+                  <Badge className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
+                    <Target className="mr-1 h-3 w-3" />
+                    Metas
+                  </Badge>
+                )}
+                {studyModeConfig.type === 'intensive' && (
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <Flame className="mr-1 h-3 w-3" />
+                    Intensivo
+                  </Badge>
+                )}
+                {studyModeConfig.type === 'test' && (
+                  <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    <Award className="mr-1 h-3 w-3" />
+                    Teste
+                  </Badge>
+                )}
+                {studyModeConfig.type === 'custom' && (
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    <Settings className="mr-1 h-3 w-3" />
+                    Personalizado
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="w-32 flex items-center gap-2">
               <Progress value={progress} className="h-2 flex-1" />
@@ -1547,6 +1730,158 @@ export default function FlashcardsPage() {
           <div className="flex justify-end">
             <Button onClick={() => setShowKeyboardShortcuts(false)}>
               Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Configuração de Modo Personalizado */}
+      <Dialog open={showStudyModeConfig} onOpenChange={setShowStudyModeConfig}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Configurar Modo de Estudo Personalizado
+            </DialogTitle>
+            <DialogDescription>
+              Personalize sua experiência de estudo com configurações avançadas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Configurações Básicas */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Configurações Básicas</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tempo por Card (segundos)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={studyModeConfig.customSettings.timePerCard}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      customSettings: {
+                        ...prev.customSettings,
+                        timePerCard: parseInt(e.target.value) || 0
+                      }
+                    }))}
+                    placeholder="0 = sem limite"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Meta de Cards</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={studyModeConfig.goalCards}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      goalCards: parseInt(e.target.value) || 20
+                    }))}
+                    placeholder="20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Configurações Avançadas */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Configurações Avançadas</h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium">Embaralhar Cards</label>
+                    <p className="text-xs text-gray-500">Misturar a ordem dos flashcards</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={studyModeConfig.customSettings.shuffleCards}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      customSettings: {
+                        ...prev.customSettings,
+                        shuffleCards: e.target.checked
+                      }
+                    }))}
+                    className="h-4 w-4"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium">Avanço Automático</label>
+                    <p className="text-xs text-gray-500">Passar automaticamente para o próximo card</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={studyModeConfig.customSettings.autoAdvance}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      customSettings: {
+                        ...prev.customSettings,
+                        autoAdvance: e.target.checked
+                      }
+                    }))}
+                    className="h-4 w-4"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium">Mostrar Dicas</label>
+                    <p className="text-xs text-gray-500">Exibir dicas adicionais nos cards</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={studyModeConfig.customSettings.showHints}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      customSettings: {
+                        ...prev.customSettings,
+                        showHints: e.target.checked
+                      }
+                    }))}
+                    className="h-4 w-4"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium">Mostrar Progresso</label>
+                    <p className="text-xs text-gray-500">Exibir barra de progresso durante o estudo</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={studyModeConfig.customSettings.showProgress}
+                    onChange={(e) => setStudyModeConfig(prev => ({
+                      ...prev,
+                      customSettings: {
+                        ...prev.customSettings,
+                        showProgress: e.target.checked
+                      }
+                    }))}
+                    className="h-4 w-4"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowStudyModeConfig(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              setShowStudyModeConfig(false)
+              if (selectedTopic) {
+                startStudy(selectedTopic, studyType, 'custom')
+              }
+            }}>
+              Iniciar Estudo Personalizado
             </Button>
           </div>
         </DialogContent>
