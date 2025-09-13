@@ -1104,7 +1104,6 @@ export default function FlashcardsPage() {
           </div>
 
           <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {console.log("🎯 Renderizando subjects:", safeSubjects.length, safeSubjects)}
             {safeSubjects.map((subject, index) => (
               <Card 
                 key={subject.id || index} 
@@ -1358,7 +1357,6 @@ export default function FlashcardsPage() {
             </div>
           ) : (
             <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {console.log("🎯 Renderizando topics:", safeTopics.length, safeTopics)}
               {safeTopics.map((topic, index) => (
                 <Card 
                   key={topic.id || index} 
