@@ -536,8 +536,14 @@ export default function FlashcardsPage() {
     
     // Mostrar seletor de quantidade de cards
     console.log("📊 Mostrando seletor de quantidade de cards")
+    console.log("🔍 Estado atual showCardCountSelector:", showCardCountSelector)
     setShowCardCountSelector(true)
-    console.log("✅ Seletor de cards ativado")
+    console.log("✅ Seletor de cards ativado - novo estado:", true)
+    
+    // Verificar se o estado foi atualizado
+    setTimeout(() => {
+      console.log("🔍 Estado showCardCountSelector após 100ms:", showCardCountSelector)
+    }, 100)
   }
 
   const confirmStudyStart = async () => {
@@ -1874,6 +1880,7 @@ export default function FlashcardsPage() {
   return (
     <PagePermissionGuard pageName="flashcards">
       {/* Modal de Seleção de Quantidade de Cards */}
+      {console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)}
       <Dialog open={showCardCountSelector} onOpenChange={setShowCardCountSelector}>
         <DialogContent className="max-w-md">
           <DialogHeader>
