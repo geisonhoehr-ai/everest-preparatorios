@@ -3152,4 +3152,290 @@ export async function getNewCards(userId: string, topicId?: string, limit: numbe
   }
 }
 
+// ========================================
+// SISTEMA DE CATEGORIAS E TAGS
+// ========================================
+
+// Função para obter todas as categorias
+export async function getAllFlashcardCategories() {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Buscando todas as categorias de flashcards`)
+
+  const { data, error } = await supabase
+    .from("flashcard_categories")
+    .select("*")
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar categorias:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Categorias encontradas: ${data?.length || 0}`)
+  return { success: true, data: data || [] }
+}
+
+// Função para obter todas as tags
+export async function getAllFlashcardTags() {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Buscando todas as tags de flashcards`)
+
+  const { data, error } = await supabase
+    .from("flashcard_tags")
+    .select("*")
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao buscar tags:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tags encontradas: ${data?.length || 0}`)
+  return { success: true, data: data || [] }
+}
+
+// Função para criar uma nova categoria
+export async function createFlashcardCategory(userUuid: string, data: {
+  name: string
+  description?: string
+  color: string
+  icon?: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Criando categoria: ${data.name}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para criar categoria")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data: newCategory, error } = await supabase
+    .from("flashcard_categories")
+    .insert({
+      name: data.name.trim(),
+      description: data.description?.trim(),
+      color: data.color,
+      icon: data.icon
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar categoria:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Categoria criada: ${newCategory.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data: newCategory }
+}
+
+// Função para criar uma nova tag
+export async function createFlashcardTag(userUuid: string, data: {
+  name: string
+  color: string
+}) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Criando tag: ${data.name}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para criar tag")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data: newTag, error } = await supabase
+    .from("flashcard_tags")
+    .insert({
+      name: data.name.trim(),
+      color: data.color
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar tag:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tag criada: ${newTag.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data: newTag }
+}
+
+// Função para associar categoria a um flashcard
+export async function addFlashcardCategory(userUuid: string, flashcardId: number, categoryId: number) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Associando categoria ${categoryId} ao flashcard ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para associar categoria")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data, error } = await supabase
+    .from("flashcard_category_relations")
+    .insert({
+      flashcard_id: flashcardId,
+      category_id: categoryId
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao associar categoria:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Categoria associada: ${data.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data }
+}
+
+// Função para associar tag a um flashcard
+export async function addFlashcardTag(userUuid: string, flashcardId: number, tagId: number) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Associando tag ${tagId} ao flashcard ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para associar tag")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { data, error } = await supabase
+    .from("flashcard_tag_relations")
+    .insert({
+      flashcard_id: flashcardId,
+      tag_id: tagId
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao associar tag:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tag associada: ${data.id}`)
+  revalidatePath("/flashcards")
+  return { success: true, data }
+}
+
+// Função para remover categoria de um flashcard
+export async function removeFlashcardCategory(userUuid: string, flashcardId: number, categoryId: number) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Removendo categoria ${categoryId} do flashcard ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para remover categoria")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { error } = await supabase
+    .from("flashcard_category_relations")
+    .delete()
+    .eq("flashcard_id", flashcardId)
+    .eq("category_id", categoryId)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao remover categoria:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Categoria removida`)
+  revalidatePath("/flashcards")
+  return { success: true }
+}
+
+// Função para remover tag de um flashcard
+export async function removeFlashcardTag(userUuid: string, flashcardId: number, tagId: number) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Removendo tag ${tagId} do flashcard ${flashcardId}`)
+
+  // Verificar se o usuário tem acesso
+  const hasAccess = await checkTeacherOrAdminAccess(userUuid)
+  if (!hasAccess) {
+    console.error("❌ [Server Action] Acesso negado para remover tag")
+    return { success: false, error: "Acesso negado" }
+  }
+
+  const { error } = await supabase
+    .from("flashcard_tag_relations")
+    .delete()
+    .eq("flashcard_id", flashcardId)
+    .eq("tag_id", tagId)
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao remover tag:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log(`✅ [Server Action] Tag removida`)
+  revalidatePath("/flashcards")
+  return { success: true }
+}
+
+// Função para obter categorias e tags de um flashcard
+export async function getFlashcardCategoriesAndTags(flashcardId: number) {
+  const supabase = await getSupabase()
+  console.log(`🏷️ [Server Action] Buscando categorias e tags do flashcard ${flashcardId}`)
+
+  try {
+    // Buscar categorias
+    const { data: categories, error: categoriesError } = await supabase
+      .from("flashcard_category_relations")
+      .select(`
+        flashcard_categories (
+          id,
+          name,
+          color,
+          icon
+        )
+      `)
+      .eq("flashcard_id", flashcardId)
+
+    if (categoriesError) {
+      console.error("❌ [Server Action] Erro ao buscar categorias:", categoriesError)
+      return { success: false, error: categoriesError.message }
+    }
+
+    // Buscar tags
+    const { data: tags, error: tagsError } = await supabase
+      .from("flashcard_tag_relations")
+      .select(`
+        flashcard_tags (
+          id,
+          name,
+          color
+        )
+      `)
+      .eq("flashcard_id", flashcardId)
+
+    if (tagsError) {
+      console.error("❌ [Server Action] Erro ao buscar tags:", tagsError)
+      return { success: false, error: tagsError.message }
+    }
+
+    const result = {
+      categories: categories?.map(item => item.flashcard_categories).filter(Boolean) || [],
+      tags: tags?.map(item => item.flashcard_tags).filter(Boolean) || []
+    }
+
+    console.log(`✅ [Server Action] Categorias e tags encontradas:`, result)
+    return { success: true, data: result }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao buscar categorias e tags:", error)
+    return { success: false, error: "Erro inesperado" }
+  }
+}
+
 // Cache buster - Build: ab44064 - Force cache clear - SERVER ACTIONS FILE

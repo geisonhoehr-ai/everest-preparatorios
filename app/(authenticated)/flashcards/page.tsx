@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats } from "../../server-actions"
+import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -69,6 +69,22 @@ interface Flashcard {
   topic_id: string
   question: string
   answer: string
+  categories?: FlashcardCategory[]
+  tags?: FlashcardTag[]
+}
+
+interface FlashcardCategory {
+  id: number
+  name: string
+  description?: string
+  color: string
+  icon?: string
+}
+
+interface FlashcardTag {
+  id: number
+  name: string
+  color: string
 }
 
 export default function FlashcardsPage() {
@@ -104,6 +120,12 @@ export default function FlashcardsPage() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "difficulty" | "progress">("newest")
+  
+  // Estados para categorias e tags
+  const [categories, setCategories] = useState<FlashcardCategory[]>([])
+  const [tags, setTags] = useState<FlashcardTag[]>([])
+  const [isCategoryTagDialogOpen, setIsCategoryTagDialogOpen] = useState(false)
+  const [selectedFlashcardForTags, setSelectedFlashcardForTags] = useState<Flashcard | null>(null)
   
   // Estados para edição inline (admin/teacher)
   const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null)
@@ -365,6 +387,75 @@ export default function FlashcardsPage() {
     }
   }
 
+  const loadCategoriesAndTags = async () => {
+    try {
+      const [categoriesResult, tagsResult] = await Promise.all([
+        getAllFlashcardCategories(),
+        getAllFlashcardTags()
+      ])
+
+      if (categoriesResult.success && categoriesResult.data) {
+        setCategories(categoriesResult.data)
+      }
+
+      if (tagsResult.success && tagsResult.data) {
+        setTags(tagsResult.data)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar categorias e tags:", error)
+    }
+  }
+
+  const handleAddCategoryToFlashcard = async (flashcardId: number, categoryId: number) => {
+    if (!user?.id) return
+
+    try {
+      const result = await addFlashcardCategory(user.id, flashcardId, categoryId)
+      if (result.success) {
+        console.log("✅ Categoria adicionada ao flashcard")
+        // Recarregar categorias do flashcard
+        loadFlashcardCategoriesAndTags(flashcardId)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao adicionar categoria:", error)
+    }
+  }
+
+  const handleAddTagToFlashcard = async (flashcardId: number, tagId: number) => {
+    if (!user?.id) return
+
+    try {
+      const result = await addFlashcardTag(user.id, flashcardId, tagId)
+      if (result.success) {
+        console.log("✅ Tag adicionada ao flashcard")
+        // Recarregar tags do flashcard
+        loadFlashcardCategoriesAndTags(flashcardId)
+      }
+    } catch (error) {
+      console.error("❌ Erro ao adicionar tag:", error)
+    }
+  }
+
+  const loadFlashcardCategoriesAndTags = async (flashcardId: number) => {
+    try {
+      const result = await getFlashcardCategoriesAndTags(flashcardId)
+      if (result.success && result.data) {
+        // Atualizar o flashcard específico com suas categorias e tags
+        setFlashcards(prev => prev.map(flashcard => 
+          flashcard.id === flashcardId 
+            ? { 
+                ...flashcard, 
+                categories: result.data.categories,
+                tags: result.data.tags
+              }
+            : flashcard
+        ))
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar categorias e tags do flashcard:", error)
+    }
+  }
+
   const nextCard = () => {
     if (currentCardIndex < safeFlashcards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1)
@@ -457,6 +548,7 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     loadSubjects()
+    loadCategoriesAndTags()
     if (user?.id) {
       loadProgressStats()
     }
@@ -720,6 +812,42 @@ export default function FlashcardsPage() {
                       <option value="hard">Difícil</option>
                     </select>
                   </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Categoria:
+                    </label>
+                    <select
+                      value={selectedCategory || ""}
+                      onChange={(e) => setSelectedCategory(e.target.value || null)}
+                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                    >
+                      <option value="">Todas</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Tag:
+                    </label>
+                    <select
+                      value={selectedTag || ""}
+                      onChange={(e) => setSelectedTag(e.target.value || null)}
+                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm"
+                    >
+                      <option value="">Todas</option>
+                      {tags.map((tag) => (
+                        <option key={tag.id} value={tag.id.toString()}>
+                          {tag.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -858,6 +986,21 @@ export default function FlashcardsPage() {
                     type="button"
                   >
                     <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setSelectedFlashcardForTags(currentCard)
+                      setIsCategoryTagDialogOpen(true)
+                      loadFlashcardCategoriesAndTags(currentCard.id)
+                    }}
+                    className="h-8 w-8 p-0 hover:bg-purple-100 dark:hover:bg-purple-900 cursor-pointer"
+                    type="button"
+                  >
+                    <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -1146,6 +1289,104 @@ export default function FlashcardsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal para gerenciar categorias e tags */}
+      <Dialog open={isCategoryTagDialogOpen} onOpenChange={setIsCategoryTagDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Categorias e Tags</DialogTitle>
+            <DialogDescription>
+              Organize este flashcard com categorias e tags para facilitar a busca e estudo.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedFlashcardForTags && (
+            <div className="space-y-6">
+              {/* Categorias atuais */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Categorias Atuais</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedFlashcardForTags.categories?.map((category) => (
+                    <Badge 
+                      key={category.id} 
+                      style={{ backgroundColor: category.color, color: 'white' }}
+                      className="px-3 py-1"
+                    >
+                      {category.name}
+                    </Badge>
+                  )) || <span className="text-gray-500">Nenhuma categoria</span>}
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Adicionar Categoria:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <Button
+                        key={category.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddCategoryToFlashcard(selectedFlashcardForTags.id, category.id)}
+                        className="flex items-center gap-2"
+                        style={{ borderColor: category.color, color: category.color }}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tags atuais */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Tags Atuais</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedFlashcardForTags.tags?.map((tag) => (
+                    <Badge 
+                      key={tag.id} 
+                      style={{ backgroundColor: tag.color, color: 'white' }}
+                      className="px-3 py-1"
+                    >
+                      {tag.name}
+                    </Badge>
+                  )) || <span className="text-gray-500">Nenhuma tag</span>}
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Adicionar Tag:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <Button
+                        key={tag.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddTagToFlashcard(selectedFlashcardForTags.id, tag.id)}
+                        className="flex items-center gap-2"
+                        style={{ borderColor: tag.color, color: tag.color }}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end">
+            <Button onClick={() => setIsCategoryTagDialogOpen(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PagePermissionGuard>
   )
 }
