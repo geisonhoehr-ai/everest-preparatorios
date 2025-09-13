@@ -3168,7 +3168,7 @@ interface StudySession {
   correct_answers: number
   incorrect_answers: number
   xp_gained: number
-  session_type: 'review' | 'new' | 'learning' | 'test' | 'timer' | 'goals' | 'intensive' | 'custom'
+  session_type: 'review' | 'new' | 'learning' | 'all' | 'test' | 'timer' | 'goals' | 'intensive' | 'custom'
   study_mode_config?: any
   created_at?: string
 }
