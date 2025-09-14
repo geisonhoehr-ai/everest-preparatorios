@@ -37,7 +37,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Páginas com acesso livre para todos os usuários autenticados
-    const freeAccessPages = ['flashcards', 'quiz']
+    const freeAccessPages = ['flashcards', 'quiz', 'evercast', 'calendario']
     if (freeAccessPages.includes(pageName)) {
       setHasAccess(true)
       setIsLoading(false)
