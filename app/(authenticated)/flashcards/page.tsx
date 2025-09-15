@@ -556,102 +556,86 @@ export default function FlashcardsPage() {
     return (
       <PagePermissionGuard pageName="flashcards">
         <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-5xl mx-auto space-y-4 py-4 px-4">
               
-              {/* Header moderno e elegante */}
-              <div className="relative">
-                {/* Background decorativo */}
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl"></div>
-                
-                <Card className="relative backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-0 shadow-2xl rounded-3xl overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-blue-400 to-purple-400"></div>
-                  
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      {/* Controles à esquerda */}
-                      <div className="flex items-center gap-4">
-                        <Button 
-                          variant="ghost" 
-                          onClick={resetStudy}
-                          className="group bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              {/* Header limpo e funcional */}
+              <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Controles à esquerda */}
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={resetStudy}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        <ArrowRight className="h-4 w-4 rotate-180" />
+                        Sair
+                      </Button>
+                      
+                      {profile?.role === 'admin' && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsAdminMode(!isAdminMode)}
+                          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                         >
-                          <ArrowRight className="h-5 w-5 mr-2 rotate-180 group-hover:animate-pulse" />
-                          Sair
+                          <Settings className="h-4 w-4" />
+                          {isAdminMode ? "Estudo" : "Admin"}
                         </Button>
-                        
-                        {profile?.role === 'admin' && (
-                          <Button
-                            variant="ghost"
-                            onClick={() => setIsAdminMode(!isAdminMode)}
-                            className="group bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            {isAdminMode ? "Modo Estudo" : "Modo Admin"}
-                          </Button>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Informações centrais */}
+                    {/* Informações centrais */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1 text-sm font-medium">
+                          Sessão de Estudo
+                        </Badge>
+                      </div>
+                      
+                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {currentCardIndex + 1} de {flashcards.length}
+                      </h1>
+                      
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {selectedTopic ? formatTopicName(selectedTopic) : ""}
+                      </p>
+                    </div>
+
+                    {/* Stats à direita */}
+                    <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <div className="flex items-center justify-center gap-3 mb-3">
-                          <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 text-sm font-semibold shadow-lg">
-                            📚 Sessão de Estudo
-                          </Badge>
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="font-semibold">{studyStats.correct}</span>
                         </div>
-                        
-                        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                          <p className="text-3xl font-black tracking-tight">
-                            {currentCardIndex + 1} de {flashcards.length}
-                          </p>
-                        </div>
-                        
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                          {selectedTopic ? formatTopicName(selectedTopic) : ""}
-                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Acertos</p>
                       </div>
-
-                      {/* Progresso à direita */}
                       <div className="text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Progresso</p>
-                        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                          <p className="text-2xl font-bold">{Math.round(progress)}%</p>
+                        <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                          <XCircle className="h-4 w-4" />
+                          <span className="font-semibold">{studyStats.incorrect}</span>
                         </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Erros</p>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Barra de progresso moderna */}
-                    <div className="relative mb-4">
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
-                        <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 rounded-full transition-all duration-700 ease-out shadow-lg"
-                          style={{width: `${progress}%`}}
-                        >
-                          <div className="h-full bg-gradient-to-r from-white/30 to-transparent rounded-full"></div>
-                        </div>
-                      </div>
+                  {/* Barra de progresso simples */}
+                  <div className="mt-4">
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
+                        style={{width: `${progress}%`}}
+                      ></div>
                     </div>
-
-                    {/* Stats da sessão modernizados */}
-                    <div className="flex justify-center gap-6">
-                      <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full border border-green-200 dark:border-green-800">
-                        <div className="p-1 bg-green-500 rounded-full">
-                          <CheckCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="font-bold text-green-700 dark:text-green-300">{studyStats.correct}</span>
-                        <span className="text-sm text-green-600 dark:text-green-400">acertos</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 px-4 py-2 rounded-full border border-red-200 dark:border-red-800">
-                        <div className="p-1 bg-red-500 rounded-full">
-                          <XCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="font-bold text-red-700 dark:text-red-300">{studyStats.incorrect}</span>
-                        <span className="text-sm text-red-600 dark:text-red-400">erros</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                      {Math.round(progress)}% concluído
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
               {flashcardError && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -665,81 +649,79 @@ export default function FlashcardsPage() {
                 </div>
               ) : flashcards.length > 0 ? (
                 <div className="space-y-6">
-                  {/* Card principal ultra moderno */}
-                  <div className="relative">
-                    {/* Background decorativo para o card */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-blue-400/20 to-purple-400/20 rounded-3xl blur-2xl transform rotate-1"></div>
-                    
-                    <Card className="relative backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-0 shadow-2xl rounded-3xl overflow-hidden transform transition-all duration-500 hover:shadow-3xl">
-                      <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-400 via-blue-400 to-purple-400"></div>
-                      
-                      <CardContent className="p-8 flex flex-col justify-center items-center text-center min-h-[350px]">
+                  {/* Card principal elegante e limpo */}
+                  <div className="max-w-4xl mx-auto">
+                    <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+                      <CardContent className="p-8 sm:p-12">
                         {!showAnswer ? (
-                          <div className="space-y-6 max-w-2xl">
-                            {/* Ícone com animação */}
-                            <div className="flex items-center justify-center mb-4">
-                              <div className="p-4 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full shadow-2xl animate-pulse">
-                                <Brain className="h-10 w-10 text-white" />
+                          <div className="text-center space-y-8">
+                            {/* Header do card */}
+                            <div className="flex items-center justify-center mb-6">
+                              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                                <Brain className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                               </div>
                             </div>
                             
-                            {/* Pergunta estilizada */}
+                            {/* Pergunta */}
                             <div className="space-y-4">
-                              <h2 className="text-3xl font-black leading-tight bg-gradient-to-r from-gray-800 via-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                              <div className="inline-flex items-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300">
+                                Pergunta
+                              </div>
+                              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-relaxed">
                                 {currentCard.question}
                               </h2>
                             </div>
                             
-                            {/* Botão de mostrar resposta premium */}
-                            <div className="pt-4">
+                            {/* Botão de mostrar resposta */}
+                            <div className="pt-6">
                               <Button 
                                 onClick={() => setShowAnswer(true)}
-                                className="group bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600 text-white px-10 py-4 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-3xl transform active:scale-95"
+                                size="lg"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                               >
                                 <div className="flex items-center gap-3">
+                                  <Eye className="h-5 w-5" />
                                   <span>Mostrar Resposta</span>
-                                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform duration-300" />
                                 </div>
                               </Button>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-6 max-w-3xl">
-                            {/* Ícone da resposta */}
-                            <div className="flex items-center justify-center mb-4">
-                              <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-2xl animate-bounce">
-                                <BookOpen className="h-10 w-10 text-white" />
+                          <div className="space-y-8">
+                            {/* Header da resposta */}
+                            <div className="flex items-center justify-center mb-6">
+                              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                <BookOpen className="h-8 w-8 text-green-600 dark:text-green-400" />
                               </div>
                             </div>
                             
-                            {/* Área da resposta */}
-                            <div className="space-y-6">
-                              <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 px-6 py-3 rounded-2xl border border-blue-200 dark:border-blue-700">
-                                <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300">💡 Resposta</h3>
-                              </div>
-                              
-                              <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-inner">
-                                <p className="text-2xl leading-relaxed font-bold bg-gradient-to-r from-gray-800 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                  {currentCard.answer}
-                                </p>
-                              </div>
+                            {/* Pergunta (repetida) */}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+                              <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Pergunta:</div>
+                              <p className="text-lg text-gray-800 dark:text-gray-200">{currentCard.question}</p>
                             </div>
                             
-                            {/* Botões de ação premium */}
-                            <div className="flex gap-6 justify-center pt-4">
+                            {/* Resposta */}
+                            <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-xl border border-green-200 dark:border-green-700">
+                              <div className="text-sm font-medium text-green-700 dark:text-green-300 mb-3">Resposta:</div>
+                              <p className="text-xl font-semibold text-gray-900 dark:text-white leading-relaxed">
+                                {currentCard.answer}
+                              </p>
+                            </div>
+                            
+                            {/* Botões de avaliação */}
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
                               <Button 
                                 onClick={() => handleAnswer(false)}
                                 variant="outline"
                                 size="lg"
-                                className="group px-8 py-4 text-lg font-bold border-3 border-red-300 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 rounded-2xl bg-red-50 dark:bg-red-900/20"
+                                className="flex-1 max-w-xs bg-red-50 hover:bg-red-100 border-red-200 text-red-700 hover:text-red-800 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:border-red-700 dark:text-red-300 dark:hover:text-red-200 px-6 py-4 text-lg font-semibold rounded-xl transition-all duration-200 hover:scale-105"
                               >
-                                <div className="flex items-center gap-4">
-                                  <div className="p-2 bg-red-500 group-hover:bg-red-600 rounded-full transition-colors duration-300">
-                                    <XCircle className="h-6 w-6 text-white" />
-                                  </div>
+                                <div className="flex items-center gap-3">
+                                  <XCircle className="h-6 w-6" />
                                   <div className="text-left">
                                     <div>Errei</div>
-                                    <div className="text-sm opacity-75">(Tecla 1)</div>
+                                    <div className="text-sm font-normal opacity-75">Preciso estudar mais</div>
                                   </div>
                                 </div>
                               </Button>
@@ -747,15 +729,13 @@ export default function FlashcardsPage() {
                               <Button 
                                 onClick={() => handleAnswer(true)}
                                 size="lg"
-                                className="group px-8 py-4 text-lg font-bold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 rounded-2xl shadow-xl"
+                                className="flex-1 max-w-xs bg-green-600 hover:bg-green-700 text-white px-6 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                               >
-                                <div className="flex items-center gap-4">
-                                  <div className="p-2 bg-green-600 group-hover:bg-green-700 rounded-full transition-colors duration-300">
-                                    <CheckCircle className="h-6 w-6 text-white" />
-                                  </div>
+                                <div className="flex items-center gap-3">
+                                  <CheckCircle className="h-6 w-6" />
                                   <div className="text-left">
                                     <div>Acertei</div>
-                                    <div className="text-sm opacity-75">(Tecla 2)</div>
+                                    <div className="text-sm font-normal opacity-90">Conheço bem</div>
                                   </div>
                                 </div>
                               </Button>
@@ -824,111 +804,105 @@ export default function FlashcardsPage() {
     return (
       <PagePermissionGuard pageName="flashcards">
         <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-4xl mx-auto space-y-6 py-8 px-4">
               
-              {/* Header de conclusão premium */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-orange-400/20 to-red-400/20 rounded-3xl blur-3xl"></div>
-                
-                <Card className="relative backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-0 shadow-2xl rounded-3xl overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400"></div>
-                  
-                  <CardContent className="p-8 text-center">
-                    <div className="space-y-6">
-                      {/* Ícone de troféu animado */}
-                      <div className="flex items-center justify-center">
-                        <div className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-2xl animate-bounce">
-                          <Trophy className="h-16 w-16 text-white" />
-                        </div>
-                      </div>
-                      
-                      {/* Título principal */}
-                      <div className="space-y-2">
-                        <h1 className="text-4xl font-black bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
-                          Estudo Concluído!
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">
-                          Você completou {flashcards.length} flashcards com sucesso
-                        </p>
+              {/* Header de conclusão limpo */}
+              <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl">
+                <CardContent className="p-8 text-center">
+                  <div className="space-y-6">
+                    {/* Ícone de troféu */}
+                    <div className="flex items-center justify-center">
+                      <div className="p-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                        <Trophy className="h-12 w-12 text-yellow-600 dark:text-yellow-400" />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    
+                    {/* Título principal */}
+                    <div className="space-y-2">
+                      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        Estudo Concluído!
+                      </h1>
+                      <p className="text-lg text-gray-600 dark:text-gray-400">
+                        Você completou {flashcards.length} flashcards
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Cards de estatísticas premium */}
+              {/* Cards de estatísticas limpos */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-700 shadow-xl rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300">
+                <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
                   <CardContent className="p-6 text-center">
-                    <div className="p-4 bg-green-500 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
-                      <CheckCircle className="h-8 w-8 text-white" />
+                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
-                    <p className="text-3xl font-black text-green-600 dark:text-green-400 mb-1">{studyStats.correct}</p>
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-300">Acertos</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{studyStats.correct}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Acertos</p>
                   </CardContent>
                 </Card>
                 
-                <Card className="bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/20 dark:to-pink-900/20 border-red-200 dark:border-red-700 shadow-xl rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300">
+                <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
                   <CardContent className="p-6 text-center">
-                    <div className="p-4 bg-red-500 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
-                      <XCircle className="h-8 w-8 text-white" />
+                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                      <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
                     </div>
-                    <p className="text-3xl font-black text-red-600 dark:text-red-400 mb-1">{studyStats.incorrect}</p>
-                    <p className="text-sm font-semibold text-red-700 dark:text-red-300">Erros</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{studyStats.incorrect}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Erros</p>
                   </CardContent>
                 </Card>
                 
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-700 shadow-xl rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300">
+                <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
                   <CardContent className="p-6 text-center">
-                    <div className="p-4 bg-blue-500 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-lg">
-                      <Target className="h-8 w-8 text-white" />
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                      <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <p className="text-3xl font-black text-blue-600 dark:text-blue-400 mb-1">{accuracy}%</p>
-                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Precisão</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{accuracy}%</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Precisão</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Mensagem de motivação baseada na performance */}
-              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-700 shadow-xl rounded-2xl overflow-hidden">
+              {/* Mensagem de motivação simples */}
+              <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
                 <CardContent className="p-6 text-center">
                   {accuracy >= 80 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-12 h-12 mx-auto flex items-center justify-center">
                         <Star className="h-6 w-6 text-green-600" />
                       </div>
-                      <h3 className="text-xl font-bold text-green-700 dark:text-green-300">Excelente Performance!</h3>
-                      <p className="text-green-600 dark:text-green-400">Você demonstrou um domínio excepcional do conteúdo!</p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Excelente Performance!</h3>
+                      <p className="text-gray-600 dark:text-gray-400">Você demonstrou um domínio excepcional do conteúdo!</p>
                     </div>
                   ) : accuracy >= 60 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full w-12 h-12 mx-auto flex items-center justify-center">
                         <TrendingUp className="h-6 w-6 text-blue-600" />
                       </div>
-                      <h3 className="text-xl font-bold text-blue-700 dark:text-blue-300">Boa Performance!</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Continue praticando para melhorar ainda mais!</p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Boa Performance!</h3>
+                      <p className="text-gray-600 dark:text-gray-400">Continue praticando para melhorar ainda mais!</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full w-12 h-12 mx-auto flex items-center justify-center">
                         <RefreshCw className="h-6 w-6 text-orange-600" />
                       </div>
-                      <h3 className="text-xl font-bold text-orange-700 dark:text-orange-300">Continue Praticando!</h3>
-                      <p className="text-orange-600 dark:text-orange-400">A prática leva à perfeição. Tente novamente!</p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Continue Praticando!</h3>
+                      <p className="text-gray-600 dark:text-gray-400">A prática leva à perfeição. Tente novamente!</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Botões de ação premium */}
+              {/* Botões de ação simples */}
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button 
                   onClick={resetStudy} 
-                  className="group bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white px-8 py-4 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
-                    <RotateCcw className="h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
+                    <RotateCcw className="h-5 w-5" />
                     <span>Voltar aos Tópicos</span>
                   </div>
                 </Button>
@@ -936,10 +910,10 @@ export default function FlashcardsPage() {
                 <Button 
                   onClick={() => startStudy(selectedTopic!)}
                   variant="outline"
-                  className="group border-2 border-purple-300 text-purple-600 hover:bg-purple-500 hover:text-white px-8 py-4 text-lg font-bold rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="border-2 border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 px-8 py-3 text-lg font-semibold rounded-xl transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
-                    <RefreshCw className="h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
+                    <RefreshCw className="h-5 w-5" />
                     <span>Estudar Novamente</span>
                   </div>
                 </Button>
@@ -953,59 +927,50 @@ export default function FlashcardsPage() {
 
   return (
     <PagePermissionGuard pageName="flashcards">
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <div className="max-w-6xl mx-auto space-y-6 py-6 px-4">
+        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="max-w-6xl mx-auto space-y-6 py-6 px-4">
             
-            {/* Header premium */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl"></div>
-              
-              <Card className="relative backdrop-blur-sm bg-white/80 dark:bg-gray-800/80 border-0 shadow-2xl rounded-3xl overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-blue-400 to-purple-400"></div>
-                
-                <CardContent className="p-8">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl shadow-lg">
-                          <BookOpenText className="h-8 w-8 text-white" />
-                        </div>
-                        <div>
-                          <h1 className="text-4xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Flashcards
-                          </h1>
-                          <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">
-                            Escolha uma matéria e tópico para estudar
-                          </p>
-                        </div>
+            {/* Header limpo */}
+            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
+              <CardContent className="p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                        <BookOpenText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                       </div>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 text-sm font-semibold shadow-lg">
-                          🎯 Dados Reais do Supabase
-                        </Badge>
-                        <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 text-sm font-semibold shadow-lg">
-                          ✨ Design Premium
-                        </Badge>
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          Flashcards
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Escolha uma matéria e tópico para estudar
+                        </p>
                       </div>
                     </div>
                     
-                    {profile?.role === 'admin' && (
-                      <Button
-                        onClick={() => setShowCreateModal(true)}
-                        className="group bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 text-lg font-bold rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
-                          <span>Criar Flashcard</span>
-                        </div>
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-3 py-1 text-sm font-medium">
+                        Dados Reais
+                      </Badge>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  
+                  {profile?.role === 'admin' && (
+                    <Button
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span>Criar Flashcard</span>
+                      </div>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
               
           {flashcardError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
