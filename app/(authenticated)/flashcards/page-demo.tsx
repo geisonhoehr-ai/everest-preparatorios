@@ -28,7 +28,6 @@ import {
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
 import { useAuth } from "@/context/auth-context"
-import { getAllTopicIds, getFlashcardsByTopic, createFlashcard, updateFlashcard, deleteFlashcard } from "../../../actions-flashcards-simples"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -47,7 +46,116 @@ interface Topic {
   flashcardCount: number
 }
 
-export default function FlashcardsPageSimples() {
+// Dados mockados baseados nos topic_ids reais
+const MOCK_TOPICS: Topic[] = [
+  {
+    id: "lei-13954-2019",
+    name: "Lei 13.954/2019",
+    description: "Lei de modernização do ensino médio",
+    flashcardCount: 15
+  },
+  {
+    id: "regencia",
+    name: "Regência",
+    description: "Regência verbal e nominal",
+    flashcardCount: 25
+  },
+  {
+    id: "concordancia",
+    name: "Concordância",
+    description: "Concordância verbal e nominal",
+    flashcardCount: 30
+  },
+  {
+    id: "ica-111-1",
+    name: "ICA 111-1",
+    description: "Instrução de Comando da Aeronáutica",
+    flashcardCount: 20
+  },
+  {
+    id: "portaria-gm-md-1143-2022",
+    name: "Portaria GM/MD 1143/2022",
+    description: "Portaria do Ministério da Defesa",
+    flashcardCount: 18
+  },
+  {
+    id: "sintaxe-termos-acessorios",
+    name: "Sintaxe - Termos Acessórios",
+    description: "Adjunto adnominal, adjunto adverbial, aposto",
+    flashcardCount: 22
+  },
+  {
+    id: "semantica-estilistica",
+    name: "Semântica e Estilística",
+    description: "Significado das palavras e estilo",
+    flashcardCount: 28
+  },
+  {
+    id: "sintaxe-termos-essenciais",
+    name: "Sintaxe - Termos Essenciais",
+    description: "Sujeito e predicado",
+    flashcardCount: 35
+  },
+  {
+    id: "ortografia",
+    name: "Ortografia",
+    description: "Regras de escrita das palavras",
+    flashcardCount: 40
+  },
+  {
+    id: "acentuacao-grafica",
+    name: "Acentuação Gráfica",
+    description: "Regras de acentuação",
+    flashcardCount: 32
+  }
+]
+
+const MOCK_FLASHCARDS: { [key: string]: Flashcard[] } = {
+  "lei-13954-2019": [
+    {
+      id: 1,
+      topic_id: "lei-13954-2019",
+      question: "O que estabelece a Lei 13.954/2019?",
+      answer: "A Lei 13.954/2019 estabelece a modernização do ensino médio, criando o programa de fomento à implementação de escolas de ensino médio em tempo integral."
+    },
+    {
+      id: 2,
+      topic_id: "lei-13954-2019",
+      question: "Qual o objetivo principal da Lei 13.954/2019?",
+      answer: "O objetivo é ampliar a oferta de vagas em escolas de ensino médio em tempo integral, com jornada de pelo menos 7 horas diárias."
+    }
+  ],
+  "regencia": [
+    {
+      id: 3,
+      topic_id: "regencia",
+      question: "O que é regência verbal?",
+      answer: "Regência verbal é a relação de dependência que se estabelece entre o verbo e seus complementos, determinando a preposição adequada."
+    },
+    {
+      id: 4,
+      topic_id: "regencia",
+      question: "Qual a regência do verbo 'aspirar'?",
+      answer: "O verbo 'aspirar' pode reger preposição 'a' (aspirar a algo) ou não reger preposição (aspirar ar)."
+    }
+  ],
+  "concordancia": [
+    {
+      id: 5,
+      topic_id: "concordancia",
+      question: "O que é concordância verbal?",
+      answer: "Concordância verbal é a relação de harmonia entre o verbo e o sujeito, em número e pessoa."
+    },
+    {
+      id: 6,
+      topic_id: "concordancia",
+      question: "Como concordar com sujeito composto?",
+      answer: "Com sujeito composto, o verbo concorda no plural, exceto quando os núcleos são sinônimos ou quando há ideia de reciprocidade."
+    }
+  ]
+}
+
+export default function FlashcardsPageDemo() {
   const { user, profile } = useAuth()
   
   const [topics, setTopics] = useState<Topic[]>([])
@@ -80,47 +188,11 @@ export default function FlashcardsPageSimples() {
       setIsLoading(true)
       console.log("📚 Carregando tópicos dos flashcards...")
       
-      // Dados reais dos topic_ids que você forneceu
-      const realTopicIds = [
-        "lei-13954-2019",
-        "regencia", 
-        "concordancia",
-        "ica-111-1",
-        "portaria-gm-md-1143-2022",
-        "sintaxe-termos-acessorios",
-        "semantica-estilistica",
-        "sintaxe-termos-essenciais",
-        "ortografia",
-        "acentuacao-grafica"
-      ]
+      // Simular carregamento
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
-      console.log("✅ Usando topic IDs reais:", realTopicIds.length)
-      
-      // Criar objetos de tópicos com contagem de flashcards
-      const topicsWithCount = await Promise.all(
-        realTopicIds.map(async (topicId) => {
-          try {
-            const flashcards = await getFlashcardsByTopic(topicId, 1)
-            return {
-              id: topicId,
-              name: formatTopicName(topicId),
-              description: `Estude e pratique ${formatTopicName(topicId).toLowerCase()}`,
-              flashcardCount: flashcards.length || Math.floor(Math.random() * 30) + 10 // Fallback
-            }
-          } catch (error) {
-            console.log(`⚠️ Erro ao carregar flashcards para ${topicId}, usando fallback`)
-            return {
-              id: topicId,
-              name: formatTopicName(topicId),
-              description: `Estude e pratique ${formatTopicName(topicId).toLowerCase()}`,
-              flashcardCount: Math.floor(Math.random() * 30) + 10
-            }
-          }
-        })
-      )
-      
-      console.log("✅ Tópicos formatados:", topicsWithCount.length)
-      setTopics(topicsWithCount)
+      console.log("✅ Tópicos carregados:", MOCK_TOPICS.length)
+      setTopics(MOCK_TOPICS)
       
     } catch (error) {
       console.error("❌ Erro ao carregar tópicos:", error)
@@ -130,41 +202,22 @@ export default function FlashcardsPageSimples() {
     }
   }
 
-  const formatTopicName = (topicId: string): string => {
-    return topicId
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-  }
-
   const loadFlashcards = async (topicId: string) => {
     try {
       setIsLoading(true)
       console.log(`📚 Carregando flashcards para tópico: ${topicId}`)
       
-      // Tentar carregar do banco primeiro
-      try {
-        const flashcardsData = await getFlashcardsByTopic(topicId, 50)
-        console.log("✅ Flashcards carregados do banco:", flashcardsData.length)
-        
-        if (flashcardsData.length > 0) {
-          setFlashcards(flashcardsData)
-          setFlashcardError(null)
-          return
-        }
-      } catch (error) {
-        console.log("⚠️ Erro ao carregar do banco, usando dados mockados")
-      }
+      // Simular carregamento
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Fallback: dados mockados baseados nos topic_ids reais
-      const mockFlashcards = getMockFlashcardsForTopic(topicId)
-      console.log("📚 Usando flashcards mockados:", mockFlashcards.length)
+      const flashcardsData = MOCK_FLASHCARDS[topicId] || []
+      console.log("✅ Flashcards carregados:", flashcardsData.length)
       
-      if (mockFlashcards.length === 0) {
+      if (flashcardsData.length === 0) {
         setFlashcardError("Nenhum flashcard encontrado para este tópico")
         setFlashcards([])
       } else {
-        setFlashcards(mockFlashcards)
+        setFlashcards(flashcardsData)
         setFlashcardError(null)
       }
       
@@ -175,166 +228,6 @@ export default function FlashcardsPageSimples() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  // Função para obter flashcards mockados baseados nos topic_ids reais
-  const getMockFlashcardsForTopic = (topicId: string): Flashcard[] => {
-    const mockData: { [key: string]: Flashcard[] } = {
-      "lei-13954-2019": [
-        {
-          id: 1,
-          topic_id: "lei-13954-2019",
-          question: "O que estabelece a Lei 13.954/2019?",
-          answer: "A Lei 13.954/2019 estabelece a modernização do ensino médio, criando o programa de fomento à implementação de escolas de ensino médio em tempo integral."
-        },
-        {
-          id: 2,
-          topic_id: "lei-13954-2019",
-          question: "Qual o objetivo principal da Lei 13.954/2019?",
-          answer: "O objetivo é ampliar a oferta de vagas em escolas de ensino médio em tempo integral, com jornada de pelo menos 7 horas diárias."
-        },
-        {
-          id: 3,
-          topic_id: "lei-13954-2019",
-          question: "Quando foi sancionada a Lei 13.954/2019?",
-          answer: "A Lei 13.954/2019 foi sancionada em 20 de dezembro de 2019."
-        }
-      ],
-      "regencia": [
-        {
-          id: 4,
-          topic_id: "regencia",
-          question: "O que é regência verbal?",
-          answer: "Regência verbal é a relação de dependência que se estabelece entre o verbo e seus complementos, determinando a preposição adequada."
-        },
-        {
-          id: 5,
-          topic_id: "regencia",
-          question: "Qual a regência do verbo 'aspirar'?",
-          answer: "O verbo 'aspirar' pode reger preposição 'a' (aspirar a algo) ou não reger preposição (aspirar ar)."
-        },
-        {
-          id: 6,
-          topic_id: "regencia",
-          question: "Como se classifica a regência do verbo 'obedecer'?",
-          answer: "O verbo 'obedecer' é transitivo indireto, regendo preposição 'a' (obedecer a alguém)."
-        }
-      ],
-      "concordancia": [
-        {
-          id: 7,
-          topic_id: "concordancia",
-          question: "O que é concordância verbal?",
-          answer: "Concordância verbal é a relação de harmonia entre o verbo e o sujeito, em número e pessoa."
-        },
-        {
-          id: 8,
-          topic_id: "concordancia",
-          question: "Como concordar com sujeito composto?",
-          answer: "Com sujeito composto, o verbo concorda no plural, exceto quando os núcleos são sinônimos ou quando há ideia de reciprocidade."
-        },
-        {
-          id: 9,
-          topic_id: "concordancia",
-          question: "Qual a concordância com 'a maioria dos alunos'?",
-          answer: "Com expressões partitivas como 'a maioria dos alunos', o verbo pode concordar com o núcleo do sujeito (singular) ou com o complemento (plural)."
-        }
-      ],
-      "ica-111-1": [
-        {
-          id: 10,
-          topic_id: "ica-111-1",
-          question: "O que é a ICA 111-1?",
-          answer: "A ICA 111-1 é a Instrução de Comando da Aeronáutica que estabelece normas para o ensino militar."
-        },
-        {
-          id: 11,
-          topic_id: "ica-111-1",
-          question: "Qual o objetivo da ICA 111-1?",
-          answer: "O objetivo é padronizar o ensino militar na Aeronáutica, estabelecendo diretrizes pedagógicas e administrativas."
-        }
-      ],
-      "portaria-gm-md-1143-2022": [
-        {
-          id: 12,
-          topic_id: "portaria-gm-md-1143-2022",
-          question: "O que estabelece a Portaria GM/MD 1143/2022?",
-          answer: "A Portaria GM/MD 1143/2022 estabelece normas para o ensino militar no âmbito do Ministério da Defesa."
-        }
-      ],
-      "sintaxe-termos-acessorios": [
-        {
-          id: 13,
-          topic_id: "sintaxe-termos-acessorios",
-          question: "O que são termos acessórios da oração?",
-          answer: "Termos acessórios são aqueles que não são essenciais para a estrutura da oração, mas acrescentam informações: adjunto adnominal, adjunto adverbial e aposto."
-        },
-        {
-          id: 14,
-          topic_id: "sintaxe-termos-acessorios",
-          question: "Qual a diferença entre adjunto adnominal e adjunto adverbial?",
-          answer: "Adjunto adnominal modifica substantivo (casa grande), adjunto adverbial modifica verbo, adjetivo ou advérbio (correu rapidamente)."
-        }
-      ],
-      "semantica-estilistica": [
-        {
-          id: 15,
-          topic_id: "semantica-estilistica",
-          question: "O que é semântica?",
-          answer: "Semântica é o estudo do significado das palavras e das relações de sentido entre elas."
-        },
-        {
-          id: 16,
-          topic_id: "semantica-estilistica",
-          question: "Qual a diferença entre denotação e conotação?",
-          answer: "Denotação é o sentido literal da palavra, conotação são os sentidos figurados e subjetivos que a palavra pode adquirir."
-        }
-      ],
-      "sintaxe-termos-essenciais": [
-        {
-          id: 17,
-          topic_id: "sintaxe-termos-essenciais",
-          question: "Quais são os termos essenciais da oração?",
-          answer: "Os termos essenciais da oração são o sujeito e o predicado, elementos fundamentais para a estrutura da frase."
-        },
-        {
-          id: 18,
-          topic_id: "sintaxe-termos-essenciais",
-          question: "O que é predicado?",
-          answer: "Predicado é tudo o que se declara sobre o sujeito, contendo o verbo e seus complementos."
-        }
-      ],
-      "ortografia": [
-        {
-          id: 19,
-          topic_id: "ortografia",
-          question: "Qual a regra para o uso de 's' e 'z'?",
-          answer: "Use 's' entre vogais (casa, mesa) e 'z' no final de palavras oxítonas terminadas em 'ez' (rapaz, capaz)."
-        },
-        {
-          id: 20,
-          topic_id: "ortografia",
-          question: "Quando usar 'ss'?",
-          answer: "Use 'ss' entre vogais quando o som for de 's' (passo, massa, grosso)."
-        }
-      ],
-      "acentuacao-grafica": [
-        {
-          id: 21,
-          topic_id: "acentuacao-grafica",
-          question: "Quando acentuar oxítonas?",
-          answer: "Oxítonas são acentuadas quando terminam em A(s), E(s), O(s), EM, ENS (café, você, avô, também, parabéns)."
-        },
-        {
-          id: 22,
-          topic_id: "acentuacao-grafica",
-          question: "Quando acentuar paroxítonas?",
-          answer: "Paroxítonas são acentuadas quando terminam em R, L, N, X, I(s), U(s), Ã(s), ÃO(s), PS, Ã(s), ÃO(s) (mármore, fácil, hífen, tórax, júri, bônus, ímã, órfão)."
-        }
-      ]
-    }
-    
-    return mockData[topicId] || []
   }
 
   const startStudy = (topicId: string) => {
@@ -400,24 +293,19 @@ export default function FlashcardsPageSimples() {
     if (!editingFlashcard) return
     
     try {
-      const result = await updateFlashcard(
-        editingFlashcard.id,
-        editForm.question,
-        editForm.answer
-      )
+      // Simular salvamento
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      if (result.success) {
-        // Atualizar o flashcard na lista
-        setFlashcards(prev => prev.map(f => 
-          f.id === editingFlashcard.id 
-            ? { ...f, question: editForm.question, answer: editForm.answer }
-            : f
-        ))
-        setIsEditDialogOpen(false)
-        setEditingFlashcard(null)
-      } else {
-        alert("Erro ao salvar: " + result.error)
-      }
+      // Atualizar o flashcard na lista
+      setFlashcards(prev => prev.map(f => 
+        f.id === editingFlashcard.id 
+          ? { ...f, question: editForm.question, answer: editForm.answer }
+          : f
+      ))
+      setIsEditDialogOpen(false)
+      setEditingFlashcard(null)
+      
+      console.log("✅ Flashcard salvo com sucesso!")
     } catch (error) {
       console.error("Erro ao salvar flashcard:", error)
       alert("Erro ao salvar flashcard")
@@ -428,14 +316,13 @@ export default function FlashcardsPageSimples() {
     if (!confirm("Tem certeza que deseja deletar este flashcard?")) return
     
     try {
-      const result = await deleteFlashcard(flashcardId)
+      // Simular exclusão
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      if (result.success) {
-        // Remover o flashcard da lista
-        setFlashcards(prev => prev.filter(f => f.id !== flashcardId))
-      } else {
-        alert("Erro ao deletar: " + result.error)
-      }
+      // Remover o flashcard da lista
+      setFlashcards(prev => prev.filter(f => f.id !== flashcardId))
+      
+      console.log("✅ Flashcard deletado com sucesso!")
     } catch (error) {
       console.error("Erro ao deletar flashcard:", error)
       alert("Erro ao deletar flashcard")
@@ -465,13 +352,13 @@ export default function FlashcardsPageSimples() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                  Flashcards
+                  Flashcards - Modo Demo
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-                  Escolha um tópico para estudar
+                  Escolha um tópico para estudar (dados de demonstração)
                 </p>
-                <Badge className="mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  🎯 Dados Reais do Supabase
+                <Badge className="mt-2 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                  🎯 Interface Funcional - Dados Mockados
                 </Badge>
               </div>
             </div>
@@ -562,11 +449,14 @@ export default function FlashcardsPageSimples() {
               </Button>
               <div className="text-center order-first sm:order-none">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatTopicName(selectedTopic || '')}
+                  {topics.find(t => t.id === selectedTopic)?.name}
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                   Flashcard {currentCardIndex + 1} de {flashcards.length}
                 </p>
+                <Badge className="mt-1 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                  Demo
+                </Badge>
               </div>
               <div className="w-full sm:w-32 flex items-center gap-2 order-last sm:order-none">
                 <Progress value={progress} className="h-2 flex-1" />
@@ -689,6 +579,9 @@ export default function FlashcardsPageSimples() {
               <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
                 Parabéns por completar o estudo!
               </p>
+              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                🎯 Modo Demo - Interface Funcional
+              </Badge>
             </div>
 
             <div className="max-w-2xl mx-auto">
