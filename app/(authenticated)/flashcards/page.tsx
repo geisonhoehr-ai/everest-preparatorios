@@ -1957,27 +1957,16 @@ export default function FlashcardsPage() {
     )
   }
 
-  // Debug: verificar estado do modal
-  console.log("🔧 [Debug] Estado do modal:", { isEditDialogOpen, editingFlashcard })
-  console.log("🔍 Renderizando modal - showCardCountSelector:", showCardCountSelector)
-  console.log("🔍 Modal deve aparecer?", showCardCountSelector ? "SIM" : "NÃO")
-  console.log("🔍 Tipo de showCardCountSelector:", typeof showCardCountSelector)
-  console.log("🔍 Valor exato:", JSON.stringify(showCardCountSelector))
-  console.log("🔍 ANTES DA CONDIÇÃO - showCardCountSelector:", showCardCountSelector)
-  console.log("🟣 MODAL SENDO RENDERIZADO!")
 
   return (
     <PagePermissionGuard pageName="flashcards">
-      {/* Modal de Seleção de Quantidade de Cards - VERSÃO SIMPLES */}
-      {/* TESTE: Modal sempre visível para debug */}
-      {true && (
+      {/* Modal de Seleção de Quantidade de Cards */}
+      {showCardCountSelector && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           style={{ zIndex: 9999 }}
           onClick={(e) => {
-            console.log("🟣 MODAL CLICADO!")
             if (e.target === e.currentTarget) {
-              console.log("🟣 Clique no fundo do modal")
               setShowCardCountSelector(false)
             }
           }}
@@ -1985,13 +1974,9 @@ export default function FlashcardsPage() {
           <div 
             className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full"
             onClick={(e) => {
-              console.log("🟣 CONTEÚDO DO MODAL CLICADO!")
               e.stopPropagation()
             }}
           >
-            <div style={{backgroundColor: 'red', color: 'white', padding: '10px', position: 'fixed', top: '10px', left: '10px', zIndex: 10000}}>
-              🟣 MODAL VISÍVEL - TESTE
-            </div>
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Target className="h-5 w-5" />
               Quantos flashcards estudar?
