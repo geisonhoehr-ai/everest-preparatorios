@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react"
 
 interface RoleGuardProps {
   children: React.ReactNode
-  allowedRoles: ('admin' | 'teacher' | 'student')[]
+  allowedRoles: ('administrator' | 'teacher' | 'student')[]
   fallbackPath?: string
 }
 
