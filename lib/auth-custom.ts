@@ -1,7 +1,6 @@
 "use client"
 
 import { createClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase-server'
 
 // Tipos para a nova estrutura de autenticação
 export interface CustomUser {
@@ -352,17 +351,5 @@ async function getClientIP(): Promise<string> {
   }
 }
 
-// Função para verificar se usuário está autenticado (server-side)
-export async function getServerUser(): Promise<CustomUser | null> {
-  try {
-    const supabase = await createServerClient()
-    
-    // Em uma implementação real, você extrairia o token dos cookies
-    // Por enquanto, retornar null para indicar que precisa ser implementado
-    return null
-    
-  } catch (error) {
-    console.error('❌ [AUTH] Erro ao verificar usuário no servidor:', error)
-    return null
-  }
-}
+// Nota: Funções server-side devem ser implementadas separadamente
+// para evitar conflitos entre client e server components
