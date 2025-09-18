@@ -111,7 +111,7 @@ export default function FlashcardPageRefactored() {
 
           {/* Seção de Administração */}
           {isTeacherOrAdmin && (
-            <RoleGuard allowedRoles={['teacher', 'admin']}>
+            <RoleGuard allowedRoles={['teacher', 'administrator']}>
               <div className="mt-12 max-w-6xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-4">
