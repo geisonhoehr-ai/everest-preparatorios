@@ -1043,7 +1043,7 @@ export default function FlashcardsPage() {
 
   if (isLoading && studyMode === "select") {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -1058,7 +1058,7 @@ export default function FlashcardsPage() {
   if (!selectedSubject) {
     console.log("🎯 Renderizando seleção de matérias - selectedSubject:", selectedSubject)
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div>
@@ -1198,7 +1198,7 @@ export default function FlashcardsPage() {
   if (studyMode === "select") {
     console.log("🎯 Renderizando seleção de tópicos - selectedSubject:", selectedSubject)
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -1574,7 +1574,7 @@ export default function FlashcardsPage() {
     const progress = ((currentCardIndex + 1) / safeFlashcards.length) * 100
 
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
             <Button 
@@ -1837,7 +1837,7 @@ export default function FlashcardsPage() {
   // Tratar quando não há flashcards disponíveis
   if (studyMode === "study" && safeFlashcards.length === 0) {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
             <Button 
@@ -1893,7 +1893,7 @@ export default function FlashcardsPage() {
     const accuracy = totalCards > 0 ? (sessionStats.correct / totalCards) * 100 : 0
 
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           <div className="text-center">
             <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
