@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const { signIn, user } = useAuth()
 
   useEffect(() => {
     // Forçar tema dark e limpar cache
@@ -49,8 +50,6 @@ export default function LoginPage() {
   }, [])
 
   const checkUser = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       router.push("/dashboard")
     }
@@ -62,31 +61,13 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // LOGIN REAL APENAS COM SUPABASE (SEM BYPASS)
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const result = await signIn({ email, password })
 
-      if (error) {
-        setError("Credenciais inválidas. Verifique seu email e senha.")
-        return
-      }
-
-      if (data.user) {
-        // Redirecionar baseado no role do usuário
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .single()
-
-        if (profile?.role === 'admin') {
-          router.push("/dashboard")
-        } else {
-          router.push("/dashboard") // Usuário comum também vai para dashboard
-        }
+      if (result.success) {
+        // Redirecionar para dashboard após login bem-sucedido
+        router.push("/dashboard")
+      } else {
+        setError(result.error || "Credenciais inválidas. Verifique seu email e senha.")
       }
     } catch (error) {
       setError("Erro inesperado. Tente novamente.")
@@ -207,6 +188,23 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
+              
+              {/* Link para recuperação de senha */}
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const email = prompt('Digite seu email para recuperação de senha:')
+                    if (email) {
+                      // TODO: Implementar solicitação de recuperação de senha
+                      alert('Funcionalidade de recuperação de senha será implementada em breve.')
+                    }
+                  }}
+                  className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm transition-colors"
+                >
+                  Esqueceu sua senha?
+                </button>
+              </div>
               
               {/* Footer */}
               <div className="mt-6 sm:mt-8 text-center">

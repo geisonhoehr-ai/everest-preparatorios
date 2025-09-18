@@ -1,0 +1,38 @@
+// In all interactions, you should observe the points below...
+
+// 1. Avoid Code Duplication (DRY - Don't Repeat Yourself)
+Identify duplicated code patterns in the project. Look for functions, components, or code blocks that appear in multiple places with little or no change. Suggest refactorings to create reusable components, custom hooks, or utility functions that can replace this duplication, following the DRY principle (Don't Repeat Yourself).
+
+// 2. Eliminate Unused Code (Dead Code)
+Analyze the project and identify: 1) Components that were created but never imported or rendered, 2) Declared functions that are never called, 3) Imports that are not used, 4) State variables (useState) that never change or are never read, 5) Commented code without clear explanation of why it was kept. Suggest removing these elements to improve code maintainability and performance.
+
+// 3. Consistent Use of TypeScript
+Examine the use of types in the project. Identify: 1) Excessive use of the 'any' type that should be replaced with specific types, 2) Component props that don't have defined interfaces or types, 3) Inconsistencies in the use of 'interface' vs 'type', 4) Types that could be more specific or restrictive. Suggest improvements to better leverage TypeScript's type system and increase code safety.
+
+// 4. Well-Structured Components
+Identify React components that violate the single responsibility principle or are excessively large. Look for: 1) Components with more than 250 lines of code, 2) Components that do many different things, 3) Complex or deeply nested JSX. Suggest how these components can be divided into smaller, more focused and reusable components, explaining the benefits for maintenance and readability.
+
+// 5. Efficient State Management
+Analyze state management in the application. Identify: 1) Cases of excessive "prop drilling" (passing props through many components), 2) State that should be at a higher level of the component tree, 3) Duplicated state in multiple components, 4) Inappropriate use of Context API for data that doesn't need to be global. Suggest improvements using Context API, component composition, or state management libraries when appropriate.
+
+// 6. Proper Use of React Hooks
+Analyze the use of React hooks in the project. Identify: 1) Violations of hook rules (conditional calls, within loops), 2) Missing or unnecessary dependencies in useEffect/useMemo/useCallback, 3) Complex logic that could be extracted to custom hooks, 4) Excessive use of useState when useReducer would be more appropriate. Suggest improvements to follow hook best practices and make the code more predictable and testable.
+
+// 7. Separation of Logic and Presentation
+Examine the structure of React components and identify where the separation between logic and presentation can be improved. Look for: 1) UI components with embedded business rules, 2) API calls directly in presentation components, 3) Components that could follow the container/presentational pattern. Suggest refactorings to improve the separation of responsibilities, making components more reusable and testable.
+
+// 8. Proper Error Handling
+Analyze error handling in the application. Identify: 1) API calls without try/catch blocks or error handling, 2) Asynchronous operations that may fail silently, 3) Lack of feedback to the user when errors occur, 4) Errors that are logged to the console but not properly handled. Suggest implementations of React error boundaries and strategies to improve the user experience during failures.
+
+// 9. Performance and Optimizations
+Identify performance problems and optimization opportunities. Look for: 1) Components that render frequently and could use React.memo(), 2) Functions created on each render that should use useCallback(), 3) Heavy calculations that should use useMemo(), 4) Large lists without virtualization, 5) Unoptimized images. Suggest concrete improvements for each problem found, explaining the impact on performance.
+
+// 10. Project Organization and Structure
+Analyze the project's file and folder structure. Identify: 1) Inconsistencies in organization (by type, by feature, or hybrid), 2) Circular dependencies between modules, 3) Disorderly or excessively long imports, 4) Very large files that should be split. Suggest improvements to the project structure following best practices for React/TypeScript, explaining how better organization facilitates long-term maintenance.
+
+// 11. Accessibility (a11y)
+Evaluate the accessibility of the React application. Identify: 1) Interactive elements without accessible labels, 2) Images without alternative text, 3) Incorrect use of HTML semantic elements, 4) Color contrast failure, 5) Components not navigable by keyboard. Suggest corrections to make the application more accessible, following WCAG guidelines and best practices for accessible React development.
+
+// 12. Adequate Testing
+Analyze the coverage and quality of tests in the project. Identify: 1) Critical components without tests, 2) Tests that only check rendering without testing behavior, 3) Inappropriate use of mocks, 4) Fragile tests that break easily. Suggest improvements to the testing strategy including unit, integration, and end-to-end tests where appropriate, prioritize what should be tested first, and how to write more robust and meaningful tests.
+

@@ -10,29 +10,14 @@ export function createClient() {
 
   console.log('🔧 [SUPABASE] Criando cliente...')
 
-  // Verificar se as variáveis de ambiente estão definidas
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('⚠️ [SUPABASE] Variáveis de ambiente não definidas')
-    // Retornar um cliente mock para evitar erros durante o build
-    return {
-      auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
-        signOut: async () => ({ error: null }),
-      },
-      from: () => ({
-        select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }),
-        insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
-        update: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
-        delete: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }),
-      }),
-    }
-  }
+  // Usar configurações hardcoded do next.config.js como fallback
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hnhzindsfuqnaxosujay.supabase.co'
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaHppbmRzZnVxbmF4b3N1amF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MzU5NTIsImV4cCI6MjA2ODUxMTk1Mn0.cT7fe1wjee9HfZw_IVD7K_exMqu-LtUxiClCD-sDLyU'
 
-  supabaseInstance = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  console.log('🌐 [DEBUG] URL do Supabase:', supabaseUrl)
+  console.log('🔑 [DEBUG] Chave anônima (primeiros 20 chars):', supabaseAnonKey.substring(0, 20) + '...')
+
+  supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
   console.log('✅ [SUPABASE] Cliente criado')
   return supabaseInstance

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { supabaseAdmin } from '@/lib/supabaseServer'
 import { createClient } from '@/lib/supabase-server'
-import { getCache, setCache } from '@/lib/cache'
+// Cache functions will be implemented separately
 
 /**
  * Obtém uma instância do Supabase (server-side)
@@ -1037,12 +1037,12 @@ export async function getAllSubjects() {
   try {
     // Verificar cache primeiro
     const cacheKey = 'subjects:all'
-    const cached = await getCache(cacheKey)
+    // const cached = await getCache(cacheKey) // Cache will be implemented
     
-    if (cached) {
-      console.log("✅ [Server Action] Usando cache para subjects")
-      return cached
-    }
+    // if (cached) {
+    //   console.log("✅ [Server Action] Usando cache para subjects")
+    //   return cached
+    // }
     
     const { data, error } = await supabase.from("subjects").select("id, name").order("name")
     console.log("🔍 [Server Action] Query executada, data:", data, "error:", error)
@@ -1055,7 +1055,7 @@ export async function getAllSubjects() {
     console.log("✅ [Server Action] Matérias encontradas:", data)
     
     // Salvar no cache por 10 minutos
-    await setCache(cacheKey, data, 10 * 60)
+    // await setCache(cacheKey, data, 10 * 60) // Cache will be implemented
     
     return data || []
   } catch (error) {

@@ -21,7 +21,7 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
+  const { success, error: showError, warning } = useToast()
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -29,21 +29,13 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
 
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione apenas arquivos de imagem.",
-        variant: "destructive"
-      })
+      showError("Erro", "Por favor, selecione apenas arquivos de imagem.")
       return
     }
 
     // Validar tamanho (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Erro",
-        description: "A imagem deve ter no máximo 5MB.",
-        variant: "destructive"
-      })
+      showError("Erro", "A imagem deve ter no máximo 5MB.")
       return
     }
 
@@ -90,10 +82,7 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
 
       if (urlData?.publicUrl) {
         setUploadProgress(100)
-        toast({
-          title: "Sucesso!",
-          description: "Avatar atualizado com sucesso.",
-        })
+        success("Sucesso!", "Avatar atualizado com sucesso.")
         
         // Limpar preview
         setPreviewUrl(null)
@@ -107,11 +96,7 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
 
     } catch (error) {
       console.error('Erro no upload:', error)
-      toast({
-        title: "Erro",
-        description: "Erro ao fazer upload da imagem. Tente novamente.",
-        variant: "destructive"
-      })
+      showError("Erro", "Erro ao fazer upload da imagem. Tente novamente.")
     } finally {
       setIsUploading(false)
       setUploadProgress(0)
@@ -136,10 +121,7 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
         console.error('Erro ao remover avatar:', error)
       }
 
-      toast({
-        title: "Avatar removido",
-        description: "Avatar removido com sucesso.",
-      })
+      success("Avatar removido", "Avatar removido com sucesso.")
       
       // Limpar preview e chamar callback
       setPreviewUrl(null)
@@ -147,11 +129,7 @@ export function AvatarUpload({ email, currentAvatarUrl, onAvatarUpdate }: Avatar
 
     } catch (error) {
       console.error('Erro ao remover avatar:', error)
-      toast({
-        title: "Erro",
-        description: "Erro ao remover avatar. Tente novamente.",
-        variant: "destructive"
-      })
+      showError("Erro", "Erro ao remover avatar. Tente novamente.")
     } finally {
       setIsUploading(false)
     }

@@ -1,55 +1,66 @@
--- =====================================================
--- CONFIRMAR EMAILS - VERSÃO SIMPLES
--- =====================================================
+-- SCRIPT SIMPLES PARA CONFIRMAR EMAILS
 -- Execute este script no SQL Editor do Supabase Dashboard
 
--- 1. VERIFICAR STATUS ATUAL
--- =====================================================
-SELECT 
-    email,
-    email_confirmed_at,
-    email_change_confirm_status
+-- 1. VERIFICAR USUÁRIOS
+SELECT 'USUÁRIOS ATUAIS' as status;
+SELECT id, email, email_confirmed_at, created_at
 FROM auth.users 
-WHERE email IN ('aluno@teste.com', 'admin@teste.com', 'professor@teste.com')
-ORDER BY email;
+WHERE email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com');
 
--- 2. ATUALIZAR APENAS CAMPOS ESSENCIAIS
--- =====================================================
+-- 2. CONFIRMAR EMAILS (APENAS CAMPOS ESSENCIAIS)
 UPDATE auth.users 
 SET 
-    email_confirmed_at = NOW(),
-    email_change_confirm_status = 0,
-    confirmation_token = '',
-    email_change = '',
-    email_change_token_new = '',
-    recovery_token = '',
-    last_sign_in_at = NOW(),
-    updated_at = NOW()
-WHERE email IN ('aluno@teste.com', 'admin@teste.com', 'professor@teste.com');
+  email_confirmed_at = NOW(),
+  updated_at = NOW()
+WHERE email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com');
 
--- 3. VERIFICAR STATUS APOS ATUALIZACAO
--- =====================================================
-SELECT 
-    email,
-    email_confirmed_at,
-    email_change_confirm_status,
-    last_sign_in_at,
-    updated_at
+-- 3. VERIFICAR RESULTADO
+SELECT 'EMAILS CONFIRMADOS' as status;
+SELECT id, email, email_confirmed_at
 FROM auth.users 
-WHERE email IN ('aluno@teste.com', 'admin@teste.com', 'professor@teste.com')
-ORDER BY email;
+WHERE email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com');
 
 -- 4. VERIFICAR PERFIS
--- =====================================================
-SELECT 
-    au.email,
-    up.role,
-    up.display_name
-FROM auth.users au
-LEFT JOIN user_profiles up ON au.id = up.user_id
-WHERE au.email IN ('aluno@teste.com', 'admin@teste.com', 'professor@teste.com')
-ORDER BY up.role;
+SELECT 'PERFIS DE USUÁRIO' as status;
+SELECT user_id, role, display_name
+FROM user_profiles 
+WHERE user_id IN (
+  SELECT id FROM auth.users 
+  WHERE email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com')
+);
 
--- 5. MENSAGEM DE SUCESSO
--- =====================================================
-SELECT 'CONFIRMACAO REALIZADA COM SUCESSO!' as status;
+-- 5. CRIAR PERFIS SE NÃO EXISTIREM
+INSERT INTO user_profiles (user_id, role, display_name, created_at, updated_at)
+SELECT 
+  id as user_id,
+  CASE 
+    WHEN email = 'aluno@teste.com' THEN 'student'
+    WHEN email = 'professor@teste.com' THEN 'teacher' 
+    WHEN email = 'admin@teste.com' THEN 'admin'
+  END as role,
+  CASE
+    WHEN email = 'aluno@teste.com' THEN 'Aluno Teste'
+    WHEN email = 'professor@teste.com' THEN 'Professor Teste'
+    WHEN email = 'admin@teste.com' THEN 'Admin Teste'
+  END as display_name,
+  NOW() as created_at,
+  NOW() as updated_at
+FROM auth.users
+WHERE email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com')
+AND id NOT IN (SELECT user_id FROM user_profiles WHERE user_id IS NOT NULL);
+
+-- 6. VERIFICAÇÃO FINAL
+SELECT 'VERIFICAÇÃO FINAL' as status;
+SELECT 
+  u.email,
+  CASE 
+    WHEN u.email_confirmed_at IS NOT NULL THEN 'CONFIRMADO'
+    ELSE 'NÃO CONFIRMADO'
+  END as status_email,
+  CASE 
+    WHEN p.user_id IS NOT NULL THEN 'PERFIL OK'
+    ELSE 'SEM PERFIL'
+  END as status_perfil
+FROM auth.users u
+LEFT JOIN user_profiles p ON u.id = p.user_id
+WHERE u.email IN ('aluno@teste.com', 'professor@teste.com', 'admin@teste.com');

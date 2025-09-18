@@ -28,12 +28,13 @@ import {
   Headphones
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export function MainSidebar() {
   const pathname = usePathname()
   const { user, profile, signOut } = useAuth()
   const { isMobileOpen, toggleMobile } = useMobileMenu()
+  const { success, error: showError, info } = useToast()
 
   const navigationItems = [
     { title: "Dashboard", href: "/dashboard", icon: BarChart3, access: "all" },
@@ -64,21 +65,14 @@ export function MainSidebar() {
   const handleLogout = async () => {
     try {
       // Mostrar toast de loading
-      toast({
-        title: "Fazendo logout...",
-        description: "Aguarde um momento...",
-      })
+      info("Fazendo logout...", "Aguarde um momento...")
       
       await signOut()
       
       // O toast de sucesso não será mostrado pois a página será redirecionada
     } catch (error) {
       console.error('Erro ao fazer logout:', error)
-      toast({
-        title: "Erro no logout",
-        description: "Ocorreu um erro ao tentar sair do sistema. Tentando redirecionar...",
-        variant: "destructive",
-      })
+      showError("Erro no logout", "Ocorreu um erro ao tentar sair do sistema. Tentando redirecionar...")
       
       // Forçar redirecionamento mesmo com erro
       setTimeout(() => {

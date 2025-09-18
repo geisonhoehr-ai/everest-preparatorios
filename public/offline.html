@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Everest Preparatórios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .features {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .features h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .features ul {
+            list-style: none;
+            text-align: left;
+        }
+
+        .features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .features li::before {
+            content: "✓";
+            color: #4ade80;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .status.online {
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .status.offline {
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>Você está offline</h1>
+        <p>
+            Parece que você perdeu a conexão com a internet. 
+            Não se preocupe, algumas funcionalidades ainda estão disponíveis!
+        </p>
+
+        <div class="features">
+            <h3>Funcionalidades disponíveis offline:</h3>
+            <ul>
+                <li>Flashcards já carregados</li>
+                <li>Histórico de estudos</li>
+                <li>Configurações salvas</li>
+                <li>Dados em cache</li>
+            </ul>
+        </div>
+
+        <button class="retry-btn" onclick="checkConnection()">
+            Tentar novamente
+        </button>
+
+        <div id="status" class="status offline">
+            Status: Offline
+        </div>
+    </div>
+
+    <script>
+        function checkConnection() {
+            const statusEl = document.getElementById('status');
+            
+            if (navigator.onLine) {
+                statusEl.textContent = 'Status: Online - Redirecionando...';
+                statusEl.className = 'status online';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                statusEl.textContent = 'Status: Ainda offline';
+                statusEl.className = 'status offline';
+            }
+        }
+
+        // Monitorar mudanças de conexão
+        window.addEventListener('online', () => {
+            checkConnection();
+        });
+
+        window.addEventListener('offline', () => {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = 'Status: Offline';
+            statusEl.className = 'status offline';
+        });
+
+        // Verificar conexão periodicamente
+        setInterval(checkConnection, 5000);
+    </script>
+</body>
+</html>

@@ -1,159 +1,111 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { User, Session } from "@supabase/supabase-js"
-import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { initializeUserProgress } from "@/actions"
-import { debugSupabaseConfig } from "@/lib/supabase/debug"
+import { 
+  CustomUser, 
+  UserSession, 
+  LoginCredentials, 
+  LoginResponse,
+  customLogin, 
+  verifySession, 
+  customLogout,
+  requestPasswordReset,
+  resetPassword
+} from "@/lib/auth-custom"
 
 interface UserProfile {
   id: string
   user_id: string
-  role: 'admin' | 'teacher' | 'student'
-  display_name?: string
+  role: 'administrator' | 'teacher' | 'student'
+  display_name: string
+  first_name: string
+  last_name: string
+  email: string
+  is_active: boolean
+  last_login_at?: string
   created_at: string
+  updated_at: string
+  profile_type: 'administrator' | 'teacher' | 'student' | 'user'
+  specific_data?: {
+    // Dados específicos do professor
+    employee_id_number?: string
+    hire_date?: string
+    department?: string
+    // Dados específicos do aluno
+    student_id_number?: string
+    enrollment_date?: string
+  }
 }
 
 interface AuthContextType {
-  user: User | null
-  session: Session | null
+  user: CustomUser | null
+  session: UserSession | null
   profile: UserProfile | null
   isLoading: boolean
+  signIn: (credentials: LoginCredentials) => Promise<LoginResponse>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<CustomUser | null>(null)
+  const [session, setSession] = useState<UserSession | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     let safetyTimeout: NodeJS.Timeout | null = null
     let isInitialized = false
-    let retryCount = 0
-    const maxRetries = 3
 
-    // Timeout de segurança reduzido para evitar travamento
+    // Timeout de segurança
     safetyTimeout = setTimeout(() => {
       if (!isInitialized) {
         console.warn('⚠️ Timeout de segurança ativado - forçando fim do loading')
         setIsLoading(false)
         isInitialized = true
       }
-    }, 8000) // Reduzido para 8 segundos
+    }, 8000)
 
     // Verificar sessão atual
-    const getSession = async () => {
+    const checkSession = async () => {
       try {
-        console.log('🔐 Verificando sessão atual... (tentativa:', retryCount + 1, ')')
+        console.log('🔐 Verificando sessão atual...')
         
-        // Debug da configuração do Supabase
-        if (retryCount === 0) {
-          debugSupabaseConfig()
-        }
+        const result = await verifySession()
         
-        // Verificar se as variáveis de ambiente estão disponíveis
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          console.error('❌ Variáveis de ambiente do Supabase não encontradas')
-          setIsLoading(false)
-          isInitialized = true
-          if (safetyTimeout) clearTimeout(safetyTimeout)
-          return
-        }
-
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('❌ Erro ao buscar sessão:', error)
-          
-          // Se for erro de rede, tentar novamente
-          if (retryCount < maxRetries && (error.message.includes('network') || error.message.includes('fetch'))) {
-            retryCount++
-            console.log('🔄 Tentando novamente em 2 segundos...')
-            setTimeout(getSession, 2000)
-            return
-          }
-          
-          setIsLoading(false)
-          isInitialized = true
-          if (safetyTimeout) clearTimeout(safetyTimeout)
-          return
-        }
-
-        console.log('✅ Sessão encontrada:', session ? 'Sim' : 'Não')
-        setSession(session)
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          console.log('👤 Usuário autenticado:', session.user.email)
-          await fetchUserProfile(session.user.id)
+        if (result.success && result.user) {
+          console.log('✅ Usuário autenticado:', result.user.email)
+          setUser(result.user)
+          await fetchUserProfile(result.user.id)
         } else {
           console.log('👤 Nenhum usuário autenticado')
-        }
-        
-        setIsLoading(false)
-        isInitialized = true
-        if (safetyTimeout) clearTimeout(safetyTimeout)
-      } catch (error) {
-        console.error('❌ Erro inesperado ao verificar sessão:', error)
-        
-        // Se for erro de rede, tentar novamente
-        if (retryCount < maxRetries) {
-          retryCount++
-          console.log('🔄 Tentando novamente em 2 segundos...')
-          setTimeout(getSession, 2000)
-          return
-        }
-        
-        setIsLoading(false)
-        isInitialized = true
-        if (safetyTimeout) clearTimeout(safetyTimeout)
-      }
-    }
-
-    getSession()
-
-    // Escutar mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: Session | null) => {
-        console.log('🔄 Evento de autenticação:', event, session?.user?.email)
-        
-        // Evitar loops em eventos de refresh e múltiplos SIGNED_IN
-        if (event === 'TOKEN_REFRESHED' && !session) {
-          console.log('🔄 Token refresh sem sessão - ignorando')
-          return
-        }
-        
-        // Evitar múltiplos eventos SIGNED_IN para o mesmo usuário
-        if (event === 'SIGNED_IN' && session?.user?.id === user?.id) {
-          console.log('🔄 Usuário já autenticado - ignorando evento duplicado')
-          return
-        }
-        
-        setSession(session)
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          await fetchUserProfile(session.user.id)
-        } else {
+          setUser(null)
           setProfile(null)
         }
         
         setIsLoading(false)
         isInitialized = true
         if (safetyTimeout) clearTimeout(safetyTimeout)
+      } catch (error) {
+        console.error('❌ Erro ao verificar sessão:', error)
+        setUser(null)
+        setProfile(null)
+        setIsLoading(false)
+        isInitialized = true
+        if (safetyTimeout) clearTimeout(safetyTimeout)
       }
-    )
+    }
+
+    checkSession()
 
     return () => {
-      subscription.unsubscribe()
       if (safetyTimeout) clearTimeout(safetyTimeout)
     }
   }, [])
@@ -186,114 +138,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfileFromServer = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      if (error) {
-        console.error('❌ Erro ao buscar perfil:', error)
-        console.error('📋 Detalhes do erro:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        })
-        
-        // Se não existir perfil, criar um padrão local
-        console.log('🔄 Criando perfil padrão local...')
-        const defaultProfile = {
-          id: userId,
-          user_id: userId,
-          role: 'student' as const,
-          display_name: 'Usuário',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        setProfile(defaultProfile)
-        localStorage.setItem(`profile_${userId}`, JSON.stringify(defaultProfile))
+      console.log('🔍 Buscando perfil completo para usuário:', userId)
+      
+      // Usar a função verifySession para obter dados atualizados do usuário
+      const result = await verifySession()
+      
+      if (!result.success || !result.user) {
+        console.error('❌ Erro ao verificar sessão do usuário')
         return
-      } else {
-        console.log('✅ Perfil encontrado no servidor:', data)
-        setProfile(data)
-        
-        // Salvar no cache local
-        localStorage.setItem(`profile_${userId}`, JSON.stringify(data))
       }
+      
+      const userData = result.user
+      console.log('✅ Dados do usuário encontrados:', userData)
+      
+      // Criar perfil unificado baseado na nova estrutura
+      const profile = {
+        id: userId,
+        user_id: userId,
+        role: userData.role,
+        display_name: `${userData.first_name} ${userData.last_name}`,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        is_active: userData.is_active,
+        last_login_at: userData.last_login_at,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+        profile_type: userData.role,
+        specific_data: null // Pode ser expandido no futuro se necessário
+      }
+      
+      console.log('✅ Perfil unificado criado:', profile)
+      setProfile(profile)
+      localStorage.setItem(`profile_${userId}`, JSON.stringify(profile))
+      
     } catch (error) {
       console.error('❌ Erro ao buscar perfil do servidor:', error)
     }
   }
 
-  const createDefaultProfile = async (userId: string) => {
+  // Função de login
+  const signIn = async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
-      console.log('🆕 Criando perfil padrão para usuário:', userId)
+      console.log('🔐 Iniciando login...')
+      const result = await customLogin(credentials)
       
-      // Determinar role baseado no email
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError) {
-        console.error('❌ Erro ao buscar usuário:', userError)
-        return
-      }
-
-      if (!user) {
-        console.error('❌ Usuário não encontrado')
-        return
-      }
-
-      // Determinar role baseado no email para Everest Preparatórios
-      let role: 'admin' | 'teacher' | 'student' = 'student'
-      if (user.email === 'admin@teste.com') {
-        role = 'admin'
-      } else if (user.email === 'professor@teste.com') {
-        role = 'teacher'
-      } else if (user.email === 'aluno@teste.com') {
-        role = 'student'
-      }
-      
-      console.log('👑 Role determinado:', role)
-      
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: userId,
-          role: role,
-          display_name: user?.email?.split('@')[0] || 'Usuário'
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('❌ Erro ao criar perfil:', error)
-        console.error('📋 Detalhes do erro:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        })
+      if (result.success && result.user) {
+        setUser(result.user)
+        setSession(result.session || null)
+        await fetchUserProfile(result.user.id)
         
-        // Se a tabela não existir, mostrar instruções
-        if (error.code === '42P01') { // undefined_table
-          console.error('🚨 TABELA user_profiles NÃO EXISTE!')
-          console.error('📋 Execute o script SQL: scripts/create_user_profiles_table.sql')
-        }
-      } else {
-        console.log('✅ Perfil criado com sucesso:', data)
-        setProfile(data)
-        
-        // Inicializar progresso do usuário
-        console.log('🎯 Inicializando progresso do usuário...')
+        // Inicializar progresso do usuário se necessário
         try {
-          await initializeUserProgress(userId)
+          await initializeUserProgress(result.user.id)
           console.log('✅ Progresso inicializado com sucesso')
         } catch (error) {
           console.error('❌ Erro ao inicializar progresso:', error)
         }
       }
+      
+      return result
     } catch (error) {
-      console.error('❌ Erro inesperado ao criar perfil:', error)
+      console.error('❌ Erro no login:', error)
+      return { success: false, error: 'Erro interno do servidor' }
     }
   }
 
@@ -319,12 +226,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null)
       setProfile(null)
       
-      // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut()
+      // Fazer logout customizado
+      const result = await customLogout()
       
-      if (error) {
-        console.error('❌ Erro no Supabase logout:', error)
-        throw error
+      if (!result.success) {
+        console.error('❌ Erro no logout customizado:', result.error)
       }
       
       console.log('✅ Logout realizado com sucesso')
@@ -343,8 +249,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     isLoading,
+    signIn,
     signOut,
-    refreshProfile
+    refreshProfile,
+    requestPasswordReset,
+    resetPassword
   }
 
   return (
@@ -357,13 +266,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider')
+    console.warn('useAuth está sendo usado fora de um AuthProvider')
+    // Retornar um contexto padrão em vez de lançar erro
+    return {
+      user: null,
+      session: null,
+      profile: null,
+      isLoading: false,
+      signIn: async () => ({ success: false, error: 'Contexto não disponível' }),
+      signOut: async () => {},
+      refreshProfile: async () => {},
+      requestPasswordReset: async () => ({ success: false, error: 'Contexto não disponível' }),
+      resetPassword: async () => ({ success: false, error: 'Contexto não disponível' })
+    }
   }
   return context
 }
 
 // Hook para verificar se o usuário tem acesso a uma página
-export function useRequireAuth(requiredRole?: 'admin' | 'teacher' | 'student') {
+export function useRequireAuth(requiredRole?: 'administrator' | 'teacher' | 'student') {
   const { user, profile, isLoading } = useAuth()
   const router = useRouter()
 
@@ -373,12 +294,9 @@ export function useRequireAuth(requiredRole?: 'admin' | 'teacher' | 'student') {
       return
     }
 
-    if (!isLoading && user && requiredRole && profile?.role !== requiredRole) {
-      if (requiredRole === 'admin') {
-        router.push('/dashboard')
-      } else {
-        router.push('/dashboard')
-      }
+    if (!isLoading && user && requiredRole && user.role !== requiredRole) {
+      // Redirecionar para dashboard se não tiver permissão
+      router.push('/dashboard')
     }
   }, [user, profile, isLoading, requiredRole, router])
 

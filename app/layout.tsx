@@ -4,6 +4,8 @@ import { PerformanceOptimizer } from "@/components/performance-optimizer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/auth-context"
 import { Toaster } from "@/components/ui/toaster"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { SkipLinks } from "@/components/skip-link"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -31,11 +33,14 @@ export default function RootLayout({
      crossOrigin="anonymous"></script>
       </head>
       <body className={inter.className}>
+        <SkipLinks />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
           <AuthProvider>
-            <PerformanceOptimizer>
-              {children}
-            </PerformanceOptimizer>
+            <ErrorBoundary>
+              <PerformanceOptimizer>
+                {children}
+              </PerformanceOptimizer>
+            </ErrorBoundary>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

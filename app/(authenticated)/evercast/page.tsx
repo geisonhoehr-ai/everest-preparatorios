@@ -51,6 +51,11 @@ import { MP3Player } from '@/components/evercast/mp3-player'
 import { SoundCloudPlayer } from '@/components/evercast/soundcloud-player'
 import AudioOnlyHLSPlayer from '@/components/evercast/audio-only-hls-player'
 import { AudioPlayer } from '@/components/evercast/audio-player'
+import { EnhancedAudioPlayer } from '@/components/evercast/enhanced-audio-player'
+import { BackgroundAudioManager } from '@/components/evercast/background-audio-manager'
+import { BackgroundAudioInfo } from '@/components/evercast/background-audio-info'
+import { useBackgroundAudioService } from '@/lib/background-audio-service'
+import { useServiceWorker } from '@/hooks/use-service-worker'
 import PandaVideoManager from '@/components/evercast/panda-video-manager'
 import MobileModuleAccordion from '@/components/evercast/mobile-module-accordion'
 import { CrudModal } from '@/components/evercast/crud-modal'
@@ -87,7 +92,117 @@ export default function EverCastPage() {
   const [playlist, setPlaylist] = useState<AudioLesson[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [cachedAudios, setCachedAudios] = useState<Set<string>>(new Set())
+  const [useEnhancedPlayer, setUseEnhancedPlayer] = useState(true)
   const audioRef = useRef<HTMLAudioElement>(null)
+  
+  // Background Audio Service
+  const backgroundAudioService = useBackgroundAudioService()
+  
+  // Service Worker
+  const serviceWorker = useServiceWorker()
+
+  // Inicializar Background Audio Service
+  useEffect(() => {
+    const initializeBackgroundAudio = async () => {
+      try {
+        await backgroundAudioService.initialize()
+        console.log('✅ Background Audio Service inicializado')
+      } catch (error) {
+        console.error('❌ Erro ao inicializar Background Audio Service:', error)
+      }
+    }
+
+    initializeBackgroundAudio()
+  }, [])
+
+  // Configurar Background Audio quando a aula mudar
+  useEffect(() => {
+    if (!currentLesson) return
+
+    // Configurar metadados
+    backgroundAudioService.setMetadata({
+      title: currentLesson.title,
+      artist: 'EverCast - Everest Preparatórios',
+      album: currentLesson.module?.name || currentCourse?.name || 'Curso de Áudio',
+      artwork: [
+        {
+          src: '/icons/evercast-icon-96.png',
+          sizes: '96x96',
+          type: 'image/png'
+        },
+        {
+          src: '/icons/evercast-icon-128.png',
+          sizes: '128x128',
+          type: 'image/png'
+        },
+        {
+          src: '/icons/evercast-icon-192.png',
+          sizes: '192x192',
+          type: 'image/png'
+        },
+        {
+          src: '/icons/evercast-icon-256.png',
+          sizes: '256x256',
+          type: 'image/png'
+        }
+      ]
+    })
+
+    // Configurar action handlers
+    backgroundAudioService.setActionHandlers({
+      play: () => setIsPlaying(true),
+      pause: () => setIsPlaying(false),
+      stop: () => {
+        setIsPlaying(false)
+        setCurrentTime(0)
+      },
+      seekbackward: (details) => {
+        const skipTime = details.seekOffset || 10
+        setCurrentTime(Math.max(0, currentTime - skipTime))
+      },
+      seekforward: (details) => {
+        const skipTime = details.seekOffset || 10
+        setCurrentTime(Math.min(duration, currentTime + skipTime))
+      },
+      seekto: (details) => {
+        if (details.seekTime !== undefined) {
+          setCurrentTime(details.seekTime)
+        }
+      },
+      previoustrack: () => {
+        if (currentIndex > 0) {
+          const prevIndex = currentIndex - 1
+          setCurrentIndex(prevIndex)
+          setCurrentLesson(playlist[prevIndex])
+        }
+      },
+      nexttrack: handleNext
+    })
+
+    // Ativar Wake Lock se estiver tocando
+    if (isPlaying) {
+      backgroundAudioService.requestWakeLock()
+    } else {
+      backgroundAudioService.releaseWakeLock()
+    }
+
+  }, [currentLesson, isPlaying, currentTime, duration, currentIndex, playlist])
+
+  // Atualizar estado de reprodução no Media Session
+  useEffect(() => {
+    backgroundAudioService.setPlaybackState(isPlaying ? 'playing' : 'paused')
+  }, [isPlaying])
+
+  // Atualizar posição no Media Session
+  useEffect(() => {
+    if (duration > 0) {
+      backgroundAudioService.setPositionState({
+        duration,
+        playbackRate: 1,
+        position: currentTime
+      })
+    }
+  }, [currentTime, duration])
 
   // Carregar cursos
   useEffect(() => {
@@ -187,6 +302,23 @@ export default function EverCastPage() {
     setIsLooping(!isLooping)
   }
 
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume)
+  }
+
+  const handleMuteToggle = () => {
+    setIsMuted(!isMuted)
+  }
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1
+      setCurrentIndex(prevIndex)
+      setCurrentLesson(playlist[prevIndex])
+      setIsPlaying(false)
+    }
+  }
+
   // Verificação de acesso
   if (!user || !profile) {
     return (
@@ -213,6 +345,16 @@ export default function EverCastPage() {
               <p className="text-gray-600 dark:text-gray-300">Seus cursos em áudio para estudar em qualquer lugar</p>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUseEnhancedPlayer(!useEnhancedPlayer)}
+                className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                title={useEnhancedPlayer ? "Usar player antigo" : "Usar player com background audio"}
+              >
+                <Smartphone className="w-4 h-4 mr-2" />
+                {useEnhancedPlayer ? "Player Antigo" : "Background Audio"}
+              </Button>
               {canEdit && (
                 <Button
                   onClick={() => setShowModal(true)}
@@ -222,9 +364,24 @@ export default function EverCastPage() {
                   Novo Curso
                 </Button>
               )}
-              <Badge variant="outline" className="text-orange-600 border-orange-600">
-                {profile.role === 'teacher' ? 'Professor' : profile.role === 'admin' ? 'Admin' : 'Estudante'}
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                  {profile.role === 'teacher' ? 'Professor' : profile.role === 'admin' ? 'Admin' : 'Estudante'}
+                </Badge>
+                {serviceWorker.isSupported && (
+                  <Badge 
+                    variant="outline" 
+                    className={`${
+                      serviceWorker.isRegistered 
+                        ? 'text-green-600 border-green-600' 
+                        : 'text-yellow-600 border-yellow-600'
+                    }`}
+                    title={serviceWorker.isRegistered ? 'PWA ativo' : 'PWA não ativo'}
+                  >
+                    {serviceWorker.isRegistered ? 'PWA ✅' : 'PWA ⚠️'}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -238,6 +395,11 @@ export default function EverCastPage() {
               courses={courses} 
               currentCourse={currentCourse}
             />
+          )}
+
+          {/* Informações sobre Background Audio */}
+          {useEnhancedPlayer && (
+            <BackgroundAudioInfo className="mb-6" />
           )}
 
           {/* Sistema de Busca e Filtros */}
@@ -469,71 +631,96 @@ export default function EverCastPage() {
       </div>
 
 
-      {/* HLS Player Component - Estrutura da versão antiga */}
-      {currentLesson?.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
-        <HLSPlayer
-          hlsUrl={currentLesson.hls_url}
-          title={currentLesson.title}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onEnded={handleNext}
+      {/* Enhanced Audio Player com Background Audio */}
+      {currentLesson && useEnhancedPlayer && (
+        <EnhancedAudioPlayer
+          currentLesson={currentLesson}
+          isPlaying={isPlaying}
           onPlayPause={setIsPlaying}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          currentTime={currentTime}
+          duration={duration}
+          volume={volume}
+          onVolumeChange={handleVolumeChange}
+          isMuted={isMuted}
+          onMuteToggle={handleMuteToggle}
           isLooping={isLooping}
-          onToggleLoop={toggleLoop}
+          onLoopToggle={toggleLoop}
           className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
         />
       )}
 
-      {/* HLS Player para áudio do PandaVideo */}
-      {currentAudioHLS && (
-        <HLSPlayer
-          hlsUrl={currentAudioHLS}
-          title="Áudio do PandaVideo"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onEnded={handleNext}
-          onPlayPause={setIsPlaying}
-          isLooping={isLooping}
-          onToggleLoop={toggleLoop}
-          className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
-        />
-      )}
+      {/* Players Legados (fallback) */}
+      {currentLesson && !useEnhancedPlayer && (
+        <>
+          {/* HLS Player Component */}
+          {currentLesson?.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
+            <HLSPlayer
+              hlsUrl={currentLesson.hls_url}
+              title={currentLesson.title}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleNext}
+              onPlayPause={setIsPlaying}
+              isLooping={isLooping}
+              onToggleLoop={toggleLoop}
+              className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
+            />
+          )}
 
-      {/* MP3 Player Component */}
-      {currentLesson?.audio_url && !currentLesson.hls_url && !currentLesson.soundcloud_url && (
-        <MP3Player
-          audioUrl={currentLesson.audio_url}
-          title={currentLesson.title}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onEnded={handleNext}
-          onPlayPause={setIsPlaying}
-          isLooping={isLooping}
-          onToggleLoop={toggleLoop}
-          className="fixed bottom-4 left-4 right-4 z-10"
-        />
-      )}
+          {/* HLS Player para áudio do PandaVideo */}
+          {currentAudioHLS && (
+            <HLSPlayer
+              hlsUrl={currentAudioHLS}
+              title="Áudio do PandaVideo"
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleNext}
+              onPlayPause={setIsPlaying}
+              isLooping={isLooping}
+              onToggleLoop={toggleLoop}
+              className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
+            />
+          )}
 
-      {/* SoundCloud Player Component */}
-      {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
-        <SoundCloudPlayer
-          soundcloudUrl={currentLesson.soundcloud_url}
-          title={currentLesson.title}
-          onPlayPause={setIsPlaying}
-          className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
-        />
-      )}
+          {/* MP3 Player Component */}
+          {currentLesson?.audio_url && !currentLesson.hls_url && !currentLesson.soundcloud_url && (
+            <MP3Player
+              audioUrl={currentLesson.audio_url}
+              title={currentLesson.title}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleNext}
+              onPlayPause={setIsPlaying}
+              isLooping={isLooping}
+              onToggleLoop={toggleLoop}
+              className="fixed bottom-4 left-4 right-4 z-10"
+            />
+          )}
 
-      {/* Fallback Audio Element para URLs não-HLS, não-MP3 e não-SoundCloud */}
-      {currentLesson?.embed_url && !currentLesson.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
-        <audio
-          ref={audioRef}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onEnded={handleNext}
-          src={currentLesson.embed_url}
-          preload="metadata"
-        />
+          {/* SoundCloud Player Component */}
+          {currentLesson?.soundcloud_url && !currentLesson.audio_url && !currentLesson.hls_url && (
+            <SoundCloudPlayer
+              soundcloudUrl={currentLesson.soundcloud_url}
+              title={currentLesson.title}
+              onPlayPause={setIsPlaying}
+              className="fixed bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-50 max-w-6xl mx-auto"
+            />
+          )}
+
+          {/* Fallback Audio Element */}
+          {currentLesson?.embed_url && !currentLesson.hls_url && !currentLesson.audio_url && !currentLesson.soundcloud_url && (
+            <audio
+              ref={audioRef}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleNext}
+              src={currentLesson.embed_url}
+              preload="metadata"
+            />
+          )}
+        </>
       )}
 
       {/* Modal CRUD */}

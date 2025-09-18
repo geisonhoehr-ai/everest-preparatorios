@@ -13,7 +13,6 @@ import { useState } from "react";
 export default function LandingPage() {
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
-  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
   return (
@@ -34,13 +33,14 @@ export default function LandingPage() {
               
               {/* Menu Desktop - Só aparece em telas médias e grandes */}
               <div className="desktop-menu hidden md:flex items-center space-x-4">
-                <Button 
-                  variant="outline" 
-                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                  onClick={() => setIsMaintenanceModalOpen(true)}
-                >
-                  CIAAR
-                </Button>
+                <Link href="/ciaar">
+                  <Button 
+                    variant="outline" 
+                    className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                  >
+                    CIAAR
+                  </Button>
+                </Link>
                 <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-blue-500 hover:text-white">
                     Área do Aluno
@@ -55,13 +55,14 @@ export default function LandingPage() {
 
               {/* Menu Mobile - Sempre visível em telas pequenas */}
               <div className="mobile-menu flex md:hidden flex-col items-center space-y-3 w-full px-2 max-w-full">
-                <Button 
-                  variant="outline" 
-                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full"
-                  onClick={() => setIsMaintenanceModalOpen(true)}
-                >
-                  CIAAR
-                </Button>
+                <Link href="/ciaar" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full"
+                  >
+                    CIAAR
+                  </Button>
+                </Link>
                 <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer" className="w-full">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white w-full">
                     Área do Aluno
@@ -1626,26 +1627,6 @@ export default function LandingPage() {
         </a>
       </div>
 
-              {/* Modal de Manutenção */}
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${isMaintenanceModalOpen ? 'block' : 'hidden'}`}>
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMaintenanceModalOpen(false)}></div>
-          <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
-            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Clock className="w-8 h-8 text-orange-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-4">Em Manutenção</h3>
-            <p className="text-gray-300 mb-6">
-              A seção CIAAR está temporariamente em manutenção para melhorias. 
-              Em breve estará disponível com novos recursos!
-            </p>
-            <Button 
-              onClick={() => setIsMaintenanceModalOpen(false)}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
-            >
-              Entendi
-            </Button>
-          </div>
-        </div>
 
         {/* Modal de Política de Privacidade */}
         <PrivacyPolicyModal 
