@@ -593,7 +593,7 @@ export default function QuizPage() {
                 Selecione a matéria que deseja testar com quiz
               </p>
             </div>
-            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+            {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
               <Button 
                 onClick={() => {
                   // TODO: Implementar criação de matéria
@@ -700,7 +700,7 @@ export default function QuizPage() {
                 </p>
               </div>
             </div>
-            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+            {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
@@ -750,7 +750,7 @@ export default function QuizPage() {
                   className="group hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer border-2 hover:border-orange-500 relative"
                 >
                   {/* Ícones de edição para admin/teacher */}
-                  {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                  {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                     <div className="absolute top-4 right-4 flex gap-2 z-10">
                       <Button
                         variant="ghost"
@@ -810,7 +810,7 @@ export default function QuizPage() {
                         <Clock className="mr-3 h-6 w-6" />
                         Quiz 5 min
                       </Button>
-                      {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                      {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                         <Button 
                           onClick={() => {
                             // Abrir modal de gerenciamento de quizzes do tópico
@@ -957,7 +957,7 @@ export default function QuizPage() {
           <div className="max-w-4xl mx-auto">
             <Card className="min-h-[500px] flex flex-col justify-center relative">
               {/* Ícones de edição para admin/teacher */}
-              {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+              {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                 <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button
                     variant="ghost"

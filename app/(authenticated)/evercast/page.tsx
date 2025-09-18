@@ -331,7 +331,7 @@ export default function EverCastPage() {
     )
   }
 
-  const canEdit = profile.role === 'teacher' || profile.role === 'admin'
+  const canEdit = profile.role === 'teacher' || profile.role === 'administrator'
 
   return (
     <PagePermissionGuard pageName="evercast">
@@ -366,7 +366,7 @@ export default function EverCastPage() {
               )}
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-orange-600 border-orange-600">
-                  {profile.role === 'teacher' ? 'Professor' : profile.role === 'admin' ? 'Admin' : 'Estudante'}
+                  {profile.role === 'teacher' ? 'Professor' : profile.role === 'administrator' ? 'Admin' : 'Estudante'}
                 </Badge>
                 {serviceWorker.isSupported && (
                   <Badge 

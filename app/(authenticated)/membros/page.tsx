@@ -125,7 +125,7 @@ export default function MembrosPage() {
   })
 
   // Verificar se o usuário tem permissão
-  const canManage = profile?.role === 'admin' || profile?.role === 'teacher'
+  const canManage = profile?.role === 'administrator' || profile?.role === 'teacher'
 
   useEffect(() => {
     if (canManage) {

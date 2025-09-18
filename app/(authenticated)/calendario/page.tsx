@@ -86,7 +86,7 @@ export default function CalendarioPage() {
             </p>
           </div>
         </div>
-        {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+        {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
           <Link href="/calendario/edit">
             <Button variant="outline" className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
@@ -97,7 +97,7 @@ export default function CalendarioPage() {
       </div>
 
       {/* Importador de Cronograma (apenas para professores e admins) */}
-      {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+      {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
         <CronogramaImporter 
           onImportComplete={loadEvents}
           userRole={profile.role}
@@ -143,7 +143,7 @@ export default function CalendarioPage() {
                     <p className="text-gray-600 dark:text-gray-400">
                       Não há eventos programados no momento.
                     </p>
-                    {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+                    {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
                       <Button className="mt-4" asChild>
                         <Link href="/calendario/edit">
                           <Edit className="h-4 w-4 mr-2" />

@@ -30,7 +30,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Professores e admins têm acesso total
-    if (profile.role === 'teacher' || profile.role === 'admin') {
+    if (profile.role === 'teacher' || profile.role === 'administrator') {
       setHasAccess(true)
       setIsLoading(false)
       return

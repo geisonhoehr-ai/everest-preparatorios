@@ -574,7 +574,7 @@ export default function FlashcardsPage() {
                         Sair
                       </Button>
                       
-                      {profile?.role === 'admin' && (
+                      {profile?.role === 'administrator' && (
                         <Button
                           variant="outline"
                           onClick={() => setIsAdminMode(!isAdminMode)}
@@ -957,7 +957,7 @@ export default function FlashcardsPage() {
                     </div>
                   </div>
                   
-                  {profile?.role === 'admin' && (
+                  {profile?.role === 'administrator' && (
                     <Button
                       onClick={() => setShowCreateModal(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
@@ -1116,7 +1116,7 @@ export default function FlashcardsPage() {
             </TabsContent>
 
             <TabsContent value="admin" className="space-y-6">
-              {profile?.role === 'admin' ? (
+              {profile?.role === 'administrator' ? (
                 <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-700 shadow-xl rounded-2xl overflow-hidden">
                   <CardHeader className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-800/30 dark:to-pink-800/30">
                     <CardTitle className="flex items-center gap-3 text-purple-700 dark:text-purple-300">
