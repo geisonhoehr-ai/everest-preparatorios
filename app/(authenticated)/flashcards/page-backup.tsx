@@ -1097,7 +1097,7 @@ export default function FlashcardsPage() {
                 Metas
               </Button>
               
-              {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+              {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
                 <>
                   <Button 
                     variant={isAdminMode ? "default" : "outline"}
@@ -1219,7 +1219,7 @@ export default function FlashcardsPage() {
                 </p>
               </div>
             </div>
-            {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+            {(profile?.role === 'teacher' || profile?.role === 'administrator') && (
               <Button 
                 onClick={() => {
                   // Abrir modal de criação de flashcard
@@ -1403,7 +1403,7 @@ export default function FlashcardsPage() {
                   }}
                 >
                   {/* Botões de edição para admin/teacher */}
-                  {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                  {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                     <div className="absolute top-2 right-2 flex gap-1 z-10">
                       <Button
                         variant="ghost"
@@ -1654,7 +1654,7 @@ export default function FlashcardsPage() {
                 : 'transform translate-x-0 opacity-100'
             }`}>
               {/* Ícones de edição para admin/teacher */}
-              {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+              {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                 <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button
                     variant="ghost"
