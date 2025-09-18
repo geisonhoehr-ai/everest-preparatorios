@@ -197,7 +197,7 @@ export function MainSidebar() {
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    profile.role === 'admin' 
+                    profile.role === 'administrator' 
                       ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200' 
                       : profile.role === 'teacher'
                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
