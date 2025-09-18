@@ -123,7 +123,7 @@ export default function EverCastPage() {
     backgroundAudioService.setMetadata({
       title: currentLesson.title,
       artist: 'EverCast - Everest Preparatórios',
-      album: currentLesson.module?.name || currentCourse?.name || 'Curso de Áudio',
+      album: currentModule?.name || currentCourse?.name || 'Curso de Áudio',
       artwork: [
         {
           src: '/icons/evercast-icon-96.png',
