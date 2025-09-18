@@ -555,7 +555,7 @@ export default function FlashcardsPage() {
 
     return (
       <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-5xl mx-auto space-y-4 py-4 px-4">
               
@@ -803,7 +803,7 @@ export default function FlashcardsPage() {
     
     return (
       <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-4xl mx-auto space-y-6 py-8 px-4">
               
@@ -927,7 +927,7 @@ export default function FlashcardsPage() {
 
   return (
     <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <div className="max-w-6xl mx-auto space-y-6 py-6 px-4">
             
