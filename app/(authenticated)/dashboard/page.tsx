@@ -20,7 +20,7 @@ export default function DashboardPage() {
 
   const getWelcomeMessage = () => {
     switch (profile?.role) {
-      case 'admin':
+      case 'administrator':
         return 'Bem-vindo, Administrador!'
       case 'teacher':
         return 'Bem-vindo, Professor!'
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   const getRoleDescription = () => {
     switch (profile?.role) {
-      case 'admin':
+      case 'administrator':
         return 'Gerencie toda a plataforma e usuários'
       case 'teacher':
         return 'Gerencie suas turmas e conteúdos'

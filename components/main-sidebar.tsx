@@ -110,7 +110,7 @@ export function MainSidebar() {
 
   const getRoleDisplayName = () => {
     switch (profile?.role) {
-      case 'admin':
+      case 'administrator':
         return 'Administrador'
       case 'teacher':
         return 'Professor'
