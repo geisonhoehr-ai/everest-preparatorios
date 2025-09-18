@@ -3,10 +3,12 @@
 // ========================================
 // Este arquivo contém as correções necessárias para as funções de server actions
 
+import { createClient } from '@/lib/supabaseServer'
+
 // PROBLEMA 1: getAllSubjects() retorna UUIDs, mas frontend espera numbers
 export async function getAllSubjects() {
   console.log("🔍 [Server Action] getAllSubjects() iniciada")
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log("🔍 [Server Action] Supabase client obtido")
   
   try {
@@ -36,7 +38,7 @@ export async function getAllSubjects() {
 
 // PROBLEMA 2: getTopicsBySubject() usa number para subjectId, mas database usa UUID
 export async function getTopicsBySubject(subjectId: string) { // CORREÇÃO: Mudado de number para string
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`🔍 [Server Action] getTopicsBySubject para subjectId: ${subjectId}`)
   
   const { data, error } = await supabase
@@ -56,7 +58,7 @@ export async function getTopicsBySubject(subjectId: string) { // CORREÇÃO: Mud
 
 // PROBLEMA 3: getAllQuizzesByTopic() busca por quiz_id, mas deveria buscar por topic_id
 export async function getAllQuizzesByTopic(topicId: string) { // CORREÇÃO: Mudado de quizId para topicId
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`❓ [Server Action] Buscando questões do tópico: ${topicId}`)
 
   const { data, error } = await supabase
@@ -76,7 +78,7 @@ export async function getAllQuizzesByTopic(topicId: string) { // CORREÇÃO: Mud
 
 // NOVA FUNÇÃO: Buscar quizzes por tópico
 export async function getQuizzesByTopic(topicId: string) {
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`🔍 [Server Action] getQuizzesByTopic para topicId: ${topicId}`)
 
   const { data, error } = await supabase
@@ -96,7 +98,7 @@ export async function getQuizzesByTopic(topicId: string) {
 
 // NOVA FUNÇÃO: Buscar questões por quiz
 export async function getQuestionsByQuiz(quizId: string) {
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`🔍 [Server Action] getQuestionsByQuiz para quizId: ${quizId}`)
 
   const { data, error } = await supabase
@@ -121,7 +123,7 @@ export async function createQuiz(userId: string, quizData: {
   description: string
   duration_minutes: number
 }) {
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`📝 [Server Action] Criando quiz para tópico: ${quizData.topic_id}`)
 
   const { data, error } = await supabase
@@ -156,7 +158,7 @@ export async function createQuizQuestion(userId: string, questionData: {
   explanation: string
   points: number
 }) {
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`📝 [Server Action] Criando questão de quiz: ${questionData.quiz_id}`)
 
   const { data, error } = await supabase
@@ -191,7 +193,7 @@ export async function updateQuizProgress(userId: string, quizId: string, progres
   time_spent: number
   completed_at: string
 }) {
-  const supabase = await getSupabase()
+  const supabase = createClient()
   console.log(`📝 [Server Action] Atualizando progresso do quiz: ${quizId}`)
 
   const { data, error } = await supabase
