@@ -156,15 +156,15 @@ export default function EverCastPage() {
         setIsPlaying(false)
         setCurrentTime(0)
       },
-      seekbackward: (details) => {
+      seekbackward: (details: MediaSessionActionDetails) => {
         const skipTime = details.seekOffset || 10
         setCurrentTime(Math.max(0, currentTime - skipTime))
       },
-      seekforward: (details) => {
+      seekforward: (details: MediaSessionActionDetails) => {
         const skipTime = details.seekOffset || 10
         setCurrentTime(Math.min(duration, currentTime + skipTime))
       },
-      seekto: (details) => {
+      seekto: (details: MediaSessionActionDetails) => {
         if (details.seekTime !== undefined) {
           setCurrentTime(details.seekTime)
         }
