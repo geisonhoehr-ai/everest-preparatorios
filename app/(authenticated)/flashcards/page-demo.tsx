@@ -347,7 +347,7 @@ export default function FlashcardsPageDemo() {
   if (studyMode === "select") {
     return (
       <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
               <div>
@@ -436,7 +436,7 @@ export default function FlashcardsPageDemo() {
 
     return (
       <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
               <Button 
@@ -567,7 +567,7 @@ export default function FlashcardsPageDemo() {
 
     return (
       <PagePermissionGuard pageName="flashcards">
-        <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+        <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
           <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
             <div className="text-center">
               <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
