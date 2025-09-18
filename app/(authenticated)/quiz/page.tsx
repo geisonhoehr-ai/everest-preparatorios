@@ -568,7 +568,7 @@ export default function QuizPage() {
 
   if (isLoading && quizMode === "select") {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -582,7 +582,7 @@ export default function QuizPage() {
   // Seleção de matéria
   if (!selectedSubject) {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-6 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -679,7 +679,7 @@ export default function QuizPage() {
   // Seleção de tópico
   if (quizMode === "select") {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-6 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -861,7 +861,7 @@ export default function QuizPage() {
   // Modo de quiz - sem questões
   if (quizMode === "quiz" && safeQuestions.length === 0) {
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-6 p-6">
           <div className="flex items-center justify-between">
             <Button 
@@ -913,7 +913,7 @@ export default function QuizPage() {
     const progress = ((currentQuestionIndex + 1) / safeQuestions.length) * 100
 
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
             <Button 
@@ -1090,7 +1090,7 @@ export default function QuizPage() {
     const accuracy = totalQuestions > 0 ? (quizStats.correct / totalQuestions) * 100 : 0
 
     return (
-      <RoleGuard allowedRoles={['student', 'teacher', 'admin']}>
+      <RoleGuard allowedRoles={['student', 'teacher', 'administrator']}>
         <div className="space-y-6 p-6">
           <div className="text-center">
             <div className="mx-auto mb-6 p-6 bg-gradient-to-r from-green-500 to-blue-500 rounded-full w-fit">
