@@ -466,7 +466,7 @@ export default function FlashcardsPageDemo() {
             <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-0">
               <Card className="min-h-[250px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center relative">
                 {/* Ícones de edição para admin/teacher */}
-                {(profile?.role === 'admin' || profile?.role === 'teacher') && (
+                {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                   <div className="absolute top-4 right-4 flex gap-2 z-10">
                     <Button
                       variant="ghost"
