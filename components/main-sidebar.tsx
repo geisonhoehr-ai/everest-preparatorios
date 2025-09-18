@@ -57,8 +57,8 @@ export function MainSidebar() {
   // Filtrar itens baseado no role do usuário
   const filteredNavigationItems = navigationItems.filter(item => {
     if (item.access === "all") return true
-    if (item.access === "teacher" && (profile?.role === "teacher" || profile?.role === "admin")) return true
-    if (item.access === "admin" && profile?.role === "admin") return true
+    if (item.access === "teacher" && (profile?.role === "teacher" || profile?.role === "administrator")) return true
+    if (item.access === "admin" && profile?.role === "administrator") return true
     return false
   })
 
