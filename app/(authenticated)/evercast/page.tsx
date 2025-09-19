@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { PagePermissionGuard } from "@/components/page-permission-guard"
-import { useAuth } from '@/context/auth-context'
+import { useAuth } from '@/context/auth-context-supabase'
 import { 
   getAllAudioCourses, 
   createAudioCourse, 

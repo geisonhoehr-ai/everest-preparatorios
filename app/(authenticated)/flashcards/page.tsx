@@ -47,7 +47,7 @@ import {
   Library
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-supabase"
 import { updateFlashcardProgress, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress, getAllFlashcardsByTopicSimple } from "../../server-actions"
 import { getFlashcardsByTopic, createFlashcard, updateFlashcard, deleteFlashcard } from "../../../actions-flashcards-simples"
 import Link from "next/link"

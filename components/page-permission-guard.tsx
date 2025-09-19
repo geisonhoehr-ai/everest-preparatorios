@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/context/auth-context'
+import { useAuth } from '@/context/auth-context-supabase'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Shield, Lock, AlertCircle } from 'lucide-react'
@@ -23,7 +23,12 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
   }, [user, profile, pageName])
 
   const checkPageAccess = async () => {
+    console.log('🔍 Verificando acesso à página:', pageName)
+    console.log('👤 Usuário:', user?.email)
+    console.log('👤 Perfil:', profile?.role)
+    
     if (!user || !profile) {
+      console.log('❌ Usuário ou perfil não encontrado')
       setHasAccess(false)
       setIsLoading(false)
       return
@@ -31,14 +36,16 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
 
     // Professores e admins têm acesso total
     if (profile.role === 'teacher' || profile.role === 'administrator') {
+      console.log('✅ Professor/Admin tem acesso total à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
       return
     }
 
-    // Páginas com acesso livre para todos os usuários autenticados
-    const freeAccessPages = ['flashcards', 'quiz', 'evercast', 'calendario']
-    if (freeAccessPages.includes(pageName)) {
+    // Páginas permitidas para alunos
+    const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
+    if (profile.role === 'student' && studentAllowedPages.includes(pageName)) {
+      console.log('✅ Aluno tem acesso à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
       return
@@ -76,6 +83,11 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     } finally {
       setIsLoading(false)
     }
+    
+    // Se chegou até aqui, não tem acesso
+    console.log('❌ Acesso negado à página:', pageName, 'para role:', profile.role)
+    setHasAccess(false)
+    setIsLoading(false)
   }
 
   if (isLoading) {
