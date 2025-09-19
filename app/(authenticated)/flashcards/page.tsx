@@ -144,9 +144,16 @@ export default function FlashcardsPage() {
       const loadTopics = async () => {
         try {
           const data = await getTopicsBySubject(selectedSubject)
-          setTopics(data)
-          if (data.length > 0) {
-            setSelectedTopic(data[0].id)
+          // Mapear dados para incluir campos obrigatórios da interface Topic
+          const topicsWithDefaults = data.map(topic => ({
+            id: topic.id,
+            name: topic.name,
+            description: '', // Campo não disponível na API
+            flashcardCount: 0 // Será atualizado quando carregarmos os flashcards
+          }))
+          setTopics(topicsWithDefaults)
+          if (topicsWithDefaults.length > 0) {
+            setSelectedTopic(topicsWithDefaults[0].id)
           }
         } catch (error) {
           console.error('Erro ao carregar topics:', error)
@@ -162,14 +169,16 @@ export default function FlashcardsPage() {
       const loadFlashcards = async () => {
         setIsLoading(true)
         try {
-          let data: Flashcard[] = []
+          let result: any
           if (studyMode === 'review') {
-            data = await getCardsForReview(selectedTopic)
+            result = await getCardsForReview(selectedTopic)
           } else if (studyMode === 'new') {
-            data = await getNewCards(selectedTopic)
+            result = await getNewCards(selectedTopic)
           } else {
-            data = await getAllFlashcardsByTopicSimple(selectedTopic)
+            result = await getAllFlashcardsByTopicSimple(selectedTopic)
           }
+          
+          const data: Flashcard[] = result.success ? result.data : []
           setFlashcards(data)
           setCurrentCardIndex(0)
           setIsFlipped(false)
@@ -192,7 +201,7 @@ export default function FlashcardsPage() {
   const handleCardRating = async (rating: number) => {
     if (flashcards[currentCardIndex]) {
       try {
-        await updateFlashcardProgressSM2(flashcards[currentCardIndex].id, rating)
+        await updateFlashcardProgressSM2(user?.id || '', flashcards[currentCardIndex].id, rating)
         
         // Próximo card
         if (currentCardIndex < flashcards.length - 1) {

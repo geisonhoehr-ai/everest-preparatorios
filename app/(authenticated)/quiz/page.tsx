@@ -127,9 +127,16 @@ export default function QuizPage() {
       const loadTopics = async () => {
         try {
           const data = await getTopicsBySubject(selectedSubject)
-          setTopics(data)
-          if (data.length > 0) {
-            setSelectedTopic(data[0].id)
+          // Mapear dados para incluir campos obrigatórios da interface Topic
+          const topicsWithDefaults = data.map(topic => ({
+            id: topic.id,
+            name: topic.name,
+            description: '', // Campo não disponível na API
+            flashcardCount: 0 // Será atualizado quando carregarmos os flashcards
+          }))
+          setTopics(topicsWithDefaults)
+          if (topicsWithDefaults.length > 0) {
+            setSelectedTopic(topicsWithDefaults[0].id)
           }
         } catch (error) {
           console.error('Erro ao carregar topics:', error)
@@ -146,8 +153,16 @@ export default function QuizPage() {
         setIsLoading(true)
         try {
           const data = await getAllQuizzesByTopic(selectedTopic)
-          setQuestions(data)
-          setUserAnswers(new Array(data.length).fill(null))
+          // Mapear dados para incluir campos obrigatórios da interface Question
+          const questionsWithDefaults = data.map(q => ({
+            id: q.id,
+            question: q.question_text, // Mapear question_text para question
+            options: q.options,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation
+          }))
+          setQuestions(questionsWithDefaults)
+          setUserAnswers(new Array(questionsWithDefaults.length).fill(null))
         } catch (error) {
           console.error('Erro ao carregar questions:', error)
         } finally {
