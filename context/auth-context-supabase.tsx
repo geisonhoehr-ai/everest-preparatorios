@@ -23,6 +23,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -194,6 +196,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      logger.info('Solicitação de reset de senha', 'AUTH', { email: email.substring(0, 3) + '***@***' })
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      
+      if (error) {
+        logger.error('Erro ao solicitar reset de senha', 'AUTH', { error: error.message, email: email.substring(0, 3) + '***@***' })
+        return { success: false, error: error.message }
+      }
+      
+      logger.info('Reset de senha solicitado com sucesso', 'AUTH', { email: email.substring(0, 3) + '***@***' })
+      return { success: true }
+    } catch (error) {
+      logger.error('Erro inesperado ao solicitar reset de senha', 'AUTH', { error: (error as Error).message, email: email.substring(0, 3) + '***@***' })
+      return { success: false, error: 'Erro inesperado ao solicitar reset de senha.' }
+    }
+  }
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      logger.info('Tentativa de reset de senha', 'AUTH', { tokenLength: token.length })
+      
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+      
+      if (error) {
+        logger.error('Erro ao resetar senha', 'AUTH', { error: error.message })
+        return { success: false, error: error.message }
+      }
+      
+      logger.info('Senha resetada com sucesso', 'AUTH')
+      return { success: true }
+    } catch (error) {
+      logger.error('Erro inesperado ao resetar senha', 'AUTH', { error: (error as Error).message })
+      return { success: false, error: 'Erro inesperado ao resetar senha.' }
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -202,7 +246,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       signIn,
       signOut,
-      refreshProfile
+      refreshProfile,
+      requestPasswordReset,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>
