@@ -171,6 +171,6 @@ export function useFlashcards() {
     loadFlashcards,
     
     // Utilitários
-    isTeacherOrAdmin: profile?.role === 'teacher' || profile?.role === 'admin'
+    isTeacherOrAdmin: profile?.role === 'teacher' || profile?.role === 'administrator'
   }
 }
