@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Clock, FileText, BookOpen } from 'lucide-react'
+import { htmlSanitizer } from '@/lib/html-sanitizer'
 
 interface Questao {
   id: string;
@@ -96,12 +97,12 @@ export function ProvaViewer({ prova, onIniciarProva }: ProvaViewerProps) {
             <CardContent>
               <div 
                 className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: prova.texto_base }}
+                dangerouslySetInnerHTML={{ __html: htmlSanitizer.sanitize(prova.texto_base) }}
               />
               {prova.fonte_texto_base && (
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    <strong>Fonte:</strong> {prova.fonte_texto_base}
+                    <strong>Fonte:</strong> {htmlSanitizer.sanitizeText(prova.fonte_texto_base)}
                   </p>
                 </div>
               )}

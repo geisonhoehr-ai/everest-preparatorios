@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabaseServer"
 import { revalidatePath } from "next/cache"
+import { inputValidator } from '@/lib/input-validation'
+import { logger } from '@/lib/logger'
 import type { CommunityPost, CommunityComment, CommunityCategory } from "@/lib/types"
 
 // Função para obter todos os posts da comunidade
@@ -158,12 +160,26 @@ export async function createCommunityPost(formData: FormData) {
     const content = formData.get("content") as string
     const tagsString = formData.get("tags") as string // Nova entrada para tags
 
-    if (!title || !content) {
-      return { success: false, error: "Título e conteúdo são obrigatórios." }
+    // Validar entrada
+    const validation = inputValidator.validate(
+      { title, content, tags: tagsString },
+      inputValidator.getSchemas().communityPost
+    )
+
+    if (!validation.isValid) {
+      logger.warn('Tentativa de criar post com dados inválidos', 'SECURITY', { 
+        errors: validation.errors 
+      })
+      return { 
+        success: false, 
+        error: "Dados inválidos: " + Object.values(validation.errors).join(", ") 
+      }
     }
 
-    const tags = tagsString
-      ? tagsString
+    const { title: validTitle, content: validContent, tags: validTags } = validation.sanitizedData
+
+    const tags = validTags
+      ? validTags
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag.length > 0)
@@ -181,8 +197,8 @@ export async function createCommunityPost(formData: FormData) {
 
     const { error } = await supabase.from("community_posts").insert({
       user_id: user.id,
-      title,
-      content,
+      title: validTitle,
+      content: validContent,
       tags, // Incluir tags
     })
 

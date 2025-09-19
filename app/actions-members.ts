@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabaseServer'
 import { revalidatePath } from 'next/cache'
+import { inputValidator } from '@/lib/input-validation'
+import { logger } from '@/lib/logger'
 
 // ========================================
 // FUNÇÕES PARA MEMBERS
@@ -81,7 +83,24 @@ export async function createMember(memberData: {
   const supabase = createClient()
   
   try {
-    console.log('🔍 [ACTIONS-MEMBERS] Iniciando createMember com dados:', memberData)
+    // Validar entrada
+    const validation = inputValidator.validate(
+      memberData,
+      inputValidator.getSchemas().member
+    )
+
+    if (!validation.isValid) {
+      logger.warn('Tentativa de criar membro com dados inválidos', 'SECURITY', { 
+        errors: validation.errors 
+      })
+      return { 
+        success: false, 
+        error: "Dados inválidos: " + Object.values(validation.errors).join(", ") 
+      }
+    }
+
+    const sanitizedData = validation.sanitizedData
+    console.log('🔍 [ACTIONS-MEMBERS] Iniciando createMember com dados:', sanitizedData)
     
     // Verificar se o usuário está autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -110,7 +129,7 @@ export async function createMember(memberData: {
     const { data, error } = await supabase
       .from('members')
       .insert({
-        ...memberData,
+        ...sanitizedData,
         created_by: user.id
       })
       .select()

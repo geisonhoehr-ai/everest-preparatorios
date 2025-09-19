@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabaseServer'
+import { inputValidator } from '@/lib/input-validation'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +25,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    
+    // Validar entrada básica
+    const validation = inputValidator.validate(
+      { 
+        redacao_id: body.redacao_id,
+        feedback_geral: body.feedback_geral,
+        sugestoes_melhoria: body.sugestoes_melhoria
+      },
+      inputValidator.getSchemas().redacaoAvaliacao
+    )
+
+    if (!validation.isValid) {
+      logger.warn('Tentativa de criar avaliação com dados inválidos', 'SECURITY', { 
+        errors: validation.errors 
+      })
+      return NextResponse.json({ 
+        error: "Dados inválidos: " + Object.values(validation.errors).join(", ") 
+      }, { status: 400 })
+    }
+
     const {
       redacao_id,
       erros_pontuacao,

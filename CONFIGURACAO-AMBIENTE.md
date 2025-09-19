@@ -17,6 +17,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_aqui
 SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_aqui
 
 # =====================================================
+# PANDAVIDEO OAUTH
+# =====================================================
+PANDAVIDEO_CLIENT_ID=seu_client_id_pandavideo
+PANDAVIDEO_CLIENT_SECRET=sua_chave_secreta_pandavideo
+
+# =====================================================
 # CONFIGURAÇÕES GERAIS
 # =====================================================
 CUSTOM_KEY=sua_chave_personalizada
@@ -61,6 +67,19 @@ nano .env.local
 - **NUNCA expor no frontend**
 - Usada apenas em Server Actions
 - Encontrada em: Supabase Dashboard > Settings > API
+
+## 🎥 Credenciais do PandaVideo
+
+### **PANDAVIDEO_CLIENT_ID:**
+- ID do cliente para integração OAuth com PandaVideo
+- Pode ser exposta no frontend (não é sensível)
+- Encontrada no painel do PandaVideo
+
+### **PANDAVIDEO_CLIENT_SECRET:**
+- Chave secreta do cliente PandaVideo
+- **NUNCA expor no frontend**
+- Usada apenas em Server Actions
+- Encontrada no painel do PandaVideo
 
 ## ✅ Verificação
 
