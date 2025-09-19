@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRequireAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Users, BookOpen, Trophy, Loader2 } from "lucide-react"
 import ProgressWidget from "@/components/progress-widget"
 import { getTotalUsers, getTotalContent, getTotalTests, getUserRanking } from "../../server-actions"
 
 export default function DashboardPage() {
-  const { user, profile } = useRequireAuth()
+  const { user, profile } = useAuth()
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalContent: 0,
