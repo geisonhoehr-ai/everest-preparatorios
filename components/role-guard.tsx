@@ -67,7 +67,7 @@ export function RoleGuard({ children, allowedRoles, fallbackPath = "/dashboard" 
 // Componentes específicos para cada role
 export function AdminOnly({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={['admin']}>
+    <RoleGuard allowedRoles={['administrator']}>
       {children}
     </RoleGuard>
   )
@@ -75,7 +75,7 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
 
 export function TeacherOnly({ children }: { children: React.ReactNode }) {
   return (
-    <RoleGuard allowedRoles={['teacher', 'admin']}>
+    <RoleGuard allowedRoles={['teacher', 'administrator']}>
       {children}
     </RoleGuard>
   )
