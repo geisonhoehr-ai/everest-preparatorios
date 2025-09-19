@@ -18,7 +18,7 @@ export function TeacherAndAdminOnly({ children }: TeacherAndAdminOnlyProps) {
     )
   }
 
-  if (!profile || (profile.role !== 'teacher' && profile.role !== 'admin')) {
+  if (!profile || (profile.role !== 'teacher' && profile.role !== 'administrator')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
