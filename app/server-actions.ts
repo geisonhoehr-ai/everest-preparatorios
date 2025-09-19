@@ -2280,7 +2280,7 @@ export async function importEaofCronograma(userId: string) {
       .eq('user_id', userId)
       .single()
 
-    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem importar cronogramas.')
     }
 
@@ -2460,7 +2460,7 @@ export async function createMember(memberData: {
       .eq('user_id', createdBy)
       .single()
 
-    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem criar membros.')
     }
 
@@ -2577,7 +2577,7 @@ export async function updateMember(memberId: string, updateData: {
       .eq('user_id', updatedBy)
       .single()
 
-    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem editar membros.')
     }
 
@@ -2664,7 +2664,7 @@ export async function deleteMember(memberId: string, deletedBy: string) {
       .eq('user_id', deletedBy)
       .single()
 
-    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem deletar membros.')
     }
 
@@ -2704,7 +2704,7 @@ export async function createTemporaryPassword(memberId: string, createdBy: strin
       .eq('user_id', createdBy)
       .single()
 
-    if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem criar senhas provisórias.')
     }
 

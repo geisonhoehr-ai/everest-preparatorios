@@ -70,7 +70,7 @@ export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boole
       .single()
 
     if (!profileError && profileData) {
-      const hasAccess = profileData.role === 'teacher' || profileData.role === 'admin'
+      const hasAccess = profileData.role === 'teacher' || profileData.role === 'administrator'
       console.log(`✅ [EverCast] Acesso ${hasAccess ? 'permitido' : 'negado'} para role: ${profileData.role}`)
       return hasAccess
     }

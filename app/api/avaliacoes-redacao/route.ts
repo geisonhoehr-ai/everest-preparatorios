@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       .eq('user_uuid', user.email)
       .single()
 
-    if (!userRole || !['teacher', 'admin'].includes(userRole.role)) {
+    if (!userRole || !['teacher', 'administrator'].includes(userRole.role)) {
       return NextResponse.json({ error: 'Acesso negado. Apenas professores podem corrigir redações.' }, { status: 403 })
     }
 

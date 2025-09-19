@@ -51,7 +51,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const getRoleDisplay = (role: string) => {
     const roleMap: Record<string, string> = {
-      'admin': 'Administrador',
+      'administrator': 'Administrador',
       'teacher': 'Professor',
       'student': 'Estudante'
     }

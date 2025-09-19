@@ -27,7 +27,7 @@ export function CronogramaImporter({ onImportComplete, userRole, userId }: Crono
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   // Verificar se o usuário tem permissão
-  const canImport = userRole === 'admin' || userRole === 'teacher'
+  const canImport = userRole === 'administrator' || userRole === 'teacher'
 
   const handleImportCronograma = async () => {
     if (!canImport) {

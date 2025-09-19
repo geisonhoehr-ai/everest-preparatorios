@@ -4,7 +4,7 @@ interface User {
   id: string
   email: string
   name: string
-  role: 'student' | 'admin' | 'teacher'
+  role: 'student' | 'administrator' | 'teacher'
   logged_in: boolean
 }
 
@@ -43,7 +43,7 @@ export function useAuthTemp() {
         id: `${foundUser.role}-123`,
         email: foundUser.email,
         name: foundUser.name,
-        role: foundUser.role as 'student' | 'admin' | 'teacher',
+        role: foundUser.role as 'student' | 'administrator' | 'teacher',
         logged_in: true
       }
       

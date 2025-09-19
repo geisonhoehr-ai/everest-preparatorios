@@ -192,8 +192,8 @@ export default function ProfilePage() {
                 <UserIcon className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Tipo de Usuário</p>
-                  <Badge variant={userRole === 'admin' ? 'destructive' : userRole === 'teacher' ? 'default' : 'secondary'}>
-                    {userRole === 'admin' ? 'Administrador' : 
+                  <Badge variant={userRole === 'administrator' ? 'destructive' : userRole === 'teacher' ? 'default' : 'secondary'}>
+                    {userRole === 'administrator' ? 'Administrador' : 
                      userRole === 'teacher' ? 'Professor' : 
                      userRole === 'student' ? 'Estudante' : 'Usuário'}
                   </Badge>
