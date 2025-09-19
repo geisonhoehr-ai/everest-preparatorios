@@ -161,7 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         last_name: userData.last_name,
         email: userData.email,
         is_active: userData.is_active,
-        last_login_at: userData.last_login_at,
         created_at: userData.created_at,
         updated_at: userData.updated_at,
         profile_type: userData.role,
