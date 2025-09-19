@@ -30,7 +30,7 @@ export async function verifyServerSession(sessionToken: string): Promise<{ succe
         users (*)
       `)
       .eq('session_token', sessionToken)
-      .eq('expires_at', '>', new Date().toISOString())
+      .gt('expires_at', new Date().toISOString())
       .single()
     
     if (error || !session || !session.users?.is_active) {
