@@ -10,21 +10,8 @@ interface UserProfile {
   user_id: string
   role: 'administrator' | 'teacher' | 'student'
   display_name: string
-  first_name: string
-  last_name: string
-  email: string
-  is_active: boolean
-  last_login_at?: string
   created_at: string
   updated_at: string
-  profile_type: 'administrator' | 'teacher' | 'student' | 'user'
-  specific_data?: {
-    employee_id_number?: string
-    hire_date?: string
-    department?: string
-    student_id_number?: string
-    enrollment_date?: string
-  }
 }
 
 interface AuthContextType {
@@ -137,12 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .insert({
           user_id: userId,
           role: role,
-          display_name: displayName,
-          first_name: displayName.split(' ')[0],
-          last_name: displayName.split(' ').slice(1).join(' ') || '',
-          email: email,
-          is_active: true,
-          profile_type: role
+          display_name: displayName
         })
         .select()
         .single()

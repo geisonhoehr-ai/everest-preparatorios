@@ -20,26 +20,12 @@ ORDER BY au.email;
 INSERT INTO user_profiles (
     user_id, 
     role, 
-    display_name, 
-    first_name, 
-    last_name, 
-    email, 
-    is_active, 
-    profile_type,
-    created_at, 
-    updated_at
+    display_name
 )
 SELECT 
     au.id,
     'teacher',
-    'Professor Teste',
-    'Professor',
-    'Teste',
-    au.email,
-    true,
-    'teacher',
-    NOW(),
-    NOW()
+    'Professor Teste'
 FROM auth.users au
 WHERE au.email = 'professor@teste.com'
 AND NOT EXISTS (
@@ -51,26 +37,12 @@ AND NOT EXISTS (
 INSERT INTO user_profiles (
     user_id, 
     role, 
-    display_name, 
-    first_name, 
-    last_name, 
-    email, 
-    is_active, 
-    profile_type,
-    created_at, 
-    updated_at
+    display_name
 )
 SELECT 
     au.id,
     'administrator',
-    'Admin Teste',
-    'Admin',
-    'Teste',
-    au.email,
-    true,
-    'administrator',
-    NOW(),
-    NOW()
+    'Admin Teste'
 FROM auth.users au
 WHERE au.email = 'admin@teste.com'
 AND NOT EXISTS (
@@ -82,26 +54,12 @@ AND NOT EXISTS (
 INSERT INTO user_profiles (
     user_id, 
     role, 
-    display_name, 
-    first_name, 
-    last_name, 
-    email, 
-    is_active, 
-    profile_type,
-    created_at, 
-    updated_at
+    display_name
 )
 SELECT 
     au.id,
     'student',
-    'Aluno Teste',
-    'Aluno',
-    'Teste',
-    au.email,
-    true,
-    'student',
-    NOW(),
-    NOW()
+    'Aluno Teste'
 FROM auth.users au
 WHERE au.email = 'aluno@teste.com'
 AND NOT EXISTS (
@@ -116,8 +74,7 @@ SELECT
     up.user_id,
     up.role,
     up.display_name,
-    up.email,
-    up.is_active,
+    au.email,
     au.email_confirmed_at
 FROM user_profiles up
 JOIN auth.users au ON up.user_id = au.id
