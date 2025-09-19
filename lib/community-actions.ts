@@ -181,8 +181,8 @@ export async function createCommunityPost(formData: FormData) {
     const tags = validTags
       ? validTags
           .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag.length > 0)
+          .map((tag: string) => tag.trim())
+          .filter((tag: string) => tag.length > 0)
       : []
 
     const {

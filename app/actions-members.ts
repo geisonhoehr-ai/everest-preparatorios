@@ -438,7 +438,7 @@ export async function importSubscriptionsFromCSV(csvData: string) {
       .from('members')
       .select('id, email')
 
-    const memberMap = new Map(members?.map((m: any) => [m.email, m.id]) || [])
+    const memberMap = new Map(members?.map((m: { email: string; id: string }) => [m.email, m.id]) || [])
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
