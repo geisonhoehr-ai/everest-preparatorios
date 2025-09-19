@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         created_at: userData.created_at,
         updated_at: userData.updated_at,
         profile_type: userData.role,
-        specific_data: null // Pode ser expandido no futuro se necessário
+        specific_data: undefined // Pode ser expandido no futuro se necessário
       }
       
       console.log('✅ Perfil unificado criado:', profile)
