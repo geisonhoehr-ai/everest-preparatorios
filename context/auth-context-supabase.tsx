@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useRouter } from "next/navigation"
 import { createClient } from '@/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
+import { logger, logError, logLoginAttempt } from '@/lib/logger'
 
 interface UserProfile {
   id: string
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) {
-          console.error('Erro ao obter sessão:', error)
+          logger.error('Erro ao obter sessão do usuário', 'AUTH', { error: error.message })
           return
         }
         
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fetchUserProfile(session.user.id)
         }
       } catch (error) {
-        console.error('Erro ao verificar sessão:', error)
+        logger.error('Erro ao verificar sessão do usuário', 'AUTH', { error: (error as Error).message })
       } finally {
         setIsLoading(false)
       }
@@ -130,49 +131,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Erro ao criar perfil padrão:', error)
+        logger.error('Erro ao criar perfil padrão do usuário', 'AUTH', { error: error.message }, userId)
         return
       }
 
       setProfile(newProfile)
     } catch (error) {
-      console.error('Erro ao criar perfil padrão:', error)
+      logger.error('Erro ao criar perfil padrão do usuário', 'AUTH', { error: (error as Error).message }, userId)
     }
   }
 
   const signIn = async (email: string, password: string) => {
     try {
+      logger.debug('Tentativa de login iniciada', 'AUTH', { email: email.substring(0, 3) + '***@***' })
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        logLoginAttempt(email, false, 'AUTH')
+        logger.warn('Tentativa de login falhou', 'AUTH', { error: error.message, email: email.substring(0, 3) + '***@***' })
         return { success: false, error: error.message }
       }
 
       if (data.user) {
+        logLoginAttempt(email, true, 'AUTH')
+        logger.info('Login realizado com sucesso', 'AUTH', { userId: data.user.id, email: email.substring(0, 3) + '***@***' })
         setUser(data.user)
         setSession(data.session)
         await fetchUserProfile(data.user.id)
         return { success: true }
       }
 
+      logger.error('Login falhou - usuário não retornado', 'AUTH', { email: email.substring(0, 3) + '***@***' })
       return { success: false, error: 'Erro desconhecido' }
     } catch (error) {
+      logLoginAttempt(email, false, 'AUTH')
+      logger.error('Erro inesperado durante login', 'AUTH', { error: (error as Error).message, email: email.substring(0, 3) + '***@***' })
       return { success: false, error: 'Erro inesperado' }
     }
   }
 
   const signOut = async () => {
     try {
+      logger.info('Logout iniciado', 'AUTH', { userId: user?.id })
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
       setProfile(null)
+      logger.info('Logout realizado com sucesso', 'AUTH', { userId: user?.id })
       router.push('/login')
     } catch (error) {
-      console.error('Erro ao fazer logout:', error)
+      logger.error('Erro ao fazer logout', 'AUTH', { error: (error as Error).message, userId: user?.id })
     }
   }
 

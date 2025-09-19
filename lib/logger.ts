@@ -1,376 +1,196 @@
-'use client'
+/**
+ * Sistema de Logging Estruturado para Everest Preparatórios
+ * 
+ * Este sistema garante que:
+ * - Logs de debug só aparecem em desenvolvimento
+ * - Logs de erro são sempre registrados
+ * - Informações sensíveis não são expostas
+ * - Logs são estruturados para facilitar monitoramento
+ */
 
-interface LogLevel {
-  ERROR: 0
-  WARN: 1
-  INFO: 2
-  DEBUG: 3
-  TRACE: 4
-}
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
-  level: keyof LogLevel
+  level: LogLevel
   message: string
-  timestamp: number
-  context?: any
+  timestamp: string
+  context?: string
+  data?: any
   userId?: string
   sessionId?: string
-  requestId?: string
-  stack?: string
-  metadata?: Record<string, any>
 }
 
-interface LoggerConfig {
-  level: keyof LogLevel
-  enableConsole: boolean
-  enableRemote: boolean
-  enableLocalStorage: boolean
-  maxLocalLogs: number
-  remoteEndpoint?: string
-  batchSize: number
-  flushInterval: number
-}
+class Logger {
+  private isDevelopment = process.env.NODE_ENV === 'development'
+  private isProduction = process.env.NODE_ENV === 'production'
 
-class LoggerService {
-  private config: LoggerConfig
-  private logQueue: LogEntry[] = []
-  private logLevels: LogLevel = {
-    ERROR: 0,
-    WARN: 1,
-    INFO: 2,
-    DEBUG: 3,
-    TRACE: 4
-  }
-
-  constructor(config: Partial<LoggerConfig> = {}) {
-    this.config = {
-      level: 'INFO',
-      enableConsole: true,
-      enableRemote: false,
-      enableLocalStorage: true,
-      maxLocalLogs: 1000,
-      remoteEndpoint: '/api/logs',
-      batchSize: 10,
-      flushInterval: 5000,
-      ...config
+  private formatMessage(entry: LogEntry): string {
+    const { level, message, timestamp, context, data, userId, sessionId } = entry
+    
+    let formattedMessage = `[${timestamp}] ${level.toUpperCase()}`
+    
+    if (context) {
+      formattedMessage += ` [${context}]`
     }
-
-    this.initialize()
+    
+    if (userId) {
+      formattedMessage += ` [User: ${userId.substring(0, 8)}...]`
+    }
+    
+    if (sessionId) {
+      formattedMessage += ` [Session: ${sessionId.substring(0, 8)}...]`
+    }
+    
+    formattedMessage += `: ${message}`
+    
+    if (data && this.isDevelopment) {
+      formattedMessage += `\nData: ${JSON.stringify(data, null, 2)}`
+    }
+    
+    return formattedMessage
   }
 
-  private initialize() {
-    if (typeof window === 'undefined') return
-
-    // Flush logs periodicamente
-    setInterval(() => {
-      this.flushLogs()
-    }, this.config.flushInterval)
-
-    // Capturar erros globais
-    window.addEventListener('error', (event) => {
-      this.error('Global error', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error
-      })
-    })
-
-    // Capturar promises rejeitadas
-    window.addEventListener('unhandledrejection', (event) => {
-      this.error('Unhandled promise rejection', {
-        reason: event.reason,
-        promise: event.promise
-      })
-    })
-
-    // Capturar erros de recursos
-    window.addEventListener('error', (event) => {
-      if (event.target !== window) {
-        this.error('Resource error', {
-          target: event.target,
-          type: event.type
-        })
+  private sanitizeData(data: any): any {
+    if (!data) return data
+    
+    // Lista de campos sensíveis que devem ser removidos
+    const sensitiveFields = [
+      'password', 'senha', 'token', 'key', 'secret', 'auth',
+      'email', 'phone', 'cpf', 'rg', 'credit_card', 'cvv'
+    ]
+    
+    if (typeof data === 'object') {
+      const sanitized = { ...data }
+      
+      for (const field of sensitiveFields) {
+        if (field in sanitized) {
+          sanitized[field] = '[REDACTED]'
+        }
       }
-    }, true)
-  }
-
-  // Métodos de log
-  error(message: string, context?: any, metadata?: Record<string, any>) {
-    this.log('ERROR', message, context, metadata)
-  }
-
-  warn(message: string, context?: any, metadata?: Record<string, any>) {
-    this.log('WARN', message, context, metadata)
-  }
-
-  info(message: string, context?: any, metadata?: Record<string, any>) {
-    this.log('INFO', message, context, metadata)
-  }
-
-  debug(message: string, context?: any, metadata?: Record<string, any>) {
-    this.log('DEBUG', message, context, metadata)
-  }
-
-  trace(message: string, context?: any, metadata?: Record<string, any>) {
-    this.log('TRACE', message, context, metadata)
-  }
-
-  private log(level: keyof LogLevel, message: string, context?: any, metadata?: Record<string, any>) {
-    // Verificar se o nível de log está habilitado
-    if (this.logLevels[level] > this.logLevels[this.config.level]) {
-      return
+      
+      return sanitized
     }
+    
+    return data
+  }
 
-    const logEntry: LogEntry = {
+  private log(level: LogLevel, message: string, context?: string, data?: any, userId?: string, sessionId?: string) {
+    const entry: LogEntry = {
       level,
       message,
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
       context,
-      metadata,
-      userId: this.getUserId(),
-      sessionId: this.getSessionId(),
-      requestId: this.getRequestId()
+      data: this.sanitizeData(data),
+      userId,
+      sessionId
     }
 
-    // Adicionar stack trace para erros
-    if (level === 'ERROR' && context?.error) {
-      logEntry.stack = context.error.stack
-    }
+    const formattedMessage = this.formatMessage(entry)
 
-    // Log no console
-    if (this.config.enableConsole) {
-      this.logToConsole(logEntry)
-    }
-
-    // Adicionar à fila
-    this.logQueue.push(logEntry)
-
-    // Salvar no localStorage
-    if (this.config.enableLocalStorage) {
-      this.saveToLocalStorage(logEntry)
-    }
-
-    // Flush se necessário
-    if (this.logQueue.length >= this.config.batchSize) {
-      this.flushLogs()
-    }
-  }
-
-  private logToConsole(logEntry: LogEntry) {
-    const timestamp = new Date(logEntry.timestamp).toISOString()
-    const prefix = `[${timestamp}] [${logEntry.level}]`
-    
-    switch (logEntry.level) {
-      case 'ERROR':
-        console.error(prefix, logEntry.message, logEntry.context, logEntry.metadata)
-        break
-      case 'WARN':
-        console.warn(prefix, logEntry.message, logEntry.context, logEntry.metadata)
-        break
-      case 'INFO':
-        console.info(prefix, logEntry.message, logEntry.context, logEntry.metadata)
-        break
-      case 'DEBUG':
-        console.debug(prefix, logEntry.message, logEntry.context, logEntry.metadata)
-        break
-      case 'TRACE':
-        console.trace(prefix, logEntry.message, logEntry.context, logEntry.metadata)
-        break
-    }
-  }
-
-  private saveToLocalStorage(logEntry: LogEntry) {
-    try {
-      const stored = localStorage.getItem('everest-logs')
-      const logs = stored ? JSON.parse(stored) : []
-      
-      logs.push(logEntry)
-      
-      // Manter apenas os logs mais recentes
-      if (logs.length > this.config.maxLocalLogs) {
-        logs.splice(0, logs.length - this.config.maxLocalLogs)
-      }
-      
-      localStorage.setItem('everest-logs', JSON.stringify(logs))
-    } catch (error) {
-      console.error('Failed to save log to localStorage:', error)
-    }
-  }
-
-  private async flushLogs() {
-    if (!this.config.enableRemote || this.logQueue.length === 0) {
+    // Em produção, só logar warnings e errors
+    if (this.isProduction && (level === 'debug' || level === 'info')) {
       return
     }
 
-    const logsToFlush = [...this.logQueue]
-    this.logQueue = []
+    // Em desenvolvimento, logar tudo
+    switch (level) {
+      case 'debug':
+        console.log(formattedMessage)
+        break
+      case 'info':
+        console.info(formattedMessage)
+        break
+      case 'warn':
+        console.warn(formattedMessage)
+        break
+      case 'error':
+        console.error(formattedMessage)
+        break
+    }
 
-    try {
-      await fetch(this.config.remoteEndpoint!, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          logs: logsToFlush,
-          timestamp: Date.now()
-        })
-      })
-    } catch (error) {
-      console.error('Failed to flush logs:', error)
-      // Re-adicionar logs à fila se falhar
-      this.logQueue.unshift(...logsToFlush)
+    // Em produção, enviar logs críticos para serviço de monitoramento
+    if (this.isProduction && level === 'error') {
+      this.sendToMonitoring(entry)
     }
   }
 
-  // Métodos de utilidade
-  private getUserId(): string | undefined {
-    try {
-      return localStorage.getItem('everest-user-id') || undefined
-    } catch {
-      return undefined
-    }
+  private sendToMonitoring(entry: LogEntry) {
+    // TODO: Implementar integração com serviço de monitoramento
+    // Exemplos: Sentry, LogRocket, DataDog, etc.
+    // Por enquanto, apenas logar no console
+    console.error('🚨 CRITICAL ERROR - Should be sent to monitoring service:', entry)
   }
 
-  private getSessionId(): string | undefined {
-    try {
-      return localStorage.getItem('everest-session-id') || undefined
-    } catch {
-      return undefined
-    }
+  // Métodos públicos
+  debug(message: string, context?: string, data?: any, userId?: string, sessionId?: string) {
+    this.log('debug', message, context, data, userId, sessionId)
   }
 
-  private getRequestId(): string | undefined {
-    try {
-      return localStorage.getItem('everest-request-id') || undefined
-    } catch {
-      return undefined
-    }
+  info(message: string, context?: string, data?: any, userId?: string, sessionId?: string) {
+    this.log('info', message, context, data, userId, sessionId)
   }
 
-  // Obter logs do localStorage
-  getLocalLogs(limit?: number): LogEntry[] {
-    try {
-      const stored = localStorage.getItem('everest-logs')
-      const logs = stored ? JSON.parse(stored) : []
-      
-      if (limit) {
-        return logs.slice(-limit)
-      }
-      
-      return logs
-    } catch (error) {
-      console.error('Failed to get local logs:', error)
-      return []
-    }
+  warn(message: string, context?: string, data?: any, userId?: string, sessionId?: string) {
+    this.log('warn', message, context, data, userId, sessionId)
   }
 
-  // Limpar logs locais
-  clearLocalLogs(): void {
-    try {
-      localStorage.removeItem('everest-logs')
-    } catch (error) {
-      console.error('Failed to clear local logs:', error)
-    }
+  error(message: string, context?: string, data?: any, userId?: string, sessionId?: string) {
+    this.log('error', message, context, data, userId, sessionId)
   }
 
-  // Obter estatísticas de logs
-  getLogStats(): {
-    totalLogs: number
-    errorCount: number
-    warnCount: number
-    infoCount: number
-    debugCount: number
-    traceCount: number
-    oldestLog: number
-    newestLog: number
-  } {
-    const logs = this.getLocalLogs()
-    
-    const stats = {
-      totalLogs: logs.length,
-      errorCount: 0,
-      warnCount: 0,
-      infoCount: 0,
-      debugCount: 0,
-      traceCount: 0,
-      oldestLog: 0,
-      newestLog: 0
-    }
-
-    if (logs.length === 0) {
-      return stats
-    }
-
-    for (const log of logs) {
-      switch (log.level) {
-        case 'ERROR':
-          stats.errorCount++
-          break
-        case 'WARN':
-          stats.warnCount++
-          break
-        case 'INFO':
-          stats.infoCount++
-          break
-        case 'DEBUG':
-          stats.debugCount++
-          break
-        case 'TRACE':
-          stats.traceCount++
-          break
-      }
-    }
-
-    stats.oldestLog = Math.min(...logs.map(l => l.timestamp))
-    stats.newestLog = Math.max(...logs.map(l => l.timestamp))
-
-    return stats
+  // Métodos específicos para diferentes contextos
+  auth(message: string, data?: any, userId?: string, sessionId?: string) {
+    this.info(message, 'AUTH', data, userId, sessionId)
   }
 
-  // Métodos de configuração
-  updateConfig(newConfig: Partial<LoggerConfig>) {
-    this.config = { ...this.config, ...newConfig }
+  database(message: string, data?: any, userId?: string, sessionId?: string) {
+    this.info(message, 'DATABASE', data, userId, sessionId)
   }
 
-  getConfig(): LoggerConfig {
-    return { ...this.config }
+  api(message: string, data?: any, userId?: string, sessionId?: string) {
+    this.info(message, 'API', data, userId, sessionId)
   }
 
-  // Métodos de utilidade
-  isEnabled(): boolean {
-    return this.config.enableConsole || this.config.enableRemote || this.config.enableLocalStorage
+  security(message: string, data?: any, userId?: string, sessionId?: string) {
+    this.warn(message, 'SECURITY', data, userId, sessionId)
   }
 
-  getLevel(): keyof LogLevel {
-    return this.config.level
-  }
-
-  setLevel(level: keyof LogLevel) {
-    this.config.level = level
+  performance(message: string, data?: any, userId?: string, sessionId?: string) {
+    this.info(message, 'PERFORMANCE', data, userId, sessionId)
   }
 }
 
-// Instância global
-export const logger = new LoggerService()
+// Instância global do logger
+export const logger = new Logger()
 
-// Hook para usar logger
+// Hook para usar o logger em componentes React
 export function useLogger() {
-  return {
-    error: logger.error.bind(logger),
-    warn: logger.warn.bind(logger),
-    info: logger.info.bind(logger),
-    debug: logger.debug.bind(logger),
-    trace: logger.trace.bind(logger),
-    getLocalLogs: logger.getLocalLogs.bind(logger),
-    clearLocalLogs: logger.clearLocalLogs.bind(logger),
-    getLogStats: logger.getLogStats.bind(logger),
-    isEnabled: logger.isEnabled.bind(logger),
-    getLevel: logger.getLevel.bind(logger),
-    setLevel: logger.setLevel.bind(logger),
-    updateConfig: logger.updateConfig.bind(logger),
-    getConfig: logger.getConfig.bind(logger)
-  }
+  return logger
+}
+
+// Função utilitária para logar erros de forma consistente
+export function logError(error: Error, context?: string, userId?: string, sessionId?: string) {
+  logger.error(error.message, context, {
+    stack: error.stack,
+    name: error.name
+  }, userId, sessionId)
+}
+
+// Função utilitária para logar tentativas de login
+export function logLoginAttempt(email: string, success: boolean, context?: string, sessionId?: string) {
+  const message = success ? 'Login successful' : 'Login failed'
+  const level = success ? 'info' : 'warn'
+  
+  logger[level](message, context || 'AUTH', {
+    email: email.substring(0, 3) + '***@***', // Mascarar email
+    success
+  }, undefined, sessionId)
+}
+
+// Função utilitária para logar operações sensíveis
+export function logSensitiveOperation(operation: string, userId: string, context?: string, sessionId?: string) {
+  logger.security(`Sensitive operation: ${operation}`, {
+    operation,
+    userId: userId.substring(0, 8) + '...'
+  }, userId, sessionId)
 }
