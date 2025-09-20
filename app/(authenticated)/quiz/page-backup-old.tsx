@@ -337,7 +337,7 @@ export default function QuizPage() {
     
     if (confirm("Tem certeza que deseja excluir este quiz?")) {
       try {
-        const result = await deleteQuiz(profile.id, quizId.toString())
+        const result = await deleteQuiz(quizId.toString())
         if (result.success) {
           setQuestions(prev => prev.filter(q => q.id !== quizId))
         }
