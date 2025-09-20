@@ -272,7 +272,7 @@ export default function QuizPage() {
     try {
       if (editingQuiz) {
         // Editar quiz existente
-        const result = await updateQuiz(profile.id, editingQuiz.id.toString(), {
+        const result = await updateQuizQuestion(profile.id, editingQuiz.id.toString(), {
           question_text: editForm.question,
           options: editForm.options,
           correct_answer: editForm.options[editForm.correct_answer],
