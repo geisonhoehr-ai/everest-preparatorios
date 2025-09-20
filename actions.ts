@@ -1225,6 +1225,106 @@ export async function getTopicsBySubject(subjectId: number) {
   return data || []
 }
 
+// Função para obter dados completos das matérias com estatísticas
+export async function getSubjectsWithStats(userId?: string) {
+  console.log("🔍 [Server Action] getSubjectsWithStats() iniciada")
+  const supabase = await getSupabase()
+  
+  try {
+    // Buscar todas as matérias
+    const { data: subjects, error: subjectsError } = await supabase
+      .from("subjects")
+      .select("id, name")
+      .order("name")
+    
+    if (subjectsError) {
+      console.error("❌ [Server Action] Erro ao buscar matérias:", subjectsError)
+      return []
+    }
+
+    const subjectsWithStats = await Promise.all(
+      subjects.map(async (subject) => {
+        // Buscar tópicos da matéria
+        const { data: topics, error: topicsError } = await supabase
+          .from("topics")
+          .select("id, name")
+          .eq("subject_id", subject.id)
+          .order("name")
+
+        if (topicsError) {
+          console.error(`❌ [Server Action] Erro ao buscar tópicos para ${subject.name}:`, topicsError)
+        }
+
+        const topicsData = topics || []
+        
+        // Buscar flashcards por tópico
+        let totalFlashcards = 0
+        let completedFlashcards = 0
+        const includedItems = []
+
+        for (const topic of topicsData) {
+          const { data: flashcards, error: flashcardsError } = await supabase
+            .from("flashcards")
+            .select("id")
+            .eq("topic_id", topic.id)
+
+          if (!flashcardsError && flashcards) {
+            const topicFlashcardCount = flashcards.length
+            totalFlashcards += topicFlashcardCount
+
+            // Calcular progresso se userId for fornecido
+            let topicProgress = 0
+            if (userId) {
+              const { data: progress } = await supabase
+                .from("user_topic_progress")
+                .select("correct_answers, total_attempts")
+                .eq("user_id", userId)
+                .eq("topic_id", topic.id)
+                .single()
+
+              if (progress && progress.total_attempts > 0) {
+                topicProgress = Math.round((progress.correct_answers / progress.total_attempts) * 100)
+                completedFlashcards += progress.correct_answers
+              }
+            }
+
+            includedItems.push({
+              title: topic.name,
+              progress: topicProgress
+            })
+          }
+        }
+
+        // Calcular estatísticas
+        const averageProgress = includedItems.length > 0 
+          ? Math.round(includedItems.reduce((sum, item) => sum + item.progress, 0) / includedItems.length)
+          : 0
+
+        const completedCount = includedItems.filter(item => item.progress === 100).length
+
+        return {
+          id: subject.id,
+          title: subject.name,
+          subtitle: `${topicsData.length} tópicos • ${totalFlashcards} flashcards`,
+          completedCount,
+          totalCount: topicsData.length,
+          averageProgress,
+          lessonsCompleted: completedFlashcards,
+          includedItems: includedItems.slice(0, 3), // Mostrar apenas os primeiros 3
+          overallProgress: averageProgress
+        }
+      })
+    )
+
+    console.log("✅ [Server Action] Matérias com estatísticas carregadas:", subjectsWithStats.length)
+    return subjectsWithStats
+
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado em getSubjectsWithStats:", error)
+    return []
+  }
+}
+
 // Função para criar um novo tópico
 export async function createTopic(userUuid: string, data: {
   subject_id: number

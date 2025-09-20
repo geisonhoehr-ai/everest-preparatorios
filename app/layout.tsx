@@ -25,16 +25,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <link rel="icon" href="/placeholder-logo.svg" type="image/svg+xml" />
         <link rel="stylesheet" href="/globals.css" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9626674092433076"
-     crossOrigin="anonymous"></script>
       </head>
       <body className={inter.className}>
         <SkipLinks />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <ErrorBoundary>
               <PerformanceOptimizer>

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { authService, User, UserSession } from '@/lib/auth-custom'
+import { authService, User, UserSession, LoginResult, SessionVerificationResult } from '@/lib/auth-custom'
 import { logger } from '@/lib/logger'
 
 interface AuthContextType {
@@ -38,39 +38,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false)
         isInitialized = true
       }
-    }, 5000)
+    }, 3000) // Reduzido para 3 segundos
 
     const initializeAuth = async () => {
       try {
         console.log('🔄 [AUTH] Inicializando autenticação customizada...')
+        console.log('🔄 [AUTH] Estado atual do usuário:', user ? `${user.email} (${user.role})` : 'null')
         
-        // Verificar se há sessão salva no localStorage
-        const savedSessionToken = localStorage.getItem('session_token')
+        // Verificar se há sessão salva no localStorage (apenas no cliente)
+        let savedSessionToken = null
+        if (typeof window !== 'undefined') {
+          savedSessionToken = localStorage.getItem('session_token')
+        }
+        console.log('🔍 [AUTH] Token encontrado no localStorage:', !!savedSessionToken)
         
         if (savedSessionToken) {
-          console.log('🔍 [AUTH] Verificando sessão salva...')
-          const result = await authService.verifySession(savedSessionToken)
+          console.log('🔍 [AUTH] Verificando sessão salva com token:', savedSessionToken.substring(0, 10) + '...')
           
-          if (result.success && result.user) {
-            console.log('✅ [AUTH] Sessão válida encontrada:', result.user.email)
-            setUser(result.user)
-            setSession({ 
-              id: 'current',
-              user_id: result.user.id,
-              session_token: savedSessionToken,
-              login_at: new Date().toISOString(),
-              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-            })
-          } else {
-            console.log('❌ [AUTH] Sessão inválida, removendo...')
-            localStorage.removeItem('session_token')
+          try {
+            const result: SessionVerificationResult = await authService.verifySession(savedSessionToken)
+            console.log('🔍 [AUTH] Resultado da verificação:', { success: result.success, hasUser: !!result.user })
+            
+            if (result.success && result.user) {
+              console.log('✅ [AUTH] Sessão válida encontrada:', result.user.email)
+              console.log('✅ [AUTH] Dados completos do usuário:', result.user)
+              
+              setUser(result.user)
+              setSession({ 
+                id: 'current',
+                user_id: result.user.id,
+                session_token: savedSessionToken,
+                login_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                is_active: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            } else {
+              console.log('❌ [AUTH] Sessão inválida, removendo...')
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('session_token')
+              }
+            }
+          } catch (verifyError) {
+            console.error('❌ [AUTH] Erro ao verificar sessão:', verifyError)
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('session_token')
+            }
           }
         } else {
           console.log('ℹ️ [AUTH] Nenhuma sessão salva encontrada')
         }
-      } catch (error) {
-        console.error('❌ [AUTH] Erro ao inicializar autenticação:', error)
-        localStorage.removeItem('session_token')
+        } catch (error) {
+          console.error('❌ [AUTH] Erro ao inicializar autenticação:', error)
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('session_token')
+          }
       } finally {
         if (!isInitialized) {
           setIsLoading(false)
@@ -87,41 +110,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      console.log('🚀 [AUTH_CONTEXT] Iniciando login para:', email)
-      logger.debug('Tentativa de login iniciada', 'AUTH_CUSTOM', { email: email.substring(0, 3) + '***@***' })
-      
-      console.log('🔧 [AUTH_CONTEXT] Chamando API /api/auth/signin...')
-      console.log('🔧 [AUTH_CONTEXT] URL completa:', window.location.origin + '/api/auth/signin')
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-      
-      console.log('📋 [AUTH_CONTEXT] Status da resposta:', response.status)
-      console.log('📋 [AUTH_CONTEXT] Headers da resposta:', Object.fromEntries(response.headers.entries()))
+      const signIn = async (email: string, password: string) => {
+        try {
+          console.log('🚀 [AUTH_CONTEXT] Iniciando login para:', email)
+          logger.debug('Tentativa de login iniciada', 'AUTH_CUSTOM', { email: email.substring(0, 3) + '***@***' })
+          
+          console.log('🔧 [AUTH_CONTEXT] Chamando API /api/auth/signin...')
+          console.log('🔧 [AUTH_CONTEXT] URL completa:', window.location.origin + '/api/auth/signin')
+          const response = await fetch('/api/auth/signin', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          })
+          
+          console.log('📋 [AUTH_CONTEXT] Status da resposta:', response.status)
+          console.log('📋 [AUTH_CONTEXT] Headers da resposta:', Object.fromEntries(response.headers.entries()))
 
-      const result = await response.json()
-      console.log('📋 [AUTH_CONTEXT] Resultado da API:', result)
+          const result: LoginResult = await response.json()
+          console.log('📋 [AUTH_CONTEXT] Resultado completo da API:', JSON.stringify(result, null, 2))
 
-      if (result.success && result.user && result.session) {
-        logger.info('Login realizado com sucesso', 'AUTH_CUSTOM', { userId: result.user.id, email: email.substring(0, 3) + '***@***' })
-        
-        setUser(result.user)
-        setSession(result.session)
-        
-        // Salvar token no localStorage
-        localStorage.setItem('session_token', result.sessionToken)
-        
-        return { success: true }
-      } else {
-        logger.warn('Tentativa de login falhou', 'AUTH_CUSTOM', { error: result.error, email: email.substring(0, 3) + '***@***' })
-        return { success: false, error: result.error || 'Erro desconhecido' }
-      }
+          if (result.success && result.user && result.session) {
+            logger.info('Login realizado com sucesso', 'AUTH_CUSTOM', { userId: result.user.id, email: email.substring(0, 3) + '***@***' })
+            
+            console.log('✅ [AUTH] Login - Dados completos recebidos:', result.user)
+            console.log('✅ [AUTH] Login - Usuário:', { 
+              name: `${result.user.first_name} ${result.user.last_name}`.trim(), 
+              email: result.user.email, 
+              role: result.user.role,
+              fullUser: result.user
+            })
+            
+            console.log('🔧 [AUTH] Definindo usuário no estado:', result.user)
+            setUser(result.user)
+            setSession(result.session)
+            
+            // Salvar token no localStorage
+            console.log('💾 [AUTH] Salvando token no localStorage:', result.sessionToken?.substring(0, 10) + '...')
+            if (typeof window !== 'undefined' && result.sessionToken) {
+              localStorage.setItem('session_token', result.sessionToken)
+            }
+            
+            console.log('✅ [AUTH] Login finalizado com sucesso!')
+            
+            return { success: true }
+          } else {
+            logger.warn('Tentativa de login falhou', 'AUTH_CUSTOM', { error: result.error, email: email.substring(0, 3) + '***@***' })
+            return { success: false, error: result.error || 'Erro desconhecido' }
+          }
     } catch (error) {
       logger.error('Erro inesperado durante login', 'AUTH_CUSTOM', { error: (error as Error).message, email: email.substring(0, 3) + '***@***' })
       return { success: false, error: 'Erro inesperado' }
@@ -139,7 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Limpar estado local
       setUser(null)
       setSession(null)
-      localStorage.removeItem('session_token')
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('session_token')
+      }
       
       logger.info('Logout realizado com sucesso', 'AUTH_CUSTOM', { userId: user?.id })
       router.push('/login')
@@ -148,21 +187,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const refreshProfile = async () => {
-    if (session?.session_token) {
-      try {
-        const result = await authService.verifySession(session.session_token)
-        if (result.success && result.user) {
-          setUser(result.user)
-        } else {
-          // Sessão inválida, fazer logout
-          await signOut()
+      const refreshProfile = async () => {
+        if (session?.session_token) {
+          try {
+            const result: SessionVerificationResult = await authService.verifySession(session.session_token)
+            if (result.success && result.user) {
+              setUser(result.user)
+            } else {
+              // Sessão inválida, fazer logout
+              await signOut()
+            }
+          } catch (error) {
+            console.error('❌ [AUTH] Erro ao atualizar perfil:', error)
+          }
         }
-      } catch (error) {
-        console.error('❌ [AUTH] Erro ao atualizar perfil:', error)
       }
-    }
-  }
 
   const requestPasswordReset = async (email: string) => {
     try {

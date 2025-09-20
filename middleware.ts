@@ -13,31 +13,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
     
-    // Verificar se há sessão do Supabase
-    const supabase = await createClient()
-    const { data: { session }, error } = await supabase.auth.getSession()
-    
-    if (error) {
-      console.error('❌ [MIDDLEWARE] Erro ao verificar sessão:', error.message)
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-    
-    if (!session?.user) {
-      console.log('👤 [MIDDLEWARE] Nenhuma sessão encontrada, redirecionando para login')
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-    
-    // Se está logado e está na página de login, redirecionar para dashboard
-    if (request.nextUrl.pathname === '/login') {
-      console.log('✅ [MIDDLEWARE] Usuário logado, redirecionando para dashboard')
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    
-    console.log('✅ [MIDDLEWARE] Sessão válida, permitindo acesso')
+    // Para rotas protegidas, apenas permitir acesso
+    // A autenticação será verificada pelo AuthContext no frontend
+    console.log('✅ [MIDDLEWARE] Permitindo acesso à rota protegida:', request.nextUrl.pathname)
     return NextResponse.next()
   } catch (error) {
     console.error('❌ [MIDDLEWARE] Erro no middleware:', error)
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.next() // Não redirecionar, deixar o AuthContext lidar
   }
 }
 
@@ -49,7 +31,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - api routes
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

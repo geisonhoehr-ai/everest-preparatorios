@@ -27,15 +27,19 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     console.log('👤 Usuário:', user?.email)
     console.log('👤 Perfil:', profile?.role)
     
-    if (!user || !profile) {
-      console.log('❌ Usuário ou perfil não encontrado')
+    if (!user) {
+      console.log('❌ Usuário não encontrado')
       setHasAccess(false)
       setIsLoading(false)
       return
     }
 
+    // Usar user.role se profile não estiver disponível
+    const userRole = profile?.role || user.role
+    console.log('👤 Role final:', userRole)
+
     // Professores e admins têm acesso total
-    if (profile.role === 'teacher' || profile.role === 'administrator') {
+    if (userRole === 'teacher' || userRole === 'administrator') {
       console.log('✅ Professor/Admin tem acesso total à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
@@ -44,48 +48,15 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
 
     // Páginas permitidas para alunos
     const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
-    if (profile.role === 'student' && studentAllowedPages.includes(pageName)) {
+    if (userRole === 'student' && studentAllowedPages.includes(pageName)) {
       console.log('✅ Aluno tem acesso à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
       return
     }
 
-    // Verificar se o acesso não expirou
-    if ((profile as any).access_expires_at && new Date((profile as any).access_expires_at) < new Date()) {
-      setHasAccess(false)
-      setIsLoading(false)
-      return
-    }
-
-    // Para estudantes, verificar permissão específica da página
-    try {
-      const response = await fetch('/api/check-page-access', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          pageName: pageName
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setHasAccess(data.hasAccess)
-      } else {
-        setHasAccess(false)
-      }
-    } catch (error) {
-      console.error('Erro ao verificar permissão:', error)
-      setHasAccess(false)
-    } finally {
-      setIsLoading(false)
-    }
-    
     // Se chegou até aqui, não tem acesso
-    console.log('❌ Acesso negado à página:', pageName, 'para role:', profile.role)
+    console.log('❌ Acesso negado à página:', pageName, 'para role:', userRole)
     setHasAccess(false)
     setIsLoading(false)
   }

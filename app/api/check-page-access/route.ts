@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
+import { hasPermission } from '@/lib/role-permissions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,33 +15,25 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Verificar se o usuário tem permissão específica para a página
-    const { data: permission, error } = await supabase
-      .from('page_permissions')
-      .select('has_access, expires_at')
-      .eq('user_id', userId)
-      .eq('page_name', pageName)
+    // Buscar o role do usuário
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
       .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Erro ao verificar permissão:', error)
+    if (error || !user) {
+      console.error('Erro ao buscar usuário:', error)
       return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
       )
     }
 
-    // Se não há permissão específica, negar acesso
-    if (!permission) {
-      return NextResponse.json({ hasAccess: false })
-    }
+    // Verificar permissão baseada no role
+    const hasAccess = hasPermission(user.role as any, pageName)
 
-    // Verificar se a permissão não expirou
-    if (permission.expires_at && new Date(permission.expires_at) < new Date()) {
-      return NextResponse.json({ hasAccess: false })
-    }
-
-    return NextResponse.json({ hasAccess: permission.has_access })
+    return NextResponse.json({ hasAccess })
   } catch (error) {
     console.error('Erro inesperado:', error)
     return NextResponse.json(

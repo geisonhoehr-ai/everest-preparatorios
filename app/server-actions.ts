@@ -4217,4 +4217,313 @@ export async function deleteQuestion(questionId: string) {
   return { success: true }
 }
 
+// Função para obter dados completos das matérias com estatísticas
+export async function getSubjectsWithStats(userId?: string) {
+  console.log("🔍 [Server Action] getSubjectsWithStats() iniciada")
+  const supabase = await getSupabase()
+  
+  try {
+    // Buscar todas as matérias
+    const { data: subjects, error: subjectsError } = await supabase
+      .from("subjects")
+      .select("id, name")
+      .order("name")
+    
+    if (subjectsError) {
+      console.error("❌ [Server Action] Erro ao buscar matérias:", subjectsError)
+      return []
+    }
+
+    const subjectsWithStats = await Promise.all(
+      subjects.map(async (subject) => {
+        // Buscar tópicos da matéria
+        const { data: topics, error: topicsError } = await supabase
+          .from("topics")
+          .select("id, name")
+          .eq("subject_id", subject.id)
+          .order("name")
+
+        if (topicsError) {
+          console.error(`❌ [Server Action] Erro ao buscar tópicos para ${subject.name}:`, topicsError)
+        }
+
+        const topicsData = topics || []
+        
+        // Buscar flashcards por tópico
+        let totalFlashcards = 0
+        let completedFlashcards = 0
+        const includedItems = []
+
+        for (const topic of topicsData) {
+          const { data: flashcards, error: flashcardsError } = await supabase
+            .from("flashcards")
+            .select("id")
+            .eq("topic_id", topic.id)
+
+          if (!flashcardsError && flashcards) {
+            const topicFlashcardCount = flashcards.length
+            totalFlashcards += topicFlashcardCount
+
+            // Calcular progresso se userId for fornecido
+            let topicProgress = 0
+            if (userId) {
+              const { data: progress } = await supabase
+                .from("user_topic_progress")
+                .select("correct_answers, total_attempts")
+                .eq("user_id", userId)
+                .eq("topic_id", topic.id)
+                .single()
+
+              if (progress && progress.total_attempts > 0) {
+                topicProgress = Math.round((progress.correct_answers / progress.total_attempts) * 100)
+                completedFlashcards += progress.correct_answers
+              }
+            }
+
+            includedItems.push({
+              title: topic.name,
+              progress: topicProgress
+            })
+          }
+        }
+
+        // Calcular estatísticas
+        const averageProgress = includedItems.length > 0 
+          ? Math.round(includedItems.reduce((sum, item) => sum + item.progress, 0) / includedItems.length)
+          : 0
+
+        const completedCount = includedItems.filter(item => item.progress === 100).length
+
+        return {
+          id: subject.id,
+          title: subject.name,
+          subtitle: `${topicsData.length} tópicos • ${totalFlashcards} flashcards`,
+          completedCount,
+          totalCount: topicsData.length,
+          averageProgress,
+          lessonsCompleted: completedFlashcards,
+          includedItems: includedItems.slice(0, 3), // Mostrar apenas os primeiros 3
+          overallProgress: averageProgress
+        }
+      })
+    )
+
+    console.log("✅ [Server Action] Matérias com estatísticas carregadas:", subjectsWithStats.length)
+    return subjectsWithStats
+
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado em getSubjectsWithStats:", error)
+    return []
+  }
+}
+
+// ==================== SISTEMA COMPLETO DE FLASHCARDS ====================
+
+
+// Função para obter flashcards por tópico
+export async function getFlashcardsByTopic(topicId: string) {
+  console.log(`🔍 [Server Action] getFlashcardsByTopic() para tópico: ${topicId}`)
+  const supabase = await getSupabase()
+  
+  try {
+    const { data, error } = await supabase
+      .from("flashcards")
+      .select("id, question, answer, topic_id, created_at")
+      .eq("topic_id", topicId)
+      .order("created_at", { ascending: true })
+    
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
+      return []
+    }
+    
+    console.log("✅ [Server Action] Flashcards encontrados:", data?.length || 0)
+    return data || []
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado em getFlashcardsByTopic:", error)
+    return []
+  }
+}
+
+
+
+// ==================== SISTEMA COMPLETO DE QUIZZES ====================
+
+// Função para obter todos os quizzes
+export async function getAllQuizzes() {
+  console.log("🔍 [Server Action] getAllQuizzes() iniciada")
+  const supabase = await getSupabase()
+  
+  try {
+    const { data, error } = await supabase
+      .from("quizzes")
+      .select(`
+        id,
+        title,
+        description,
+        subject_id,
+        topic_id,
+        created_at,
+        subjects(name),
+        topics(name)
+      `)
+      .order("created_at", { ascending: false })
+    
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar quizzes:", error)
+      return []
+    }
+    
+    console.log("✅ [Server Action] Quizzes encontrados:", data?.length || 0)
+    return data || []
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado em getAllQuizzes:", error)
+    return []
+  }
+}
+
+// Função para obter um quiz específico com suas perguntas
+
+// Função para iniciar uma tentativa de quiz
+export async function startQuizAttempt(userId: string, quizId: string) {
+  console.log(`🎯 [Server Action] Iniciando tentativa de quiz: ${quizId} para usuário: ${userId}`)
+  const supabase = await getSupabase()
+  
+  try {
+    const { data: attempt, error } = await supabase
+      .from("user_quiz_attempts")
+      .insert({
+        user_id: userId,
+        quiz_id: quizId,
+        start_time: new Date().toISOString(),
+        score: 0,
+        is_completed: false
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao iniciar tentativa:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log("✅ [Server Action] Tentativa iniciada:", attempt.id)
+    return { success: true, data: attempt }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao iniciar tentativa:", error)
+    return { success: false, error: "Erro interno" }
+  }
+}
+
+// Função para submeter uma resposta de pergunta
+export async function submitQuestionAnswer(
+  attemptId: string,
+  questionId: string,
+  userAnswer: string
+) {
+  console.log(`📝 [Server Action] Submetendo resposta para pergunta: ${questionId}`)
+  const supabase = await getSupabase()
+  
+  try {
+    // Buscar a pergunta para verificar se a resposta está correta
+    const { data: question, error: questionError } = await supabase
+      .from("questions")
+      .select("answer_text, question_type")
+      .eq("id", questionId)
+      .single()
+
+    if (questionError) {
+      console.error("❌ [Server Action] Erro ao buscar pergunta:", questionError)
+      return { success: false, error: "Pergunta não encontrada" }
+    }
+
+    // Determinar se a resposta está correta
+    let isCorrect = false
+    if (question.question_type === 'multiple_choice') {
+      // Para múltipla escolha, verificar se a opção selecionada está correta
+      const { data: option } = await supabase
+        .from("question_options")
+        .select("is_correct")
+        .eq("id", userAnswer)
+        .single()
+      
+      isCorrect = option?.is_correct || false
+    } else {
+      // Para outras questões, comparar com a resposta correta
+      isCorrect = userAnswer.toLowerCase().trim() === question.answer_text.toLowerCase().trim()
+    }
+
+    // Salvar a resposta
+    const { data: answer, error: answerError } = await supabase
+      .from("user_question_answers")
+      .insert({
+        attempt_id: attemptId,
+        question_id: questionId,
+        user_answer: userAnswer,
+        is_correct: isCorrect
+      })
+      .select()
+      .single()
+
+    if (answerError) {
+      console.error("❌ [Server Action] Erro ao salvar resposta:", answerError)
+      return { success: false, error: "Erro ao salvar resposta" }
+    }
+
+    console.log("✅ [Server Action] Resposta salva:", answer.id)
+    return { success: true, data: answer, isCorrect }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao submeter resposta:", error)
+    return { success: false, error: "Erro interno" }
+  }
+}
+
+// Função para finalizar uma tentativa de quiz
+export async function finishQuizAttempt(attemptId: string) {
+  console.log(`🏁 [Server Action] Finalizando tentativa: ${attemptId}`)
+  const supabase = await getSupabase()
+  
+  try {
+    // Buscar todas as respostas da tentativa
+    const { data: answers, error: answersError } = await supabase
+      .from("user_question_answers")
+      .select("is_correct")
+      .eq("attempt_id", attemptId)
+
+    if (answersError) {
+      console.error("❌ [Server Action] Erro ao buscar respostas:", answersError)
+      return { success: false, error: "Erro ao calcular pontuação" }
+    }
+
+    // Calcular pontuação
+    const totalQuestions = answers?.length || 0
+    const correctAnswers = answers?.filter(answer => answer.is_correct).length || 0
+    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
+
+    // Atualizar a tentativa
+    const { data: attempt, error: attemptError } = await supabase
+      .from("user_quiz_attempts")
+      .update({
+        end_time: new Date().toISOString(),
+        score: score,
+        is_completed: true
+      })
+      .eq("id", attemptId)
+      .select()
+      .single()
+
+    if (attemptError) {
+      console.error("❌ [Server Action] Erro ao finalizar tentativa:", attemptError)
+      return { success: false, error: "Erro ao finalizar tentativa" }
+    }
+
+    console.log("✅ [Server Action] Tentativa finalizada. Pontuação:", score)
+    return { success: true, data: attempt }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado ao finalizar tentativa:", error)
+    return { success: false, error: "Erro interno" }
+  }
+}
+
+
 // Cache buster - Build: ab44064 - Force cache clear - SERVER ACTIONS FILE
