@@ -2576,7 +2576,7 @@ export async function getAllClasses() {
     
     const { data, error } = await supabase
       .from('classes')
-      .select('id, name, description')
+      .select('id, name, description, max_students')
       .order('name', { ascending: true })
 
     console.log('🔍 [Server Action] Classes encontradas:', data, 'error:', error)
