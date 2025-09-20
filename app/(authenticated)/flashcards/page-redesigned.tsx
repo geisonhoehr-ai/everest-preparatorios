@@ -143,7 +143,7 @@ export default function FlashcardsPage() {
     if (selectedSubject) {
       const loadTopics = async () => {
         try {
-          const data = await getTopicsBySubject(selectedSubject)
+          const data = await getTopicsBySubject(selectedSubject.toString())
           // Mapear dados para incluir campos obrigatórios da interface Topic
           const topicsWithDefaults = data.map(topic => ({
             id: topic.id,
