@@ -493,7 +493,7 @@ export default function QuizPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  setEditingQuestion({ quiz_id: questions[0]?.quiz_id })
+                                  setEditingQuestion({ quiz_id: questions[0]?.id })
                                   setIsEditingQuestion(true)
                                 }}
                                 className="border-green-300 text-green-600 hover:bg-green-50"
