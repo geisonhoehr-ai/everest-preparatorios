@@ -300,12 +300,11 @@ export default function QuizPage() {
           return
         }
         
-        const result = await createQuiz(profile.id, {
-          quiz_id: selectedTopic,
-          question_text: editForm.question,
-          options: editForm.options,
-          correct_answer: editForm.options[editForm.correct_answer],
-          explanation: editForm.explanation
+        const result = await createQuiz({
+          title: editForm.question,
+          description: `Quiz criado em ${new Date().toLocaleDateString()}`,
+          topic_id: selectedTopic,
+          is_active: true
         })
         
         if (result.success && result.data) {
