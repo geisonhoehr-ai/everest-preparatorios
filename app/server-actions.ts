@@ -4347,6 +4347,453 @@ export async function getFlashcardsByTopic(topicId: string) {
 
 
 
+// ==================== SISTEMA COMPLETO DE REDAÇÕES ====================
+
+// Função para obter todos os temas de redação ativos
+export async function getActiveEssayPrompts() {
+  console.log("📝 [Server Action] getActiveEssayPrompts() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .select('*')
+      .eq('is_active', true)
+      .gte('end_date', new Date().toISOString())
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getActiveEssayPrompts() - ${data?.length || 0} temas encontrados`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ [Server Action] getActiveEssayPrompts() - Erro:", error);
+    return [];
+  }
+}
+
+// Função para obter um tema de redação específico
+export async function getEssayPromptById(promptId: string) {
+  console.log(`📝 [Server Action] getEssayPromptById() para ID: ${promptId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .select('*')
+      .eq('id', promptId)
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getEssayPromptById() - Tema encontrado: ${data?.title}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] getEssayPromptById() - Erro:", error);
+    return null;
+  }
+}
+
+// Função para submeter uma redação
+export async function submitEssay(essayData: {
+  student_id: string;
+  prompt_id: string;
+  submission_text: string;
+}) {
+  console.log("📝 [Server Action] submitEssay() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essays')
+      .insert({
+        student_id: essayData.student_id,
+        prompt_id: essayData.prompt_id,
+        submission_text: essayData.submission_text,
+        submission_date: new Date().toISOString(),
+        status: 'pending'
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] submitEssay() - Redação submetida com ID: ${data.id}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] submitEssay() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para obter redações pendentes (para professores)
+export async function getPendingEssays() {
+  console.log("📝 [Server Action] getPendingEssays() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essays')
+      .select(`
+        *,
+        essay_prompts!inner(title, description),
+        users!inner(name, email)
+      `)
+      .eq('status', 'pending')
+      .order('submission_date', { ascending: true });
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getPendingEssays() - ${data?.length || 0} redações pendentes`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ [Server Action] getPendingEssays() - Erro:", error);
+    return [];
+  }
+}
+
+// Função para obter redações de um aluno específico
+export async function getStudentEssays(studentId: string) {
+  console.log(`📝 [Server Action] getStudentEssays() para aluno: ${studentId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essays')
+      .select(`
+        *,
+        essay_prompts!inner(title, description)
+      `)
+      .eq('student_id', studentId)
+      .order('submission_date', { ascending: false });
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getStudentEssays() - ${data?.length || 0} redações encontradas`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ [Server Action] getStudentEssays() - Erro:", error);
+    return [];
+  }
+}
+
+// Função para obter uma redação específica com anotações
+export async function getEssayWithAnnotations(essayId: string) {
+  console.log(`📝 [Server Action] getEssayWithAnnotations() para redação: ${essayId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    // Buscar a redação
+    const { data: essay, error: essayError } = await supabase
+      .from('essays')
+      .select(`
+        *,
+        essay_prompts!inner(title, description, suggested_repertoire, evaluation_criteria),
+        users!inner(name, email)
+      `)
+      .eq('id', essayId)
+      .single();
+    
+    if (essayError) throw essayError;
+    
+    // Buscar as anotações
+    const { data: annotations, error: annotationsError } = await supabase
+      .from('essay_annotations')
+      .select(`
+        *,
+        error_categories!inner(name, description)
+      `)
+      .eq('essay_id', essayId)
+      .order('start_offset', { ascending: true });
+    
+    if (annotationsError) throw annotationsError;
+    
+    const result = {
+      ...essay,
+      annotations: annotations || []
+    };
+    
+    console.log(`✅ [Server Action] getEssayWithAnnotations() - Redação com ${annotations?.length || 0} anotações`);
+    return result;
+  } catch (error) {
+    console.error("❌ [Server Action] getEssayWithAnnotations() - Erro:", error);
+    return null;
+  }
+}
+
+// Função para obter categorias de erro
+export async function getErrorCategories() {
+  console.log("📝 [Server Action] getErrorCategories() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('error_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getErrorCategories() - ${data?.length || 0} categorias encontradas`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ [Server Action] getErrorCategories() - Erro:", error);
+    return [];
+  }
+}
+
+// Função para criar uma anotação
+export async function createAnnotation(annotationData: {
+  essay_id: string;
+  teacher_id: string;
+  start_offset: number;
+  end_offset: number;
+  annotation_text: string;
+  error_category_id: string;
+  suggested_correction?: string;
+}) {
+  console.log("📝 [Server Action] createAnnotation() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_annotations')
+      .insert(annotationData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] createAnnotation() - Anotação criada com ID: ${data.id}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] createAnnotation() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para finalizar a correção de uma redação
+export async function finalizeEssayCorrection(essayId: string, correctionData: {
+  teacher_id: string;
+  final_grade: number;
+  teacher_feedback_text?: string;
+  teacher_feedback_audio_url?: string;
+}) {
+  console.log(`📝 [Server Action] finalizeEssayCorrection() para redação: ${essayId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essays')
+      .update({
+        status: 'corrected',
+        teacher_id: correctionData.teacher_id,
+        final_grade: correctionData.final_grade,
+        teacher_feedback_text: correctionData.teacher_feedback_text,
+        teacher_feedback_audio_url: correctionData.teacher_feedback_audio_url,
+        correction_date: new Date().toISOString()
+      })
+      .eq('id', essayId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] finalizeEssayCorrection() - Correção finalizada para redação: ${essayId}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] finalizeEssayCorrection() - Erro:", error);
+    throw error;
+  }
+}
+
+// ==================== GERENCIAMENTO DE PROMPTS DE REDAÇÃO ====================
+
+// Função para obter prompts de um professor específico
+export async function getPromptsForTeacher(teacherId?: string) {
+  console.log("📝 [Server Action] getPromptsForTeacher() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    let query = supabase
+      .from('essay_prompts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    // Se teacherId for fornecido, filtrar por criador
+    if (teacherId) {
+      query = query.eq('created_by_user_id', teacherId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getPromptsForTeacher() - ${data?.length || 0} prompts encontrados`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ [Server Action] getPromptsForTeacher() - Erro:", error);
+    return [];
+  }
+}
+
+// Função para criar um novo prompt
+export async function createPrompt(promptData: {
+  title: string;
+  description: string;
+  suggested_repertoire?: string;
+  course_id?: string;
+  subject_id?: string;
+  start_date?: string;
+  end_date?: string;
+  is_active: boolean;
+  evaluation_criteria: any;
+  created_by_user_id: string;
+}) {
+  console.log("📝 [Server Action] createPrompt() iniciada");
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .insert({
+        title: promptData.title,
+        description: promptData.description,
+        suggested_repertoire: promptData.suggested_repertoire,
+        course_id: promptData.course_id,
+        subject_id: promptData.subject_id,
+        start_date: promptData.start_date,
+        end_date: promptData.end_date,
+        is_active: promptData.is_active,
+        evaluation_criteria: promptData.evaluation_criteria,
+        created_by_user_id: promptData.created_by_user_id
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] createPrompt() - Prompt criado com ID: ${data.id}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] createPrompt() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para atualizar um prompt existente
+export async function updatePrompt(promptId: string, promptData: {
+  title: string;
+  description: string;
+  suggested_repertoire?: string;
+  course_id?: string;
+  subject_id?: string;
+  start_date?: string;
+  end_date?: string;
+  is_active: boolean;
+  evaluation_criteria: any;
+}) {
+  console.log(`📝 [Server Action] updatePrompt() para ID: ${promptId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .update({
+        title: promptData.title,
+        description: promptData.description,
+        suggested_repertoire: promptData.suggested_repertoire,
+        course_id: promptData.course_id,
+        subject_id: promptData.subject_id,
+        start_date: promptData.start_date,
+        end_date: promptData.end_date,
+        is_active: promptData.is_active,
+        evaluation_criteria: promptData.evaluation_criteria,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', promptId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] updatePrompt() - Prompt atualizado: ${data.id}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] updatePrompt() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para alternar status ativo de um prompt
+export async function togglePromptActiveStatus(promptId: string, isActive: boolean) {
+  console.log(`📝 [Server Action] togglePromptActiveStatus() para ID: ${promptId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .update({
+        is_active: isActive,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', promptId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] togglePromptActiveStatus() - Status alterado para: ${isActive}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] togglePromptActiveStatus() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para excluir um prompt
+export async function deletePrompt(promptId: string) {
+  console.log(`📝 [Server Action] deletePrompt() para ID: ${promptId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { error } = await supabase
+      .from('essay_prompts')
+      .delete()
+      .eq('id', promptId);
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] deletePrompt() - Prompt excluído: ${promptId}`);
+    return true;
+  } catch (error) {
+    console.error("❌ [Server Action] deletePrompt() - Erro:", error);
+    throw error;
+  }
+}
+
+// Função para obter um prompt específico
+export async function getPromptById(promptId: string) {
+  console.log(`📝 [Server Action] getPromptById() para ID: ${promptId}`);
+  const supabase = await getSupabase();
+  
+  try {
+    const { data, error } = await supabase
+      .from('essay_prompts')
+      .select('*')
+      .eq('id', promptId)
+      .single();
+    
+    if (error) throw error;
+    
+    console.log(`✅ [Server Action] getPromptById() - Prompt encontrado: ${data?.title}`);
+    return data;
+  } catch (error) {
+    console.error("❌ [Server Action] getPromptById() - Erro:", error);
+    return null;
+  }
+}
+
 // ==================== SISTEMA COMPLETO DE QUIZZES ====================
 
 // Função para obter todos os quizzes
