@@ -592,7 +592,7 @@ export default function LandingPage() {
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
                 <div className="relative w-full aspect-video bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
                   <iframe
-                    src="https://player-vz-e9d62059-4a4.tv.pandavideo.com.br/embed/?v=eb23fc2c-66de-4b86-9e7a-1ee57cd9f24e"
+                    src="https://www.youtube.com/embed/VqvU4orX3qk"
                     title="Vídeo Demonstrativo - Everest Preparatórios"
                     className="w-full h-full absolute inset-0"
                     frameBorder="0"
