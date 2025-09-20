@@ -689,6 +689,9 @@ export default function QuizPage() {
                           if (editingQuestion.id) {
                             await updateQuestion(editingQuestion.id, questionData)
                           } else {
+                            if (!selectedTopic) {
+                              throw new Error('Tópico não selecionado')
+                            }
                             await createQuestion({ ...questionData, quiz_id: selectedTopic })
                           }
                           setIsEditingQuestion(false)
