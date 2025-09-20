@@ -2553,11 +2553,11 @@ export async function getAllMembers() {
       user_id: user.id,
       name: `${user.first_name} ${user.last_name}`,
       email: user.email,
-      class_id: null,
-      access_expires_at: null,
+      class_id: undefined,
+      access_expires_at: undefined,
       must_change_password: false,
       created_at: user.created_at,
-      classes: null,
+      classes: undefined,
       student_subscriptions: []
     }))
 
