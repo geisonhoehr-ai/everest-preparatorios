@@ -165,7 +165,7 @@ export default function QuizPage() {
       setIsLoading(true)
       console.log(`📚 Carregando tópicos do Supabase para matéria ${subjectId}...`)
       
-      const topicsData = await getTopicsBySubject(subjectId)
+      const topicsData = await getTopicsBySubject(subjectId.toString())
       console.log("✅ Tópicos carregados:", topicsData.length)
       
       // Converter para o formato esperado
