@@ -590,15 +590,15 @@ export default function LandingPage() {
               {/* Container do vídeo com efeito LED */}
               <div className="relative overflow-hidden">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
-                <div className="relative aspect-video bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
+                <div className="relative w-full aspect-video bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
                   <iframe
-                    src="https://www.youtube.com/embed/VqvU4orX3qk?loading=lazy"
-                    title="Depoimentos de Alunos Aprovados - Everest Preparatórios"
-                    className="w-full h-full"
+                    src="https://player-vz-e9d62059-4a4.tv.pandavideo.com.br/embed/?v=eb23fc2c-66de-4b86-9e7a-1ee57cd9f24e"
+                    title="Vídeo Demonstrativo - Everest Preparatórios"
+                    className="w-full h-full absolute inset-0"
                     frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                    loading="lazy"
+                    loading="eager"
                   ></iframe>
                 </div>
               </div>
