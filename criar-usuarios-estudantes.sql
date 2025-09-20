@@ -1,8 +1,5 @@
--- Script para criar usuários reais no Supabase
--- Execute este script no SQL Editor do Supabase Dashboard
-
--- Primeiro, vamos desabilitar temporariamente o RLS para inserir usuários
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+-- Script para criar usuários estudantes na tabela users
+-- Este script contorna as políticas RLS usando privilégios administrativos
 
 -- Inserir usuários de teste para estudantes
 INSERT INTO users (
@@ -65,9 +62,6 @@ INSERT INTO users (
     NOW(),
     NOW()
 );
-
--- Reabilitar RLS após inserção
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Verificar se os usuários foram criados
 SELECT 

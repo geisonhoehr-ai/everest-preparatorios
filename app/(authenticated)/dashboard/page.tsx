@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "@/context/auth-context-supabase"
+import { useAuth } from "@/context/auth-context-custom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Users, BookOpen, Trophy, Loader2 } from "lucide-react"
 import ProgressWidget from "@/components/progress-widget"
@@ -19,13 +19,14 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
 
   const getWelcomeMessage = () => {
+    const firstName = profile?.first_name || 'Usuário'
     switch (profile?.role) {
       case 'administrator':
-        return 'Bem-vindo, Administrador!'
+        return `Bem-vindo, ${firstName}!`
       case 'teacher':
-        return 'Bem-vindo, Professor!'
+        return `Bem-vindo, Professor ${firstName}!`
       case 'student':
-        return 'Bem-vindo, Estudante!'
+        return `Bem-vindo, ${firstName}!`
       default:
         return 'Bem-vindo ao Everest Preparatórios!'
     }
@@ -201,7 +202,7 @@ export default function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Nome</label>
-              <p className="text-sm">{profile?.display_name || 'Não definido'}</p>
+              <p className="text-sm">{profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : 'Não definido'}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Email</label>

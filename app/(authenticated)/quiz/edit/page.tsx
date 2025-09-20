@@ -39,7 +39,7 @@ import {
   Settings
 } from "lucide-react"
 import { TeacherAndAdminOnly } from "@/components/teacher-admin-guard"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { useRouter } from "next/navigation"
 import { getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, getAllTopicsAndSubjects } from "@/actions"
 
@@ -158,15 +158,15 @@ export default function EditQuizPage() {
 
   useEffect(() => {
     loadData()
-  }, [user?.id, profile?.user_id])
+  }, [user?.id, profile?.id])
 
   const loadData = async () => {
-    if (!user?.id || !profile?.user_id) return
+    if (!user?.id || !profile?.id) return
     
     setIsLoading(true)
     try {
       // Carregar subjects e topics
-      const topicsResult = await getAllTopicsAndSubjects(profile.user_id)
+      const topicsResult = await getAllTopicsAndSubjects(profile.id)
       if (topicsResult.success) {
         const subjectsData = topicsResult.data?.subjects.map((subject: any) => ({
           id: subject.id,
@@ -254,10 +254,10 @@ export default function EditQuizPage() {
   }
 
   const handleSaveQuiz = async () => {
-    if (!profile?.user_id || !editingQuiz) return
+    if (!profile?.id || !editingQuiz) return
     
     try {
-      const result = await updateQuiz(profile.user_id, editingQuiz.id, {
+      const result = await updateQuiz(profile.id, editingQuiz.id, {
         title: editForm.title,
         description: editForm.description,
         // Adicionar outros campos conforme necessário
@@ -290,11 +290,11 @@ export default function EditQuizPage() {
   }
 
   const handleDeleteQuiz = async (id: string) => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     if (confirm("Tem certeza que deseja excluir este quiz?")) {
       try {
-        const result = await deleteQuiz(profile.user_id, id)
+        const result = await deleteQuiz(profile.id, id)
         if (result.success) {
           setQuizzes(prev => prev.filter(q => q.id !== id))
         }
@@ -305,10 +305,10 @@ export default function EditQuizPage() {
   }
 
   const handleCreateQuiz = async () => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     try {
-      const result = await createQuiz(profile.user_id, {
+      const result = await createQuiz(profile.id, {
         title: editForm.title,
         description: editForm.description,
         topic_id: "1", // Será melhorado depois
@@ -323,7 +323,7 @@ export default function EditQuizPage() {
           updated_at: new Date().toISOString(),
           attempts: 0,
           average_score: 0,
-          author: profile?.display_name || "Usuário"
+          author: profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "Usuário"
         }
         setQuizzes(prev => [...prev, newQuiz])
         setIsCreateDialogOpen(false)

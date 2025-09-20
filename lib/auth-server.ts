@@ -1,10 +1,10 @@
 "use server"
 
 import { createClient } from '@/lib/supabase-server'
-import { CustomUser } from './auth-custom'
+import { User } from './auth-custom'
 
 // Função para verificar se usuário está autenticado (server-side)
-export async function getServerUser(): Promise<CustomUser | null> {
+export async function getServerUser(): Promise<User | null> {
   try {
     const supabase = await createClient()
     
@@ -19,7 +19,7 @@ export async function getServerUser(): Promise<CustomUser | null> {
 }
 
 // Função para verificar sessão no servidor
-export async function verifyServerSession(sessionToken: string): Promise<{ success: boolean; user?: CustomUser; error?: string }> {
+export async function verifyServerSession(sessionToken: string): Promise<{ success: boolean; user?: User; error?: string }> {
   try {
     const supabase = await createClient()
     

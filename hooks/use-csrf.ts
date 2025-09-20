@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/context/auth-context-supabase'
+import { useAuth } from '@/context/auth-context-custom'
 import { logger } from '@/lib/logger'
 
 interface CSRFToken {

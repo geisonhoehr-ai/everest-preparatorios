@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth } from "@/context/auth-context-supabase"
+import { useAuth } from "@/context/auth-context-custom"
 import { AppHeader } from "@/components/app-header"
 import { AppFooter } from "@/components/app-footer"
 import { MainSidebar } from "@/components/main-sidebar"

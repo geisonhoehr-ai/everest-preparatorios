@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/context/auth-context'
+import { useAuth } from '@/context/auth-context-custom'
 
 interface BackgroundAudioManagerProps {
   currentLesson: any

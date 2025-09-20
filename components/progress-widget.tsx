@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Star, BookOpen, Brain, Clock, Target } from "lucide-react"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { getUserProgress } from "@/actions"
 
 interface UserStats {

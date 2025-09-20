@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { 
   getAllMembers, 
   getAllClasses, 
@@ -320,11 +320,11 @@ export default function MembrosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-            <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl">
+            <Users className="h-8 w-8 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Gestão de Membros
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -335,7 +335,7 @@ export default function MembrosPage() {
         
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg">
               <Plus className="h-4 w-4 mr-2" />
               Novo Membro
             </Button>
@@ -376,7 +376,7 @@ export default function MembrosPage() {
                       <SelectValue placeholder="Selecione uma turma" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sem turma</SelectItem>
+                      <SelectItem value="none">Sem turma</SelectItem>
                       {classes.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.name}
@@ -465,7 +465,7 @@ export default function MembrosPage() {
                 <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateMember}>
+                <Button onClick={handleCreateMember} className="bg-orange-500 hover:bg-orange-600 text-white">
                   Criar Membro
                 </Button>
               </div>
@@ -577,6 +577,7 @@ export default function MembrosPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => openEditModal(member)}
+                            className="border-orange-300 text-orange-600 hover:bg-orange-50"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -584,6 +585,7 @@ export default function MembrosPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleCreateTemporaryPassword(member.user_id)}
+                            className="border-blue-300 text-blue-600 hover:bg-blue-50"
                           >
                             <Key className="h-3 w-3" />
                           </Button>
@@ -591,6 +593,7 @@ export default function MembrosPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDeleteMember(member.user_id, member.name)}
+                            className="border-red-300 text-red-600 hover:bg-red-50"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -641,7 +644,7 @@ export default function MembrosPage() {
                     <SelectValue placeholder="Selecione uma turma" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem turma</SelectItem>
+                    <SelectItem value="none">Sem turma</SelectItem>
                     {classes.map((cls) => (
                       <SelectItem key={cls.id} value={cls.id}>
                         {cls.name}
@@ -730,7 +733,7 @@ export default function MembrosPage() {
               <Button variant="outline" onClick={() => setShowEditModal(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleUpdateMember}>
+              <Button onClick={handleUpdateMember} className="bg-orange-500 hover:bg-orange-600 text-white">
                 Salvar Alterações
               </Button>
             </div>

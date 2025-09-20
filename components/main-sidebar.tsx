@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/context/auth-context-supabase"
+import { useAuth } from "@/context/auth-context-custom"
 import { useMobileMenu } from "./mobile-menu-provider"
 import { 
   BarChart3, 
@@ -89,8 +89,8 @@ export function MainSidebar() {
   }
 
   const getUserInitials = () => {
-    if (profile?.display_name) {
-      return profile.display_name.split(' ').map(n => n[0]).join('').toUpperCase()
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
     }
     if (user?.email) {
       return user.email.split('@')[0].substring(0, 2).toUpperCase()
@@ -99,8 +99,8 @@ export function MainSidebar() {
   }
 
   const getUserDisplayName = () => {
-    if (profile?.display_name) {
-      return profile.display_name
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`
     }
     if (user?.email) {
       return user.email.split('@')[0]

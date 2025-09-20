@@ -43,7 +43,7 @@ import {
   Shield
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { updateFlashcardProgress, updateFlashcard, deleteFlashcard, getAllSubjects, getTopicsBySubject, getFlashcardsForReview, createFlashcard, updateFlashcardProgressSM2, getCardsForReview, getNewCards, getFlashcardProgressStats, getAllFlashcardCategories, getAllFlashcardTags, addFlashcardCategory, addFlashcardTag, removeFlashcardCategory, removeFlashcardTag, getFlashcardCategoriesAndTags, createStudySession, endStudySession, getStudySessionsHistory, getStudyAnalytics, createStudyGoal, getStudyGoals, updateStudyGoalProgress, getAllFlashcardsByTopicSimple } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
@@ -281,13 +281,13 @@ export default function FlashcardsPage() {
 
   const handleSaveEdit = async () => {
     console.log("🔧 [Debug] handleSaveEdit chamado")
-    console.log("🔧 [Debug] Profile user_id:", profile?.user_id)
+    console.log("🔧 [Debug] Profile id:", profile?.id)
     console.log("🔧 [Debug] Selected topic:", selectedTopic)
     console.log("🔧 [Debug] Editing flashcard:", editingFlashcard)
     console.log("🔧 [Debug] Edit form:", editForm)
     
-    if (!profile?.user_id) {
-      console.log("❌ [Debug] Falta profile.user_id")
+    if (!profile?.id) {
+      console.log("❌ [Debug] Falta profile.id")
       return
     }
     
@@ -299,7 +299,7 @@ export default function FlashcardsPage() {
         console.log("🔧 [Debug] Editando flashcard existente")
         // Editar flashcard existente
         const result = await updateFlashcard(
-          profile.user_id, 
+          profile.id, 
           editingFlashcard.id, 
           editForm.question, 
           editForm.answer
@@ -323,7 +323,7 @@ export default function FlashcardsPage() {
           return
         }
         
-        const result = await createFlashcard(profile.user_id, {
+        const result = await createFlashcard(profile.id, {
           topic_id: selectedTopic,
           question: editForm.question,
           answer: editForm.answer
@@ -348,11 +348,11 @@ export default function FlashcardsPage() {
   }
 
   const handleDeleteFlashcard = async (flashcardId: number) => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     if (confirm("Tem certeza que deseja excluir este flashcard?")) {
       try {
-        const result = await deleteFlashcard(profile.user_id, flashcardId)
+        const result = await deleteFlashcard(profile.id, flashcardId)
         if (result.success) {
           setFlashcards(prev => prev.filter(f => f.id !== flashcardId))
         }

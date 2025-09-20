@@ -43,7 +43,7 @@ import {
   BookOpenText
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
-import { useAuth } from "@/context/auth-context-supabase"
+import { useAuth } from "@/context/auth-context-custom"
 import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "../../server-actions"
 import { createClient } from '@supabase/supabase-js'
 import Link from "next/link"
@@ -190,7 +190,7 @@ export default function QuizPage() {
       setIsLoading(true)
       console.log(`📚 Carregando questões do Supabase para quiz ${quizId}...`)
       
-      if (!profile?.user_id) {
+      if (!profile?.id) {
         console.error("❌ Usuário não autenticado")
         return
       }
@@ -267,12 +267,12 @@ export default function QuizPage() {
   }
 
   const handleSaveEdit = async () => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     try {
       if (editingQuiz) {
         // Editar quiz existente
-        const result = await updateQuiz(profile.user_id, editingQuiz.id.toString(), {
+        const result = await updateQuiz(profile.id, editingQuiz.id.toString(), {
           question_text: editForm.question,
           options: editForm.options,
           correct_answer: editForm.options[editForm.correct_answer],
@@ -300,7 +300,7 @@ export default function QuizPage() {
           return
         }
         
-        const result = await createQuiz(profile.user_id, {
+        const result = await createQuiz(profile.id, {
           quiz_id: selectedTopic,
           question_text: editForm.question,
           options: editForm.options,
@@ -334,11 +334,11 @@ export default function QuizPage() {
   }
 
   const handleDeleteQuiz = async (quizId: number) => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     if (confirm("Tem certeza que deseja excluir este quiz?")) {
       try {
-        const result = await deleteQuiz(profile.user_id, quizId.toString())
+        const result = await deleteQuiz(profile.id, quizId.toString())
         if (result.success) {
           setQuestions(prev => prev.filter(q => q.id !== quizId))
         }
@@ -364,13 +364,13 @@ export default function QuizPage() {
 
   const handleSaveTopic = async () => {
     console.log("🔧 [Debug] handleSaveTopic chamado")
-    console.log("🔧 [Debug] Profile user_id:", profile?.user_id)
+    console.log("🔧 [Debug] Profile id:", profile?.id)
     console.log("🔧 [Debug] Selected subject:", selectedSubject)
     console.log("🔧 [Debug] Editing topic:", editingTopic)
     console.log("🔧 [Debug] Topic form:", topicForm)
     
-    if (!profile?.user_id || !selectedSubject) {
-      console.log("❌ [Debug] Falta profile.user_id ou selectedSubject")
+    if (!profile?.id || !selectedSubject) {
+      console.log("❌ [Debug] Falta profile.id ou selectedSubject")
       return
     }
     
@@ -381,7 +381,7 @@ export default function QuizPage() {
       if (editingTopic) {
         console.log("🔧 [Debug] Editando tópico existente")
         // Editar tópico existente
-        const result = await updateTopic(profile.user_id, editingTopic.id, {
+        const result = await updateTopic(profile.id, editingTopic.id, {
           name: topicForm.name,
           description: topicForm.description
         })
@@ -399,7 +399,7 @@ export default function QuizPage() {
       } else {
         console.log("🔧 [Debug] Criando novo tópico")
         // Criar novo tópico
-        const result = await createTopic(profile.user_id, {
+        const result = await createTopic(profile.id, {
           subject_id: selectedSubject,
           name: topicForm.name,
           description: topicForm.description
@@ -429,11 +429,11 @@ export default function QuizPage() {
   }
 
   const handleDeleteTopic = async (topicId: string) => {
-    if (!profile?.user_id) return
+    if (!profile?.id) return
     
     if (confirm("Tem certeza que deseja excluir este tópico? Todos os quizzes associados também serão removidos.")) {
       try {
-        const result = await deleteTopic(profile.user_id, topicId)
+        const result = await deleteTopic(profile.id, topicId)
         if (result.success) {
           setTopics(prev => prev.filter(t => t.id !== topicId))
         }

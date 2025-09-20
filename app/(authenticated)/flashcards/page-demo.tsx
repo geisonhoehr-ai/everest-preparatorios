@@ -27,7 +27,7 @@ import {
   Brain
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"

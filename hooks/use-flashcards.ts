@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useToast } from './use-toast'
-import { useAuth } from '@/context/auth-context'
+import { useAuth } from '@/context/auth-context-custom'
 
 export interface Flashcard {
   id: number

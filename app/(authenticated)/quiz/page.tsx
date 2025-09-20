@@ -50,25 +50,27 @@ import {
   Monitor,
   GraduationCap,
   BookOpen,
-  FileText
+  FileText,
+  ChevronRight,
+  BarChart3,
+  Lightbulb,
+  CheckCircle2
 } from "lucide-react"
 import { RoleGuard } from "@/components/role-guard"
-import { useAuth } from "@/context/auth-context-supabase"
-import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic } from "../../server-actions"
-import { createClient } from '@supabase/supabase-js'
+import { useAuth } from "@/context/auth-context-custom"
+import { useAdminMode } from "@/hooks/use-admin-mode"
+import { AdminModeToggle } from "@/components/admin-mode-toggle"
+import { QuizEditor } from "@/components/quiz/quiz-editor"
+import { QuestionEditor } from "@/components/quiz/question-editor"
+import { updateQuizProgress, getAllSubjects, getTopicsBySubject, getAllQuizzesByTopic, getQuizWithQuestions, createQuiz, updateQuiz, deleteQuiz, createTopic, updateTopic, deleteTopic, createQuestion, updateQuestion, deleteQuestion } from "../../server-actions"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 // Interface para subjects
 interface Subject {
-  id: number
+  id: string
   name: string
   description?: string
 }
@@ -89,11 +91,17 @@ interface Question {
 
 export default function QuizPage() {
   const { user, profile } = useAuth()
+  const { isAdminMode, canUseAdminMode } = useAdminMode()
+  
+  // Debug logs
+  console.log('🔧 [QUIZ_PAGE] isAdminMode:', isAdminMode)
+  console.log('🔧 [QUIZ_PAGE] canUseAdminMode:', canUseAdminMode)
   
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
   const [topics, setTopics] = useState<Topic[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
+  const [currentQuiz, setCurrentQuiz] = useState<{ id: string; title: string; description?: string; topic_id: string } | null>(null)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
@@ -104,6 +112,14 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [quizTime, setQuizTime] = useState(0)
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([])
+  
+  // Estados para modo admin/edição
+  const [isEditingQuiz, setIsEditingQuiz] = useState(false)
+  const [isEditingTopic, setIsEditingTopic] = useState(false)
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false)
+  const [editingQuiz, setEditingQuiz] = useState<any>(null)
+  const [editingTopic, setEditingTopic] = useState<any>(null)
+  const [editingQuestion, setEditingQuestion] = useState<any>(null)
 
   // Carregar subjects
   useEffect(() => {
@@ -152,9 +168,13 @@ export default function QuizPage() {
       const loadQuestions = async () => {
         setIsLoading(true)
         try {
-          const data = await getAllQuizzesByTopic(selectedTopic)
+          const { quiz, questions: questionsData } = await getQuizWithQuestions(selectedTopic)
+          
+          // Armazenar dados do quiz atual
+          setCurrentQuiz(quiz)
+          
           // Mapear dados para incluir campos obrigatórios da interface Question
-          const questionsWithDefaults = data.map(q => ({
+          const questionsWithDefaults = questionsData.map(q => ({
             id: q.id,
             question: q.question_text, // Mapear question_text para question
             options: q.options,
@@ -227,90 +247,86 @@ export default function QuizPage() {
 
   return (
     <PagePermissionGuard pageName="quiz">
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        {/* Header Tecnológico */}
-        <div className="relative overflow-hidden">
-          {/* Background animado */}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-orange-600/20">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(147,51,234,0.1),transparent_50%)]"></div>
-            <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_20%,rgba(236,72,153,0.1),transparent_50%)]"></div>
-          </div>
-          
-          {/* Grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(147,51,234,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(147,51,234,0.1)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-          
-          <div className="relative z-10 p-6">
-            {/* Título Principal */}
-            <div className="text-center mb-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        {/* Header Clean */}
+        <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Admin Mode Toggle */}
+            {canUseAdminMode && (
+              <div className="flex justify-end mb-6">
+                <AdminModeToggle />
+              </div>
+            )}
+            <div className="text-center">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl shadow-lg">
-                  <BrainCircuit className="h-8 w-8 text-white" />
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                  <BrainCircuit className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
                   Quiz Interativo
                 </h1>
-                <div className="p-3 bg-gradient-to-r from-pink-500 to-orange-600 rounded-2xl shadow-lg">
-                  <Rocket className="h-8 w-8 text-white" />
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  <Rocket className="h-8 w-8 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
                 Teste seus conhecimentos com quizzes dinâmicos e feedback instantâneo
               </p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card className="bg-gradient-to-r from-purple-600/20 to-purple-800/20 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <BookOpenText className="h-5 w-5 text-purple-400" />
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <BookOpenText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Total de Questões</p>
-                      <p className="text-2xl font-bold text-white">{questions.length}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Total de Questões</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{questions.length}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-green-600/20 to-green-800/20 border-green-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
+                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Corretas</p>
-                      <p className="text-2xl font-bold text-white">{quizStats.correct}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Corretas</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{quizStats.correct}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-red-600/20 to-red-800/20 border-red-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-500/20 rounded-lg">
-                      <XCircle className="h-5 w-5 text-red-400" />
+                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Incorretas</p>
-                      <p className="text-2xl font-bold text-white">{quizStats.incorrect}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Incorretas</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{quizStats.incorrect}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-orange-600/20 to-orange-800/20 border-orange-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-500/20 rounded-lg">
-                      <Trophy className="h-5 w-5 text-orange-400" />
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                      <Trophy className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Pontuação</p>
-                      <p className="text-2xl font-bold text-white">{getScorePercentage()}%</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Pontuação</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{getScorePercentage()}%</p>
                     </div>
                   </div>
                 </CardContent>
@@ -320,266 +336,379 @@ export default function QuizPage() {
         </div>
 
         {/* Conteúdo Principal */}
-        <div className="relative z-10 p-6">
-          <div className="max-w-7xl mx-auto">
-            
-            {quizMode === "select" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Sidebar de Controles */}
-                <div className="lg:col-span-1 space-y-6">
-                  {/* Seletor de Matéria */}
-                  <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <GraduationCap className="h-5 w-5 text-purple-400" />
-                        Matéria
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select value={selectedSubject?.toString()} onValueChange={(value) => setSelectedSubject(parseInt(value))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
-                          <SelectValue placeholder="Selecione uma matéria" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
-                          {subjects.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.id.toString()} className="text-white hover:bg-slate-700">
-                              {subject.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {quizMode === "select" && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              
+              {/* Sidebar de Controles */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Seletor de Matéria */}
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                      <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      Matéria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedSubject || ""} onValueChange={setSelectedSubject}>
+                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
+                        <SelectValue placeholder="Selecione uma matéria" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.id} className="text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
+                            {subject.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+
+                {/* Seletor de Tópico */}
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                      <BookOpenText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      Tópico
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedTopic || ""} onValueChange={setSelectedTopic}>
+                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
+                        <SelectValue placeholder="Selecione um tópico" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                        {topics.map((topic) => (
+                          <SelectItem key={topic.id} value={topic.id} className="text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
+                            {topic.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+
+                {/* Botão Iniciar Quiz */}
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                  <CardContent className="p-6">
+                    <Button
+                      onClick={startQuiz}
+                      disabled={!selectedTopic || questions.length === 0 || isLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
+                    >
+                      {isLoading ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                          Carregando...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-5 w-5 mr-2" />
+                          Iniciar Quiz
+                        </>
+                      )}
+                    </Button>
+                    {questions.length > 0 && (
+                      <p className="text-sm text-slate-600 dark:text-slate-400 text-center mt-2">
+                        {questions.length} questões disponíveis
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Área Principal */}
+              <div className="lg:col-span-2">
+                {isLoading ? (
+                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <CardContent className="p-12 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                          <BrainCircuit className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-pulse" />
+                        </div>
+                        <p className="text-slate-900 dark:text-white text-lg">Carregando questões...</p>
+                      </div>
                     </CardContent>
                   </Card>
-
-                  {/* Seletor de Tópico */}
-                  <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <BookOpenText className="h-5 w-5 text-pink-400" />
-                        Tópico
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select value={selectedTopic || ""} onValueChange={setSelectedTopic}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
-                          <SelectValue placeholder="Selecione um tópico" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
-                          {topics.map((topic) => (
-                            <SelectItem key={topic.id} value={topic.id} className="text-white hover:bg-slate-700">
-                              {topic.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                ) : questions.length === 0 ? (
+                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <CardContent className="p-12 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-full">
+                          <BookOpenText className="h-8 w-8 text-slate-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Nenhuma questão encontrada</h3>
+                        <p className="text-slate-600 dark:text-slate-400">Selecione uma matéria e tópico para começar</p>
+                        
+                        {/* Botão para criar quiz no modo admin */}
+                        {isAdminMode && selectedTopic && (
+                          <div className="mt-6 space-y-4">
+                            <Button
+                              onClick={() => {
+                                setEditingQuiz({ topic_id: selectedTopic })
+                                setIsEditingQuiz(true)
+                              }}
+                              className="bg-orange-500 hover:bg-orange-600 text-white"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Criar Novo Quiz
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
+                ) : (
+                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <CardContent className="p-8">
+                      <div className="text-center space-y-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                              <BrainCircuit className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Quiz Preparado!</h2>
+                          </div>
+                          
+                          {/* Botões de edição no modo admin */}
+                          {isAdminMode && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (currentQuiz) {
+                                    setEditingQuiz(currentQuiz)
+                                    setIsEditingQuiz(true)
+                                  }
+                                }}
+                                className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar Quiz
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingQuestion({ quiz_id: questions[0]?.quiz_id })
+                                  setIsEditingQuestion(true)
+                                }}
+                                className="border-green-300 text-green-600 hover:bg-green-50"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Nova Questão
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 text-lg">
+                          Você tem <span className="text-blue-600 dark:text-blue-400 font-semibold">{questions.length}</span> questões para responder.
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          Cada questão terá 4 alternativas. Escolha a resposta correta e teste seus conhecimentos!
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
 
-                  {/* Botão Iniciar Quiz */}
-                  <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                    <CardContent className="p-6">
+          {quizMode === "quiz" && questions.length > 0 && (
+            <div className="space-y-6">
+              {/* Progresso */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Progresso do Quiz</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{currentQuestionIndex + 1} de {questions.length}</span>
+                  </div>
+                  <Progress 
+                    value={((currentQuestionIndex + 1) / questions.length) * 100} 
+                    className="h-2 bg-slate-200 dark:bg-slate-700"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Questão Atual */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-8">
+                  <div className="space-y-8">
+                    {/* Pergunta */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">QUESTÃO {currentQuestionIndex + 1}</h3>
+                      </div>
+                      <p className="text-xl text-slate-900 dark:text-white leading-relaxed font-medium">
+                        {questions[currentQuestionIndex].question}
+                      </p>
+                    </div>
+
+                    {/* Alternativas */}
+                    <div className="space-y-3">
+                      <RadioGroup value={selectedAnswer?.toString()} onValueChange={(value) => handleAnswerSelect(parseInt(value))}>
+                        {questions[currentQuestionIndex].options.map((option, index) => (
+                          <div key={index} className="flex items-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors cursor-pointer">
+                            <RadioGroupItem value={index.toString()} id={`option-${index}`} className="text-blue-600 dark:text-blue-400" />
+                            <Label htmlFor={`option-${index}`} className="text-slate-900 dark:text-white cursor-pointer flex-1 text-base">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
+                    {/* Botão Próxima */}
+                    <div className="flex justify-center pt-6">
                       <Button
-                        onClick={startQuiz}
-                        disabled={!selectedTopic || questions.length === 0 || isLoading}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 text-lg"
+                        onClick={handleNextQuestion}
+                        disabled={selectedAnswer === null}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-medium"
                       >
-                        {isLoading ? (
+                        {currentQuestionIndex < questions.length - 1 ? (
                           <>
-                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                            Carregando...
+                            Próxima Questão
+                            <ChevronRight className="h-5 w-5 ml-2" />
                           </>
                         ) : (
                           <>
-                            <Play className="h-5 w-5 mr-2" />
-                            Iniciar Quiz
+                            Finalizar Quiz
+                            <Trophy className="h-5 w-5 ml-2" />
                           </>
                         )}
                       </Button>
-                      {questions.length > 0 && (
-                        <p className="text-sm text-gray-400 text-center mt-2">
-                          {questions.length} questões disponíveis
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Área Principal */}
-                <div className="lg:col-span-2">
-                  {isLoading ? (
-                    <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                      <CardContent className="p-12 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                          <div className="p-4 bg-purple-500/20 rounded-full">
-                            <BrainCircuit className="h-8 w-8 text-purple-400 animate-pulse" />
-                          </div>
-                          <p className="text-white text-lg">Carregando questões...</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : questions.length === 0 ? (
-                    <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                      <CardContent className="p-12 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                          <div className="p-4 bg-gray-500/20 rounded-full">
-                            <BookOpenText className="h-8 w-8 text-gray-400" />
-                          </div>
-                          <h3 className="text-xl font-semibold text-white">Nenhuma questão encontrada</h3>
-                          <p className="text-gray-400">Selecione uma matéria e tópico para começar</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                      <CardContent className="p-8">
-                        <div className="text-center space-y-6">
-                          <div className="flex items-center justify-center gap-2 mb-4">
-                            <div className="p-2 bg-purple-500/20 rounded-lg">
-                              <BrainCircuit className="h-6 w-6 text-purple-400" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-white">Quiz Preparado!</h2>
-                          </div>
-                          <p className="text-gray-300 text-lg">
-                            Você tem <span className="text-purple-400 font-semibold">{questions.length}</span> questões para responder.
-                          </p>
-                          <p className="text-gray-400">
-                            Cada questão terá 4 alternativas. Escolha a resposta correta e teste seus conhecimentos!
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {quizMode === "quiz" && questions.length > 0 && (
-              <div className="space-y-6">
-                {/* Progresso */}
-                <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-400">Progresso do Quiz</span>
-                      <span className="text-sm text-white">{currentQuestionIndex + 1} de {questions.length}</span>
                     </div>
-                    <Progress 
-                      value={((currentQuestionIndex + 1) / questions.length) * 100} 
-                      className="h-2 bg-slate-700"
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {quizMode === "finished" && (
+            <div className="max-w-4xl mx-auto">
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <div className="space-y-8">
+                    <div className="flex items-center justify-center gap-4 mb-8">
+                      <div className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                        <Trophy className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Quiz Concluído!</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-3" />
+                        <p className="text-3xl font-bold text-slate-900 dark:text-white">{quizStats.correct}</p>
+                        <p className="text-green-600 dark:text-green-400 font-medium">Corretas</p>
+                      </div>
+                      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <XCircle className="h-8 w-8 text-red-600 dark:text-red-400 mx-auto mb-3" />
+                        <p className="text-3xl font-bold text-slate-900 dark:text-white">{quizStats.incorrect}</p>
+                        <p className="text-red-600 dark:text-red-400 font-medium">Incorretas</p>
+                      </div>
+                      <div className="p-6 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                        <Trophy className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-3" />
+                        <p className="text-3xl font-bold text-slate-900 dark:text-white">{getScorePercentage()}%</p>
+                        <p className="text-orange-600 dark:text-orange-400 font-medium">Pontuação</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button
+                        onClick={resetQuiz}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-medium"
+                      >
+                        <RotateCcw className="h-5 w-5 mr-2" />
+                        Fazer Novamente
+                      </Button>
+                      <Button
+                        onClick={() => setQuizMode("select")}
+                        variant="outline"
+                        className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-8 py-3 text-lg font-medium"
+                      >
+                        <ArrowRight className="h-5 w-5 mr-2" />
+                        Novo Quiz
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Formulários de Edição - Modo Admin */}
+          {isAdminMode && (
+            <>
+              {/* Editor de Quiz */}
+              {isEditingQuiz && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <QuizEditor
+                      quiz={editingQuiz}
+                      topics={topics}
+                      onSave={async (quizData) => {
+                        try {
+                          if (editingQuiz.id) {
+                            await updateQuiz(editingQuiz.id, quizData)
+                          } else {
+                            await createQuiz(quizData)
+                          }
+                          setIsEditingQuiz(false)
+                          setEditingQuiz(null)
+                          // Recarregar dados se necessário
+                        } catch (error) {
+                          console.error('Erro ao salvar quiz:', error)
+                        }
+                      }}
+                      onCancel={() => {
+                        setIsEditingQuiz(false)
+                        setEditingQuiz(null)
+                      }}
+                      isEditing={!!editingQuiz.id}
                     />
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
+              )}
 
-                {/* Questão Atual */}
-                <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm min-h-[500px]">
-                  <CardContent className="p-8">
-                    <div className="space-y-6">
-                      {/* Pergunta */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="p-2 bg-purple-500/20 rounded-lg">
-                            <FileText className="h-5 w-5 text-purple-400" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-purple-400">QUESTÃO {currentQuestionIndex + 1}</h3>
-                        </div>
-                        <p className="text-xl text-white leading-relaxed">
-                          {questions[currentQuestionIndex].question}
-                        </p>
-                      </div>
-
-                      {/* Alternativas */}
-                      <div className="space-y-3">
-                        <RadioGroup value={selectedAnswer?.toString()} onValueChange={(value) => handleAnswerSelect(parseInt(value))}>
-                          {questions[currentQuestionIndex].options.map((option, index) => (
-                            <div key={index} className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg border border-slate-600 hover:border-purple-500/50 transition-colors">
-                              <RadioGroupItem value={index.toString()} id={`option-${index}`} className="text-purple-500" />
-                              <Label htmlFor={`option-${index}`} className="text-white cursor-pointer flex-1">
-                                {option}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      </div>
-
-                      {/* Botão Próxima */}
-                      <div className="flex justify-center pt-4">
-                        <Button
-                          onClick={handleNextQuestion}
-                          disabled={selectedAnswer === null}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 text-lg"
-                        >
-                          {currentQuestionIndex < questions.length - 1 ? (
-                            <>
-                              Próxima Questão
-                              <ArrowRight className="h-5 w-5 ml-2" />
-                            </>
-                          ) : (
-                            <>
-                              Finalizar Quiz
-                              <Trophy className="h-5 w-5 ml-2" />
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {quizMode === "finished" && (
-              <div className="max-w-4xl mx-auto">
-                <Card className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardContent className="p-12 text-center">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-center gap-3 mb-6">
-                        <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full">
-                          <Trophy className="h-12 w-12 text-white" />
-                        </div>
-                        <h2 className="text-3xl font-bold text-white">Quiz Concluído!</h2>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="p-6 bg-green-600/20 rounded-lg border border-green-500/30">
-                          <CheckCircle className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                          <p className="text-2xl font-bold text-white">{quizStats.correct}</p>
-                          <p className="text-green-400">Corretas</p>
-                        </div>
-                        <div className="p-6 bg-red-600/20 rounded-lg border border-red-500/30">
-                          <XCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-                          <p className="text-2xl font-bold text-white">{quizStats.incorrect}</p>
-                          <p className="text-red-400">Incorretas</p>
-                        </div>
-                        <div className="p-6 bg-orange-600/20 rounded-lg border border-orange-500/30">
-                          <Trophy className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-                          <p className="text-2xl font-bold text-white">{getScorePercentage()}%</p>
-                          <p className="text-orange-400">Pontuação</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <Button
-                          onClick={resetQuiz}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 text-lg mr-4"
-                        >
-                          <RotateCcw className="h-5 w-5 mr-2" />
-                          Fazer Novamente
-                        </Button>
-                        <Button
-                          onClick={() => setQuizMode("select")}
-                          variant="outline"
-                          className="border-slate-600 text-white hover:bg-slate-700 px-8 py-3 text-lg"
-                        >
-                          <ArrowRight className="h-5 w-5 mr-2" />
-                          Novo Quiz
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
+              {/* Editor de Questão */}
+              {isEditingQuestion && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <QuestionEditor
+                      question={editingQuestion}
+                      onSave={async (questionData) => {
+                        try {
+                          if (editingQuestion.id) {
+                            await updateQuestion(editingQuestion.id, questionData)
+                          } else {
+                            await createQuestion({ ...questionData, quiz_id: selectedTopic })
+                          }
+                          setIsEditingQuestion(false)
+                          setEditingQuestion(null)
+                          // Recarregar dados se necessário
+                        } catch (error) {
+                          console.error('Erro ao salvar questão:', error)
+                        }
+                      }}
+                      onCancel={() => {
+                        setIsEditingQuestion(false)
+                        setEditingQuestion(null)
+                      }}
+                      isEditing={!!editingQuestion.id}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </PagePermissionGuard>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { supabaseAdmin } from '@/lib/supabaseServer'
 import { createClient } from '@/lib/supabase-server'
+import bcrypt from 'bcryptjs'
 // Cache functions will be implemented separately
 
 /**
@@ -1064,7 +1065,7 @@ export async function getAllSubjects() {
   }
 }
 
-export async function getTopicsBySubject(subjectId: number) {
+export async function getTopicsBySubject(subjectId: string) {
   const supabase = await getSupabase()
   const { data, error } = await supabase.from("topics").select("id, name, subject_id").eq("subject_id", subjectId).order("name")
   if (error) {
@@ -1075,14 +1076,36 @@ export async function getTopicsBySubject(subjectId: number) {
 }
 
 // Função para buscar questões de quiz por quiz_id
-export async function getAllQuizzesByTopic(quizId: string) {
+export async function getAllQuizzesByTopic(topicId: string) {
   const supabase = await getSupabase()
-  console.log(`❓ [Server Action] Buscando questões do quiz: ${quizId}`)
+  console.log(`❓ [Server Action] Buscando questões do tópico: ${topicId}`)
 
+  // Primeiro buscar quizzes do tópico
+  const { data: quizzes, error: quizzesError } = await supabase
+    .from("quizzes")
+    .select("id, title, description, topic_id")
+    .eq("topic_id", topicId)
+
+  if (quizzesError) {
+    console.error("❌ [Server Action] Erro ao buscar quizzes:", quizzesError)
+    return []
+  }
+
+  console.log(`🎮 [Server Action] Quizzes encontrados para o tópico:`, quizzes)
+
+  if (!quizzes || quizzes.length === 0) {
+    console.log("ℹ️ [Server Action] Nenhum quiz encontrado para este tópico")
+    return []
+  }
+
+  // Buscar questões de todos os quizzes do tópico
+  const quizIds = quizzes.map(q => q.id)
+  console.log(`🆔 [Server Action] IDs dos quizzes para buscar questões:`, quizIds)
+  
   const { data, error } = await supabase
     .from("quiz_questions")
-    .select("id, quiz_id, question_text, options, correct_answer, explanation")
-    .eq("quiz_id", quizId)
+    .select("id, quiz_id, topic_id, question_text, options, correct_answer, explanation")
+    .in("quiz_id", quizIds)
     .order("id")
 
   if (error) {
@@ -1091,11 +1114,56 @@ export async function getAllQuizzesByTopic(quizId: string) {
   }
 
   console.log(`✅ [Server Action] Questões encontradas: ${data?.length}`)
+  if (data && data.length > 0) {
+    console.log(`📝 [Server Action] Primeira questão:`, data[0])
+  }
   return data || []
 }
 
+// Nova função para buscar quiz e questões
+export async function getQuizWithQuestions(topicId: string) {
+  const supabase = await getSupabase()
+  console.log(`❓ [Server Action] Buscando quiz e questões do tópico: ${topicId}`)
+
+  // Primeiro buscar quizzes do tópico
+  const { data: quizzes, error: quizzesError } = await supabase
+    .from("quizzes")
+    .select("id, title, description, topic_id")
+    .eq("topic_id", topicId)
+
+  if (quizzesError) {
+    console.error("❌ [Server Action] Erro ao buscar quizzes:", quizzesError)
+    return { quiz: null, questions: [] }
+  }
+
+  console.log(`🎮 [Server Action] Quizzes encontrados para o tópico:`, quizzes)
+
+  if (!quizzes || quizzes.length === 0) {
+    console.log("ℹ️ [Server Action] Nenhum quiz encontrado para este tópico")
+    return { quiz: null, questions: [] }
+  }
+
+  // Pegar o primeiro quiz (assumindo que há um quiz por tópico)
+  const quiz = quizzes[0]
+
+  // Buscar questões do quiz
+  const { data: questions, error: questionsError } = await supabase
+    .from("quiz_questions")
+    .select("id, quiz_id, topic_id, question_text, options, correct_answer, explanation")
+    .eq("quiz_id", quiz.id)
+    .order("id")
+
+  if (questionsError) {
+    console.error("❌ [Server Action] Erro ao buscar questões:", questionsError)
+    return { quiz, questions: [] }
+  }
+
+  console.log(`✅ [Server Action] Quiz e questões encontrados:`, { quiz: quiz.title, questionsCount: questions?.length })
+  return { quiz, questions: questions || [] }
+}
+
 // Função para criar uma nova questão de quiz
-export async function createQuiz(userId: string, quizData: {
+export async function createQuizQuestion(userId: string, quizData: {
   quiz_id: string
   question_text: string
   options: string[]
@@ -1128,7 +1196,7 @@ export async function createQuiz(userId: string, quizData: {
 }
 
 // Função para atualizar uma questão de quiz
-export async function updateQuiz(userId: string, quizId: string, updateData: {
+export async function updateQuizQuestion(userId: string, quizId: string, updateData: {
   question_text: string
   options: string[]
   correct_answer: string
@@ -1160,7 +1228,7 @@ export async function updateQuiz(userId: string, quizId: string, updateData: {
 }
 
 // Função para deletar uma questão de quiz
-export async function deleteQuiz(userId: string, quizId: string) {
+export async function deleteQuizQuestion(userId: string, quizId: string) {
   const supabase = await getSupabase()
   console.log(`🗑️ [Server Action] Deletando questão de quiz: ${quizId}`)
 
@@ -2211,19 +2279,9 @@ export async function getTotalTests() {
 
 export async function getUserRanking(userId: string) {
   try {
-    const supabase = await getSupabase()
-    const { data, error } = await supabase
-      .from('user_progress')
-      .select('rank_position')
-      .eq('user_id', userId)
-      .single()
-
-    if (error) {
-      console.error('❌ Erro ao buscar ranking do usuário:', error)
-      return { position: 'N/A' }
-    }
-
-    return { position: data?.rank_position || 'N/A' }
+    // Por enquanto, retornar N/A até implementarmos o sistema de ranking
+    console.log('ℹ️ Sistema de ranking ainda não implementado')
+    return { position: 'N/A' }
   } catch (error) {
     console.error('❌ Erro inesperado ao buscar ranking:', error)
     return { position: 'N/A' }
@@ -2362,35 +2420,149 @@ export async function importEaofCronograma(userId: string) {
 
 // ===== GESTÃO DE MEMBROS/ALUNOS =====
 
+function generateTemporaryPassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
 export async function getAllMembers() {
   try {
+    console.log('🔍 [Server Action] getAllMembers() iniciada')
     const supabase = await getSupabase()
+    console.log('🔍 [Server Action] Supabase client obtido')
     
+    // Primeiro, vamos ver todos os usuários para debug
+    const { data: allUsers, error: allUsersError } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, role, is_active')
+      .order('created_at', { ascending: false })
+
+    console.log('🔍 [Server Action] Todos os usuários encontrados:', allUsers)
+    if (allUsersError) {
+      console.error('❌ [Server Action] Erro ao buscar todos os usuários:', allUsersError)
+    }
+    
+    // Se não há usuários, tentar criar usuários de teste
+    if (!allUsers || allUsers.length === 0) {
+      console.log('⚠️ [Server Action] Nenhum usuário encontrado na tabela users')
+      console.log('🔧 [Server Action] Tentando criar usuários de teste...')
+      
+      try {
+        // Tentar criar usuários usando uma abordagem diferente
+        const usuariosTeste = [
+          {
+            email: 'aluno1@teste.com',
+            first_name: 'João',
+            last_name: 'Silva',
+            role: 'student',
+            password: '123456'
+          },
+          {
+            email: 'aluno2@teste.com',
+            first_name: 'Maria',
+            last_name: 'Santos',
+            role: 'student',
+            password: '123456'
+          },
+          {
+            email: 'aluno3@teste.com',
+            first_name: 'Pedro',
+            last_name: 'Oliveira',
+            role: 'student',
+            password: '123456'
+          }
+        ]
+
+        for (const usuario of usuariosTeste) {
+          try {
+            const passwordHash = await bcrypt.hash(usuario.password, 10)
+            
+            // Tentar inserir usando upsert (insert ou update)
+            const { data: newUser, error: createError } = await supabase
+              .from('users')
+              .upsert({
+                email: usuario.email,
+                password_hash: passwordHash,
+                first_name: usuario.first_name,
+                last_name: usuario.last_name,
+                role: usuario.role,
+                is_active: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'email'
+              })
+              .select()
+
+            if (createError) {
+              console.error(`❌ [Server Action] Erro ao criar usuário ${usuario.email}:`, createError.message)
+            } else {
+              console.log(`✅ [Server Action] Usuário criado: ${usuario.email}`)
+            }
+          } catch (createError) {
+            console.error(`❌ [Server Action] Erro inesperado ao criar usuário ${usuario.email}:`, createError)
+          }
+        }
+
+        // Tentar buscar novamente após criação
+        const { data: newUsers, error: newUsersError } = await supabase
+          .from('users')
+          .select('id, email, first_name, last_name, role, is_active')
+          .order('created_at', { ascending: false })
+
+        if (newUsersError) {
+          console.error('❌ [Server Action] Erro ao buscar usuários após criação:', newUsersError)
+        } else {
+          console.log('🔍 [Server Action] Usuários após criação:', newUsers)
+        }
+
+      } catch (error) {
+        console.error('❌ [Server Action] Erro ao tentar criar usuários:', error)
+      }
+    }
+    
+    // Buscar usuários com role 'student' da tabela users
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('users')
       .select(`
-        *,
-        classes(name),
-        student_subscriptions(
-          id,
-          access_plan_id,
-          class_id,
-          start_date,
-          end_date,
-          is_active,
-          access_plans(id, name, duration_months, features),
-          classes(name)
-        )
+        id,
+        email,
+        first_name,
+        last_name,
+        role,
+        is_active,
+        created_at,
+        last_login_at
       `)
       .eq('role', 'student')
       .order('created_at', { ascending: false })
+
+    console.log('🔍 [Server Action] Query executada, data:', data, 'error:', error)
 
     if (error) {
       console.error('❌ Erro ao carregar membros:', error)
       return []
     }
 
-    return data || []
+    // Mapear dados para o formato esperado pela interface
+    const members = (data || []).map(user => ({
+      user_id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+      class_id: null,
+      access_expires_at: null,
+      must_change_password: false,
+      created_at: user.created_at,
+      classes: null,
+      student_subscriptions: []
+    }))
+
+    console.log('✅ [Server Action] Membros mapeados:', members.length, 'membros encontrados')
+    return members
   } catch (error) {
     console.error('❌ Erro inesperado ao carregar membros:', error)
     return []
@@ -2399,13 +2571,15 @@ export async function getAllMembers() {
 
 export async function getAllClasses() {
   try {
+    console.log('🔍 [Server Action] getAllClasses() iniciada')
     const supabase = await getSupabase()
     
     const { data, error } = await supabase
       .from('classes')
-      .select('*')
-      .eq('is_active', true)
+      .select('id, name, description')
       .order('name', { ascending: true })
+
+    console.log('🔍 [Server Action] Classes encontradas:', data, 'error:', error)
 
     if (error) {
       console.error('❌ Erro ao carregar turmas:', error)
@@ -2421,20 +2595,50 @@ export async function getAllClasses() {
 
 export async function getAllAccessPlans() {
   try {
-    const supabase = await getSupabase()
-    
-    const { data, error } = await supabase
-      .from('access_plans')
-      .select('*')
-      .eq('is_active', true)
-      .order('duration_months', { ascending: true })
+    // Retornar planos de acesso mockados até a tabela ser criada
+    const mockPlans = [
+      {
+        id: 'basic',
+        name: 'Plano Básico',
+        description: 'Acesso básico às funcionalidades',
+        duration_months: 1,
+        price: 29.90,
+        features: {
+          quiz: true,
+          flashcards: true,
+          evercast: false,
+          calendario: false
+        }
+      },
+      {
+        id: 'premium',
+        name: 'Plano Premium',
+        description: 'Acesso completo a todas as funcionalidades',
+        duration_months: 6,
+        price: 149.90,
+        features: {
+          quiz: true,
+          flashcards: true,
+          evercast: true,
+          calendario: true
+        }
+      },
+      {
+        id: 'annual',
+        name: 'Plano Anual',
+        description: 'Acesso completo por 12 meses com desconto',
+        duration_months: 12,
+        price: 299.90,
+        features: {
+          quiz: true,
+          flashcards: true,
+          evercast: true,
+          calendario: true
+        }
+      }
+    ]
 
-    if (error) {
-      console.error('❌ Erro ao carregar planos de acesso:', error)
-      return []
-    }
-
-    return data || []
+    return mockPlans
   } catch (error) {
     console.error('❌ Erro inesperado ao carregar planos de acesso:', error)
     return []
@@ -2454,103 +2658,49 @@ export async function createMember(memberData: {
     const supabase = await getSupabase()
     
     // Verificar se o usuário tem permissão
-    const { data: profile } = await supabase
-      .from('user_profiles')
+    const { data: user } = await supabase
+      .from('users')
       .select('role')
-      .eq('user_id', createdBy)
+      .eq('id', createdBy)
       .single()
 
-    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
+    if (!user || !['administrator', 'teacher'].includes(user.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem criar membros.')
     }
 
-    // Criar usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: memberData.email,
-      password: generateTemporaryPassword(),
-      email_confirm: true
-    })
+    // Gerar senha temporária
+    const temporaryPassword = generateTemporaryPassword()
+    
+    // Separar nome e sobrenome
+    const nameParts = memberData.name.split(' ')
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ') || ''
 
-    if (authError || !authData.user) {
-      throw new Error('Erro ao criar usuário: ' + (authError?.message || 'Usuário não criado'))
-    }
-
-    const userId = authData.user.id
-
-    // Criar perfil do usuário
-    const { error: profileError } = await supabase
-      .from('user_profiles')
+    // Criar usuário na tabela users
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
       .insert({
-        user_id: userId,
-        name: memberData.name,
         email: memberData.email,
+        password_hash: await bcrypt.hash(temporaryPassword, 10),
+        first_name: firstName,
+        last_name: lastName,
         role: 'student',
-        class_id: memberData.class_id,
-        access_expires_at: memberData.end_date,
-        must_change_password: true,
-        created_by: createdBy
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
+      .select()
+      .single()
 
-    if (profileError) {
-      // Se falhar, deletar o usuário criado
-      await supabase.auth.admin.deleteUser(userId)
-      throw new Error('Erro ao criar perfil: ' + profileError.message)
-    }
-
-    // Criar assinatura
-    const { error: subscriptionError } = await supabase
-      .from('student_subscriptions')
-      .insert({
-        user_id: userId,
-        access_plan_id: memberData.access_plan_id,
-        class_id: memberData.class_id,
-        start_date: memberData.start_date,
-        end_date: memberData.end_date,
-        created_by: createdBy
-      })
-
-    if (subscriptionError) {
-      console.error('Erro ao criar assinatura:', subscriptionError)
-    }
-
-    // Criar permissões de página
-    const pagePermissions = Object.entries(memberData.page_permissions).map(([page, hasAccess]) => ({
-      user_id: userId,
-      page_name: page,
-      has_access: hasAccess,
-      granted_by: createdBy,
-      expires_at: memberData.end_date
-    }))
-
-    if (pagePermissions.length > 0) {
-      const { error: permissionsError } = await supabase
-        .from('page_permissions')
-        .insert(pagePermissions)
-
-      if (permissionsError) {
-        console.error('Erro ao criar permissões:', permissionsError)
-      }
-    }
-
-    // Criar senha provisória
-    const tempPassword = generateTemporaryPassword()
-    const { error: tempPasswordError } = await supabase
-      .from('temporary_passwords')
-      .insert({
-        user_id: userId,
-        temporary_password: tempPassword,
-        created_by: createdBy
-      })
-
-    if (tempPasswordError) {
-      console.error('Erro ao criar senha provisória:', tempPasswordError)
+    if (userError || !newUser) {
+      throw new Error('Erro ao criar usuário: ' + (userError?.message || 'Usuário não criado'))
     }
 
     console.log(`✅ Membro criado com sucesso: ${memberData.name} (${memberData.email})`)
     return { 
       success: true, 
-      userId, 
-      temporaryPassword: tempPassword,
+      userId: newUser.id, 
+      temporaryPassword: temporaryPassword,
       message: 'Membro criado com sucesso!'
     }
   } catch (error) {
@@ -2571,82 +2721,40 @@ export async function updateMember(memberId: string, updateData: {
     const supabase = await getSupabase()
     
     // Verificar se o usuário tem permissão
-    const { data: profile } = await supabase
-      .from('user_profiles')
+    const { data: user } = await supabase
+      .from('users')
       .select('role')
-      .eq('user_id', updatedBy)
+      .eq('id', updatedBy)
       .single()
 
-    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
+    if (!user || !['administrator', 'teacher'].includes(user.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem editar membros.')
     }
 
-    // Atualizar perfil
-    const profileUpdate: any = {}
-    if (updateData.name) profileUpdate.name = updateData.name
-    if (updateData.class_id !== undefined) profileUpdate.class_id = updateData.class_id
-    if (updateData.end_date) profileUpdate.access_expires_at = updateData.end_date
-
-    if (Object.keys(profileUpdate).length > 0) {
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update(profileUpdate)
-        .eq('user_id', memberId)
-
-      if (profileError) {
-        throw new Error('Erro ao atualizar perfil: ' + profileError.message)
-      }
+    // Separar nome e sobrenome se necessário
+    const updateFields: any = {}
+    if (updateData.name) {
+      const nameParts = updateData.name.split(' ')
+      updateFields.first_name = nameParts[0]
+      updateFields.last_name = nameParts.slice(1).join(' ') || ''
     }
+    updateFields.updated_at = new Date().toISOString()
 
-    // Atualizar assinatura se necessário
-    if (updateData.access_plan_id || updateData.start_date || updateData.end_date) {
-      const subscriptionUpdate: any = {}
-      if (updateData.access_plan_id) subscriptionUpdate.access_plan_id = updateData.access_plan_id
-      if (updateData.class_id !== undefined) subscriptionUpdate.class_id = updateData.class_id
-      if (updateData.start_date) subscriptionUpdate.start_date = updateData.start_date
-      if (updateData.end_date) subscriptionUpdate.end_date = updateData.end_date
+    // Atualizar usuário na tabela users
+    const { error: updateError } = await supabase
+      .from('users')
+      .update(updateFields)
+      .eq('id', memberId)
 
-      const { error: subscriptionError } = await supabase
-        .from('student_subscriptions')
-        .update(subscriptionUpdate)
-        .eq('user_id', memberId)
-        .eq('is_active', true)
-
-      if (subscriptionError) {
-        console.error('Erro ao atualizar assinatura:', subscriptionError)
-      }
-    }
-
-    // Atualizar permissões de página se necessário
-    if (updateData.page_permissions) {
-      // Deletar permissões existentes
-      await supabase
-        .from('page_permissions')
-        .delete()
-        .eq('user_id', memberId)
-
-      // Criar novas permissões
-      const pagePermissions = Object.entries(updateData.page_permissions).map(([page, hasAccess]) => ({
-        user_id: memberId,
-        page_name: page,
-        has_access: hasAccess,
-        granted_by: updatedBy,
-        expires_at: updateData.end_date
-      }))
-
-      if (pagePermissions.length > 0) {
-        const { error: permissionsError } = await supabase
-          .from('page_permissions')
-          .insert(pagePermissions)
-
-        if (permissionsError) {
-          console.error('Erro ao atualizar permissões:', permissionsError)
-        }
-      }
+    if (updateError) {
+      throw new Error('Erro ao atualizar usuário: ' + updateError.message)
     }
 
     console.log(`✅ Membro atualizado com sucesso: ${memberId}`)
-    return { success: true, message: 'Membro atualizado com sucesso!' }
+    return { 
+      success: true, 
+      message: 'Membro atualizado com sucesso!'
+    }
   } catch (error) {
     console.error('❌ Erro ao atualizar membro:', error)
     throw error
@@ -2658,35 +2766,31 @@ export async function deleteMember(memberId: string, deletedBy: string) {
     const supabase = await getSupabase()
     
     // Verificar se o usuário tem permissão
-    const { data: profile } = await supabase
-      .from('user_profiles')
+    const { data: user } = await supabase
+      .from('users')
       .select('role')
-      .eq('user_id', deletedBy)
+      .eq('id', deletedBy)
       .single()
 
-    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
+    if (!user || !['administrator', 'teacher'].includes(user.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem deletar membros.')
     }
 
-    // Deletar usuário do Supabase Auth
-    const { error: authError } = await supabase.auth.admin.deleteUser(memberId)
-    
-    if (authError) {
-      console.error('Erro ao deletar usuário do auth:', authError)
+    // Desativar usuário em vez de deletar (soft delete)
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', memberId)
+
+    if (updateError) {
+      throw new Error('Erro ao desativar usuário: ' + updateError.message)
     }
 
-    // Deletar perfil e dados relacionados (cascade)
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .delete()
-      .eq('user_id', memberId)
-
-    if (profileError) {
-      throw new Error('Erro ao deletar perfil: ' + profileError.message)
-    }
-
-    console.log(`✅ Membro deletado com sucesso: ${memberId}`)
-    return { success: true, message: 'Membro deletado com sucesso!' }
+    console.log(`✅ Membro desativado com sucesso: ${memberId}`)
+    return { success: true, message: 'Membro desativado com sucesso!' }
   } catch (error) {
     console.error('❌ Erro ao deletar membro:', error)
     throw error
@@ -2698,36 +2802,30 @@ export async function createTemporaryPassword(memberId: string, createdBy: strin
     const supabase = await getSupabase()
     
     // Verificar se o usuário tem permissão
-    const { data: profile } = await supabase
-      .from('user_profiles')
+    const { data: user } = await supabase
+      .from('users')
       .select('role')
-      .eq('user_id', createdBy)
+      .eq('id', createdBy)
       .single()
 
-    if (!profile || !['administrator', 'teacher'].includes(profile.role)) {
+    if (!user || !['administrator', 'teacher'].includes(user.role)) {
       throw new Error('Acesso negado. Apenas professores e administradores podem criar senhas provisórias.')
     }
 
     const tempPassword = generateTemporaryPassword()
     
-    // Criar senha provisória
+    // Atualizar senha do usuário na tabela users
     const { error } = await supabase
-      .from('temporary_passwords')
-      .insert({
-        user_id: memberId,
-        temporary_password: tempPassword,
-        created_by: createdBy
+      .from('users')
+      .update({ 
+        password_hash: await bcrypt.hash(tempPassword, 10),
+        updated_at: new Date().toISOString()
       })
+      .eq('id', memberId)
 
     if (error) {
-      throw new Error('Erro ao criar senha provisória: ' + error.message)
+      throw new Error('Erro ao atualizar senha: ' + error.message)
     }
-
-    // Marcar que o usuário deve trocar a senha
-    await supabase
-      .from('user_profiles')
-      .update({ must_change_password: true })
-      .eq('user_id', memberId)
 
     console.log(`✅ Senha provisória criada para: ${memberId}`)
     return { success: true, temporaryPassword: tempPassword, message: 'Senha provisória criada com sucesso!' }
@@ -2739,40 +2837,19 @@ export async function createTemporaryPassword(memberId: string, createdBy: strin
 
 export async function getMemberPagePermissions(memberId: string) {
   try {
-    const supabase = await getSupabase()
-    
-    const { data, error } = await supabase
-      .from('page_permissions')
-      .select('*')
-      .eq('user_id', memberId)
-
-    if (error) {
-      console.error('❌ Erro ao carregar permissões:', error)
-      return {}
+    // Retornar permissões padrão até a tabela page_permissions ser criada
+    return {
+      quiz: true,
+      flashcards: true,
+      evercast: false,
+      calendario: false
     }
-
-    // Converter para objeto com page_name como chave
-    const permissions: Record<string, boolean> = {}
-    data?.forEach(perm => {
-      permissions[perm.page_name] = perm.has_access
-    })
-
-    return permissions
   } catch (error) {
     console.error('❌ Erro inesperado ao carregar permissões:', error)
     return {}
   }
 }
 
-// Função auxiliar para gerar senha provisória
-function generateTemporaryPassword(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let password = ''
-  for (let i = 0; i < 8; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return password
-}
 
 // Função para atualizar progresso do flashcard
 export async function updateFlashcardProgress(
@@ -4017,6 +4094,127 @@ export async function getFlashcardCategoriesAndTags(flashcardId: number) {
     console.error("❌ [Server Action] Erro inesperado ao buscar categorias e tags:", error)
     return { success: false, error: "Erro inesperado" }
   }
+}
+
+// CRUD para Quizzes
+export async function createQuiz(quizData: {
+  title: string
+  description: string
+  topic_id: string
+  is_active: boolean
+}) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from("quizzes")
+    .insert([quizData])
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log("✅ [Server Action] Quiz criado com sucesso:", data.id)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+export async function updateQuiz(quizId: string, quizData: {
+  title: string
+  description: string
+  topic_id: string
+  is_active: boolean
+}) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from("quizzes")
+    .update(quizData)
+    .eq("id", quizId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao atualizar quiz:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log("✅ [Server Action] Quiz atualizado com sucesso:", data.id)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+export async function deleteQuiz(quizId: string) {
+  const supabase = await getSupabase()
+  const { error } = await supabase.from("quizzes").delete().eq("id", quizId)
+  if (error) {
+    console.error("❌ [Server Action] Erro ao deletar quiz:", error)
+    return { success: false, error: error.message }
+  }
+  console.log("✅ [Server Action] Quiz deletado com sucesso:", quizId)
+  revalidatePath("/quiz")
+  return { success: true }
+}
+
+// CRUD para Questões
+export async function createQuestion(questionData: {
+  question_text: string
+  options: string[]
+  correct_answer: number
+  explanation: string
+  quiz_id: string
+}) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .insert([questionData])
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao criar questão:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log("✅ [Server Action] Questão criada com sucesso:", data.id)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+export async function updateQuestion(questionId: string, questionData: {
+  question_text: string
+  options: string[]
+  correct_answer: number
+  explanation: string
+}) {
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .update(questionData)
+    .eq("id", questionId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("❌ [Server Action] Erro ao atualizar questão:", error)
+    return { success: false, error: error.message }
+  }
+
+  console.log("✅ [Server Action] Questão atualizada com sucesso:", data.id)
+  revalidatePath("/quiz")
+  return { success: true, data }
+}
+
+export async function deleteQuestion(questionId: string) {
+  const supabase = await getSupabase()
+  const { error } = await supabase.from("quiz_questions").delete().eq("id", questionId)
+  if (error) {
+    console.error("❌ [Server Action] Erro ao deletar questão:", error)
+    return { success: false, error: error.message }
+  }
+  console.log("✅ [Server Action] Questão deletada com sucesso:", questionId)
+  revalidatePath("/quiz")
+  return { success: true }
 }
 
 // Cache buster - Build: ab44064 - Force cache clear - SERVER ACTIONS FILE

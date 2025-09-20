@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/context/auth-context-supabase'
+import { useAuth } from '@/context/auth-context-custom'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Shield, Lock, AlertCircle } from 'lucide-react'

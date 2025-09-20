@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/context/auth-context-custom"
 import { ReactNode } from "react"
 
 interface TeacherAndAdminOnlyProps {

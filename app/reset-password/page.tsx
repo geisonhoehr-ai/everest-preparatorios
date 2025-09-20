@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import { PasswordStrengthMeter } from '@/components/password-strength-meter'
 import { validatePassword } from '@/lib/password-policy'
-import { useAuth } from '@/context/auth-context-supabase'
+import { useAuth } from '@/context/auth-context-custom'
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState('')

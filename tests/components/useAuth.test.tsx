@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
-import { AuthProvider } from '@/context/auth-context'
-import { useAuth } from '@/context/auth-context'
+import { AuthProvider } from '@/context/auth-context-custom'
+import { useAuth } from '@/context/auth-context-custom'
 
 // Mock do Supabase
 const mockSupabase = {

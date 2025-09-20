@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/context/auth-context-supabase"
+import { useAuth } from "@/context/auth-context-custom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,8 @@ if (typeof window !== 'undefined') {
 }
 
 export default function LoginPage() {
+  console.log('🚀 [LOGIN_PAGE] Página de login carregada')
+  
   // Forçar cache busting
   useEffect(() => {
     const timestamp = Date.now()
@@ -57,11 +59,15 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 [LOGIN_PAGE] handleLogin chamado')
+    console.log('🔧 [LOGIN_PAGE] signIn disponível:', !!signIn)
     setIsLoading(true)
     setError("")
 
     try {
+      console.log('🔧 [LOGIN_PAGE] Chamando signIn...')
       const result = await signIn(email, password)
+      console.log('📋 [LOGIN_PAGE] Resultado do signIn:', result)
 
       if (result.success) {
         // Redirecionar para dashboard após login bem-sucedido

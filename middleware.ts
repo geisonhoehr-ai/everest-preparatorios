@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import { csrfMiddleware } from '@/lib/csrf-middleware'
 
 export async function middleware(request: NextRequest) {
   try {
-    // Aplicar proteção CSRF primeiro
-    const csrfResponse = await csrfMiddleware(request)
-    if (csrfResponse) {
-      return csrfResponse
-    }
-
     // Rotas que não precisam de autenticação
-    const publicRoutes = ['/login', '/', '/api', '/reset-password']
+    const publicRoutes = ['/login', '/', '/api', '/reset-password', '/_next', '/favicon.ico']
     const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route))
     
     // Se é rota pública, permitir acesso
@@ -20,41 +13,30 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
     
-    // Verificar token de sessão nos cookies
-    const sessionToken = request.cookies.get('session_token')?.value
+    // Verificar se há sessão do Supabase
+    const supabase = await createClient()
+    const { data: { session }, error } = await supabase.auth.getSession()
     
-    if (!sessionToken) {
+    if (error) {
+      console.error('❌ [MIDDLEWARE] Erro ao verificar sessão:', error.message)
       return NextResponse.redirect(new URL('/login', request.url))
     }
     
-    // Verificar se a sessão é válida
-    const supabase = await createClient()
-    
-    const { data: session, error } = await supabase
-      .from('user_sessions')
-      .select(`
-        *,
-        users (*)
-      `)
-      .eq('session_token', sessionToken)
-      .gt('expires_at', new Date().toISOString())
-      .single()
-    
-    if (error || !session || !session.users?.is_active) {
-      // Sessão inválida, redirecionar para login
-      const response = NextResponse.redirect(new URL('/login', request.url))
-      response.cookies.delete('session_token')
-      return response
+    if (!session?.user) {
+      console.log('👤 [MIDDLEWARE] Nenhuma sessão encontrada, redirecionando para login')
+      return NextResponse.redirect(new URL('/login', request.url))
     }
     
     // Se está logado e está na página de login, redirecionar para dashboard
     if (request.nextUrl.pathname === '/login') {
+      console.log('✅ [MIDDLEWARE] Usuário logado, redirecionando para dashboard')
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     
+    console.log('✅ [MIDDLEWARE] Sessão válida, permitindo acesso')
     return NextResponse.next()
   } catch (error) {
-    console.error('Erro no middleware:', error)
+    console.error('❌ [MIDDLEWARE] Erro no middleware:', error)
     return NextResponse.redirect(new URL('/login', request.url))
   }
 }
