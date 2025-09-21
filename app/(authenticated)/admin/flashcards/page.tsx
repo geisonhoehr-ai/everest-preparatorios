@@ -31,9 +31,15 @@ import {
 
 interface Subject {
   id: string
-  name: string
+  title: string
+  subtitle: string
+  completedCount: number
   totalCount: number
+  averageProgress: number
+  lessonsCompleted: number
+  includedItems: { title: string; progress: number }[]
   overallProgress: number
+  totalFlashcards: number
 }
 
 interface Topic {
@@ -257,7 +263,7 @@ export default function AdminFlashcardsPage() {
               <option value="">Selecione uma matéria</option>
               {subjects.map((subject) => (
                 <option key={subject.id} value={subject.id}>
-                  {subject.name}
+                  {subject.title}
                 </option>
               ))}
             </select>
