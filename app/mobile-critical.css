@@ -1,0 +1,185 @@
+/* CSS Crítico Mobile-First - Everest Preparatórios */
+
+/* Reset básico */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* Hero section crítico - Mobile First */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.hero-content {
+  text-align: center;
+  z-index: 10;
+  position: relative;
+  padding: 1rem;
+}
+
+.hero-title {
+  font-size: clamp(1.75rem, 4vw, 3rem); /* Menor no mobile */
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #f97316, #ea580c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.25rem); /* Menor no mobile */
+  color: #d1d5db;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Professor photo crítico - Mobile First */
+.professor-photo-container {
+  position: relative;
+  width: 150px; /* Menor no mobile */
+  height: 150px;
+  margin: 0 auto 1.5rem; /* Menor margin no mobile */
+}
+
+.professor-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent; /* Menor border no mobile */
+  background: linear-gradient(45deg, #f97316, #ea580c);
+  background-clip: padding-box;
+}
+
+/* Botões críticos - Mobile First */
+.btn-primary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem; /* Menor padding no mobile */
+  background: linear-gradient(45deg, #f97316, #ea580c);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem; /* Menor fonte no mobile */
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+/* Grid pattern crítico - Simplificado para mobile */
+.grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px);
+  background-size: 20px 20px; /* Menor no mobile */
+}
+
+/* Animações críticas - Reduzidas para mobile */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px); /* Menor movimento no mobile */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out; /* Mais rápido no mobile */
+}
+
+/* Containment para performance mobile */
+.video-container {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+.hero-section {
+  contain: layout style;
+}
+
+/* Responsive - Tablet e Desktop */
+@media (min-width: 768px) {
+  .professor-photo-container {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 2rem;
+  }
+  
+  .professor-photo {
+    border-width: 3px;
+  }
+  
+  .grid-pattern {
+    background-size: 30px 30px;
+  }
+  
+  .btn-primary {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .professor-photo-container {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .grid-pattern {
+    background-size: 50px 50px;
+  }
+}
+
+/* Otimizações de performance mobile */
+@media (max-width: 767px) {
+  /* Reduzir animações em mobile */
+  * {
+    animation-duration: 0.3s !important;
+    transition-duration: 0.2s !important;
+  }
+  
+  /* Simplificar gradientes em mobile */
+  .hero-title {
+    background: #f97316;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Reduzir blur effects em mobile */
+  .blur-3xl {
+    filter: blur(20px);
+  }
+}

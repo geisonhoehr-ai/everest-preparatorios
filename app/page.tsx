@@ -10,6 +10,8 @@ import { TermsOfUseModal } from "@/components/terms-of-use-modal";
 import ProfessorPhoto from "@/components/professor-photo";
 import { YouTubeEmbedOptimized } from "@/components/youtube-embed-optimized";
 import { OptimizedVideo } from "@/components/optimized-video";
+import { MobileVideoStrategy } from "@/components/mobile-video-strategy";
+import { MobileOptimizedImage } from "@/components/mobile-optimized-image";
 import { useState } from "react";
 
 export default function LandingPage() {
@@ -34,18 +36,19 @@ export default function LandingPage() {
       {/* CSS não crítico com preload */}
       <link rel="preload" href="/globals.css" as="style" />
       
-      {/* CSS Crítico Inline para melhor LCP */}
+      {/* CSS Crítico Mobile-First para melhor LCP */}
       <style dangerouslySetInnerHTML={{
         __html: `
           *, *::before, *::after { box-sizing: border-box; }
-          html { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; }
+          html { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; -webkit-text-size-adjust: 100%; }
           body { margin: 0; padding: 0; background: #000; color: #fff; overflow-x: hidden; }
           .hero-section { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-          .hero-content { text-align: center; z-index: 10; position: relative; }
-          .hero-title { font-size: clamp(2rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; background: linear-gradient(45deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-          .professor-photo-container { position: relative; width: 200px; height: 200px; margin: 0 auto 2rem; }
-          .professor-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-          @media (min-width: 768px) { .professor-photo-container { width: 250px; height: 250px; } }
+          .hero-content { text-align: center; z-index: 10; position: relative; padding: 1rem; }
+          .hero-title { font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; background: linear-gradient(45deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+          .professor-photo-container { position: relative; width: 150px; height: 150px; margin: 0 auto 1.5rem; }
+          .professor-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
+          @media (min-width: 768px) { .professor-photo-container { width: 200px; height: 200px; margin-bottom: 2rem; } .professor-photo { border-width: 3px; } }
+          @media (min-width: 1024px) { .professor-photo-container { width: 250px; height: 250px; } }
         `
       }} />
       
@@ -653,19 +656,19 @@ export default function LandingPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-2">
-              <OptimizedVideo
+              <MobileVideoStrategy
                 src="/case-sucesso-1.mp4"
                 title="Depoimento 1"
                 description="Consegui minha aprovação graças à metodologia do Professor Tiago!"
               />
               
-              <OptimizedVideo
+              <MobileVideoStrategy
                 src="/case-sucesso-2.mp4"
                 title="Depoimento 2"
                 description="O curso transformou minha preparação e me deu confiança para a prova"
               />
               
-              <OptimizedVideo
+              <MobileVideoStrategy
                 src="/case-sucesso-3.mp4"
                 title="Depoimento 3"
                 description="Sonho realizado! Agora sou oficial da Aeronáutica!"
