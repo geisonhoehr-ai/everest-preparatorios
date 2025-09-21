@@ -117,16 +117,16 @@ export default function ConquistasPage() {
       case 'flashcards_studied':
         return Math.min((userStats.flashcardsStudied / achievement.condition_value) * 100, 100)
       case 'accuracy':
-        return Math.min((userStats.accuracy / achievement.condition_value) * 100, 100)
+        return Math.min((userStats.averageQuizAccuracy / achievement.condition_value) * 100, 100)
       case 'streak':
         return Math.min((userStats.currentStreak / achievement.condition_value) * 100, 100)
       case 'flashcards_reviewed':
-        return Math.min((userStats.flashcardsReviewed / achievement.condition_value) * 100, 100)
+        return Math.min((userStats.totalActivities / achievement.condition_value) * 100, 100)
       case 'total_points':
         return Math.min((userStats.totalScore / achievement.condition_value) * 100, 100)
       case 'mastery':
         const studyProgress = Math.min((userStats.flashcardsStudied / achievement.condition_value) * 100, 100)
-        const accuracyProgress = Math.min((userStats.accuracy / 80) * 100, 100)
+        const accuracyProgress = Math.min((userStats.averageQuizAccuracy / 80) * 100, 100)
         return Math.min(studyProgress, accuracyProgress)
       default:
         return 0
@@ -140,11 +140,11 @@ export default function ConquistasPage() {
       case 'flashcards_studied':
         return userStats.flashcardsStudied
       case 'accuracy':
-        return Math.round(userStats.accuracy)
+        return Math.round(userStats.averageQuizAccuracy)
       case 'streak':
         return userStats.currentStreak
       case 'flashcards_reviewed':
-        return userStats.flashcardsReviewed
+        return userStats.totalActivities
       case 'total_points':
         return userStats.totalScore
       case 'mastery':
