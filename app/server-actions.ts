@@ -4999,7 +4999,7 @@ export async function recordFlashcardResponse(userId: string, flashcardId: strin
     // Verificar e conceder conquistas após cada resposta
     try {
       const achievementsResult = await checkAndGrantAchievements(userId)
-      if (achievementsResult.success && achievementsResult.granted.length > 0) {
+      if (achievementsResult.success && achievementsResult.granted && achievementsResult.granted.length > 0) {
         console.log(`🏆 [Server Action] ${achievementsResult.granted.length} conquistas concedidas após resposta do flashcard`)
         return { 
           success: true, 
