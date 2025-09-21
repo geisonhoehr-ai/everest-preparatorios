@@ -429,7 +429,7 @@ export default function FlashcardsPage() {
         alert(`✅ Dados de teste criados com sucesso! ${result.count} registros de progresso foram adicionados.`)
         // Recarregar dados se necessário
         if (selectedSubject) {
-          await loadTopics(selectedSubject.id)
+          await loadTopics(selectedSubject)
         }
       } else {
         alert('❌ Erro ao criar dados de teste.')
