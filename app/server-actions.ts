@@ -4479,7 +4479,7 @@ async function getTeacherDashboardStats(userId?: string) {
           .select("completion_percentage")
           .in("user_id", studentClasses?.map(sc => sc.user_id) || [])
         
-        averageStudentProgress = allStudentProgress?.length > 0
+        averageStudentProgress = allStudentProgress && allStudentProgress.length > 0
           ? Math.round(allStudentProgress.reduce((sum, progress) => sum + parseFloat(progress.completion_percentage.toString()), 0) / allStudentProgress.length)
           : 0
       }
