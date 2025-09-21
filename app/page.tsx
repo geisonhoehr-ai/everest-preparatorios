@@ -9,6 +9,7 @@ import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
 import { TermsOfUseModal } from "@/components/terms-of-use-modal";
 import ProfessorPhoto from "@/components/professor-photo";
 import { YouTubeEmbedOptimized } from "@/components/youtube-embed-optimized";
+import { OptimizedVideo } from "@/components/optimized-video";
 import { useState } from "react";
 
 export default function LandingPage() {
@@ -23,6 +24,8 @@ export default function LandingPage() {
       <link rel="preconnect" href="https://img.youtube.com" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link rel="preconnect" href="https://hnhzindsfuqnaxosujay.supabase.co" />
+      <link rel="dns-prefetch" href="https://app.pandavideo.com.br" />
       
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Conteúdo principal */}
@@ -628,59 +631,23 @@ export default function LandingPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-2">
-              {/* Vídeo 1 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
-                  <video
-                    className="w-full h-full object-cover"
-                    controls
-                    preload="metadata"
-                  >
-                    <source src="/case-sucesso-1.mp4" type="video/mp4" />
-                    Seu navegador não suporta vídeos.
-                  </video>
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 1</h3>
-                <p className="text-sm text-gray-300 px-1">
-                  "Consegui minha aprovação graças à metodologia do Professor Tiago!"
-                </p>
-              </div>
+              <OptimizedVideo
+                src="/case-sucesso-1.mp4"
+                title="Depoimento 1"
+                description="Consegui minha aprovação graças à metodologia do Professor Tiago!"
+              />
               
-              {/* Vídeo 2 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
-                  <video
-                    className="w-full h-full object-cover"
-                    controls
-                    preload="metadata"
-                  >
-                    <source src="/case-sucesso-2.mp4" type="video/mp4" />
-                    Seu navegador não suporta vídeos.
-                  </video>
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 2</h3>
-                <p className="text-sm text-gray-300 px-1">
-                  "O curso transformou minha preparação e me deu confiança para a prova"
-                </p>
-              </div>
+              <OptimizedVideo
+                src="/case-sucesso-2.mp4"
+                title="Depoimento 2"
+                description="O curso transformou minha preparação e me deu confiança para a prova"
+              />
               
-              {/* Vídeo 3 */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-[#334155] rounded-2xl p-4 sm:p-6 border-2 border-orange-500/30 shadow-lg">
-                <div className="aspect-[9/16] bg-black rounded-xl overflow-hidden mb-4 border border-orange-500/20">
-                  <video
-                    className="w-full h-full object-cover"
-                    controls
-                    preload="metadata"
-                  >
-                    <source src="/case-sucesso-3.mp4" type="video/mp4" />
-                    Seu navegador não suporta vídeos.
-                  </video>
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-orange-400 px-1">Depoimento 3</h3>
-                <p className="text-sm text-gray-300 px-1">
-                  "Sonho realizado! Agora sou oficial da Aeronáutica!"
-                </p>
-              </div>
+              <OptimizedVideo
+                src="/case-sucesso-3.mp4"
+                title="Depoimento 3"
+                description="Sonho realizado! Agora sou oficial da Aeronáutica!"
+              />
             </div>
             
             <div className="text-center mt-12">
