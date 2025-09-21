@@ -26,8 +26,7 @@ import {
   Loader2,
   Database,
   BookOpen,
-  Brain,
-  Tabs
+  Brain
 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/context/auth-context-custom"
