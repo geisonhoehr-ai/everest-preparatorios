@@ -163,7 +163,7 @@ export default function ConquistasPage() {
 
   if (loading) {
     return (
-      <PagePermissionGuard allowedRoles={['student', 'teacher', 'administrator']}>
+      <PagePermissionGuard pageName="conquistas">
         <div className="container mx-auto py-8 px-4">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -177,7 +177,7 @@ export default function ConquistasPage() {
   }
 
   return (
-    <PagePermissionGuard allowedRoles={['student', 'teacher', 'administrator']}>
+    <PagePermissionGuard pageName="conquistas">
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

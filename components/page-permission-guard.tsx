@@ -47,7 +47,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Páginas permitidas para alunos
-    const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'redacao', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
+    const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'redacao', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes', 'conquistas']
     
     // Páginas de admin (apenas para professores e administradores)
     const adminPages = ['database-optimization', 'flashcards-setup', 'admin']
