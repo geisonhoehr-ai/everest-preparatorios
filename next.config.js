@@ -2,9 +2,24 @@
 const nextConfig = {
   // Configurações de imagem
   images: {
-    domains: ['localhost', 'everestpreparatorios.com.br'],
+    domains: ['localhost', 'everestpreparatorios.com.br', 'img.youtube.com'],
     formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: false,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+
+  // Otimizações de performance
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+
+  // Compressão
+  compress: true,
+
+  // SWC Minifier
+  swcMinify: true,
 
   // Headers de segurança e performance
   async headers() {

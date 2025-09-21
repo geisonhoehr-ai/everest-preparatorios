@@ -8,6 +8,7 @@ import { CheckCircle, Star, Users, BookOpen, Target, Trophy, Zap, Shield, ArrowR
 import { PrivacyPolicyModal } from "@/components/privacy-policy-modal";
 import { TermsOfUseModal } from "@/components/terms-of-use-modal";
 import ProfessorPhoto from "@/components/professor-photo";
+import { YouTubeEmbedOptimized } from "@/components/youtube-embed-optimized";
 import { useState } from "react";
 
 export default function LandingPage() {
@@ -16,7 +17,14 @@ export default function LandingPage() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <>
+      {/* Preconnect para recursos externos */}
+      <link rel="preconnect" href="https://www.youtube.com" />
+      <link rel="preconnect" href="https://img.youtube.com" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      
+      <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Conteúdo principal */}
       <div className="relative z-10">
         {/* Header/Navigation */}
@@ -33,7 +41,7 @@ export default function LandingPage() {
               
               {/* Menu Desktop - Só aparece em telas médias e grandes */}
               <div className="desktop-menu hidden md:flex items-center space-x-4">
-                <Link href="/ciaar">
+                <Link href="/ciaar" aria-label="Acessar página sobre o concurso CIAAR">
                   <Button 
                     variant="outline" 
                     className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
@@ -41,12 +49,12 @@ export default function LandingPage() {
                     CIAAR
                   </Button>
                 </Link>
-                <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-blue-500 hover:text-white">
+                <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Acessar área do aluno (abre em nova aba)">
+                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
                     Área do Aluno
                   </Button>
                 </Link>
-                <Link href="/login">
+                <Link href="/login" aria-label="Fazer login na área VIP">
                   <Button className="bg-orange-500 hover:bg-orange-600">
                     Área VIP
                   </Button>
@@ -590,17 +598,11 @@ export default function LandingPage() {
               {/* Container do vídeo com efeito LED */}
               <div className="relative overflow-hidden">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-orange-500  opacity-75 blur-sm"></div>
-                <div className="relative w-full aspect-video bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-700 rounded-2xl overflow-hidden border-2 border-orange-500/30 m-2">
-                  <iframe
-                    src="https://www.youtube.com/embed/VqvU4orX3qk"
-                    title="Vídeo Demonstrativo - Everest Preparatórios"
-                    className="w-full h-full absolute inset-0"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    loading="eager"
-                  ></iframe>
-                </div>
+                <YouTubeEmbedOptimized
+                  videoId="VqvU4orX3qk"
+                  title="Vídeo Demonstrativo - Everest Preparatórios"
+                  className="w-full max-w-4xl mx-auto"
+                />
               </div>
               <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-orange-500 text-white px-4 py-2">
@@ -1709,5 +1711,6 @@ export default function LandingPage() {
           </div>
         )}
       </div>
-    );
-  }
+    </>
+  );
+}
