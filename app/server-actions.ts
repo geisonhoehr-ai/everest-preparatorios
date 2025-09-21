@@ -4387,11 +4387,11 @@ async function getStudentDashboardStats(userId?: string) {
     })
     
     const activityStreak = last7Days.map(date => {
-      const hasActivity = userScores?.some(score => 
+      const hasActivity = (userScores?.some(score => 
         score.recorded_at.startsWith(date)
-      ) || quizAttempts?.some(attempt => 
+      ) || false) || (quizAttempts?.some(attempt => 
         attempt.attempt_date.startsWith(date)
-      )
+      ) || false)
       return hasActivity
     }).reverse()
     
