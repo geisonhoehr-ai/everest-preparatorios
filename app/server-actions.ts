@@ -5368,7 +5368,7 @@ export async function optimizeDatabaseIndexes() {
     return { success: true, results }
   } catch (error) {
     console.error("❌ [Server Action] Erro em optimizeDatabaseIndexes:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -5451,7 +5451,7 @@ export async function analyzeDatabaseStats() {
     return { success: true, stats }
   } catch (error) {
     console.error("❌ [Server Action] Erro em analyzeDatabaseStats:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -5504,7 +5504,7 @@ export async function cleanupOldData() {
     return { success: true, results }
   } catch (error) {
     console.error("❌ [Server Action] Erro em cleanupOldData:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -5936,7 +5936,7 @@ export async function checkAndGrantAchievements(userId: string) {
     return { success: true, granted }
   } catch (error) {
     console.error("❌ [Server Action] Erro em checkAndGrantAchievements:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
