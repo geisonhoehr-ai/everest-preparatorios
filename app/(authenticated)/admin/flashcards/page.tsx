@@ -88,9 +88,9 @@ export default function AdminFlashcardsPage() {
   const loadSubjects = async () => {
     try {
       setIsLoading(true)
-      const result = await getSubjectsWithStats()
-      if (result.success && result.subjects) {
-        setSubjects(result.subjects)
+      const subjects = await getSubjectsWithStats()
+      if (subjects && subjects.length > 0) {
+        setSubjects(subjects)
       }
     } catch (error) {
       console.error("Erro ao carregar matérias:", error)
@@ -101,9 +101,9 @@ export default function AdminFlashcardsPage() {
 
   const loadTopics = async (subjectId: string) => {
     try {
-      const result = await getTopicsBySubject(subjectId)
-      if (result.success && result.topics) {
-        setTopics(result.topics)
+      const topics = await getTopicsBySubject(subjectId)
+      if (topics && topics.length > 0) {
+        setTopics(topics)
       }
     } catch (error) {
       console.error("Erro ao carregar tópicos:", error)
@@ -112,9 +112,11 @@ export default function AdminFlashcardsPage() {
 
   const loadFlashcards = async (topicId: string) => {
     try {
-      const result = await getFlashcardsByTopic(topicId)
-      if (result.success && result.flashcards) {
-        setFlashcards(result.flashcards)
+      const flashcards = await getFlashcardsByTopic(topicId)
+      if (flashcards && flashcards.length > 0) {
+        setFlashcards(flashcards)
+      } else {
+        setFlashcards([])
       }
     } catch (error) {
       console.error("Erro ao carregar flashcards:", error)
