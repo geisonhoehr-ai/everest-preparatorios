@@ -45,9 +45,7 @@ interface Subject {
 interface Topic {
   id: string
   name: string
-  description: string
   subject_id: string
-  flashcardCount: number
 }
 
 interface Flashcard {
