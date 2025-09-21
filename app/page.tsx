@@ -27,6 +27,29 @@ export default function LandingPage() {
       <link rel="preconnect" href="https://hnhzindsfuqnaxosujay.supabase.co" />
       <link rel="dns-prefetch" href="https://app.pandavideo.com.br" />
       
+      {/* Preload de recursos críticos para LCP */}
+      <link rel="preload" href="/professor-tiago-costa.jpg" as="image" fetchPriority="high" />
+      <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
+      
+      {/* CSS não crítico com defer */}
+      <link rel="preload" href="/globals.css" as="style" onLoad="this.onload=null;this.rel='stylesheet'" />
+      <noscript><link rel="stylesheet" href="/globals.css" /></noscript>
+      
+      {/* CSS Crítico Inline para melhor LCP */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          *, *::before, *::after { box-sizing: border-box; }
+          html { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; }
+          body { margin: 0; padding: 0; background: #000; color: #fff; overflow-x: hidden; }
+          .hero-section { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+          .hero-content { text-align: center; z-index: 10; position: relative; }
+          .hero-title { font-size: clamp(2rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; background: linear-gradient(45deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+          .professor-photo-container { position: relative; width: 200px; height: 200px; margin: 0 auto 2rem; }
+          .professor-photo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+          @media (min-width: 768px) { .professor-photo-container { width: 250px; height: 250px; } }
+        `
+      }} />
+      
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Conteúdo principal */}
       <div className="relative z-10">

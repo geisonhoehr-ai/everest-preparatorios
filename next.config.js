@@ -25,6 +25,8 @@ const nextConfig = {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           default: false,
           vendors: false,
@@ -32,6 +34,28 @@ const nextConfig = {
             name: 'vendor',
             chunks: 'all',
             test: /node_modules/,
+            priority: 20,
+          },
+          common: {
+            name: 'common',
+            chunks: 'all',
+            minChunks: 2,
+            priority: 10,
+            reuseExistingChunk: true,
+          },
+          // Separar Framer Motion
+          framerMotion: {
+            name: 'framer-motion',
+            test: /node_modules[\\/]framer-motion/,
+            chunks: 'all',
+            priority: 30,
+          },
+          // Separar Lucide React
+          lucide: {
+            name: 'lucide',
+            test: /node_modules[\\/]lucide-react/,
+            chunks: 'all',
+            priority: 30,
           },
         },
       };
