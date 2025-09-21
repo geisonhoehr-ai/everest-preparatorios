@@ -75,7 +75,8 @@ export default function DatabaseOptimizationPage() {
       updateStepStatus(step.id, result.success ? 'completed' : 'error', result)
     } catch (error) {
       console.error(`Erro ao executar ${step.name}:`, error)
-      updateStepStatus(step.id, 'error', { error: error.message })
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      updateStepStatus(step.id, 'error', { error: errorMessage })
     }
   }
 
