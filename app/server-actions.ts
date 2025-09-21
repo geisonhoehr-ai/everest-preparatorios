@@ -5379,7 +5379,7 @@ export async function analyzeDatabaseStats() {
   const supabase = await getSupabase()
   
   try {
-    const stats = {}
+    const stats: any = {}
     
     // Estatísticas de flashcards
     const { data: flashcardStats } = await supabase
