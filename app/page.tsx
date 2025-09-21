@@ -32,7 +32,8 @@ export default function LandingPage() {
       <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
       
       {/* CSS não crítico com defer */}
-      <link rel="preload" href="/globals.css" as="style" onLoad="this.onload=null;this.rel='stylesheet'" />
+      <link rel="preload" href="/globals.css" as="style" />
+      <link rel="stylesheet" href="/globals.css" media="print" onLoad="this.media='all'" />
       <noscript><link rel="stylesheet" href="/globals.css" /></noscript>
       
       {/* CSS Crítico Inline para melhor LCP */}

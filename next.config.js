@@ -12,7 +12,6 @@ const nextConfig = {
   // Otimizações de performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    esmExternals: 'loose',
   },
 
   // Configurações para modern browsers
