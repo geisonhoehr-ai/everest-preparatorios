@@ -238,7 +238,7 @@ export default function ConquistasPage() {
               <CardContent className="p-6 text-center">
                 <TrendingUp className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {Math.round(userStats?.accuracy || 0)}%
+                  {Math.round(userStats?.averageQuizAccuracy || 0)}%
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Taxa de Acertos
