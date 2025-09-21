@@ -11,15 +11,8 @@ const nextConfig = {
 
   // Otimizações de performance
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
-
-  // Compressão
-  compress: true,
-
-  // SWC Minifier
-  swcMinify: true,
 
   // Headers de segurança e performance
   async headers() {
