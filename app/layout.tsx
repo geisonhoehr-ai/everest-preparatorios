@@ -1,6 +1,7 @@
 import type React from "react"
 import { Inter } from "next/font/google"
 import { PerformanceOptimizer } from "@/components/performance-optimizer"
+import { ResourceOptimizer } from "@/components/resource-optimizer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/context/auth-context-custom"
 import { Toaster } from "@/components/ui/toaster"
@@ -10,7 +11,8 @@ import { SkipLinks } from "@/components/skip-link"
 const inter = Inter({ 
   subsets: ["latin"],
   display: 'swap',
-  preload: true
+  preload: false,
+  fallback: ['system-ui', 'arial']
 })
 
 export const metadata = {
@@ -28,14 +30,16 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <link rel="icon" href="/placeholder-logo.svg" type="image/svg+xml" />
-        {/* YouTube Player Preloads */}
-        <link rel="preload" href="https://www.youtube.com/embed/VqvU4orX3qk" as="document" />
+        {/* DNS Prefetch para recursos externos */}
         <link rel="dns-prefetch" href="https://www.youtube.com" />
         <link rel="dns-prefetch" href="https://i.ytimg.com" />
         <link rel="dns-prefetch" href="https://www.google.com" />
-        <link rel="stylesheet" href="/globals.css" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link rel="dns-prefetch" href="https://*.supabase.co" />
       </head>
       <body className={inter.className}>
+        <ResourceOptimizer />
         <SkipLinks />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>

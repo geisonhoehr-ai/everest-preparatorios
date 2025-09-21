@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { PagePermissionGuard } from "@/components/page-permission-guard"
+import { BackButton } from "@/components/ui/back-button"
 import { useAuth } from '@/context/auth-context-custom'
 import { 
   getAllAudioCourses, 
@@ -339,6 +340,9 @@ export default function EverCastPage() {
       {/* Header */}
       <div className="bg-white/80 dark:bg-black/20 backdrop-blur-sm border-b border-gray-200 dark:border-white/10">
         <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center gap-4 mb-4">
+            <BackButton pageName="EverCast" />
+          </div>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">🎧 EverCast</h1>

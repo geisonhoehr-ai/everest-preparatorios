@@ -365,4 +365,174 @@
   animation: spin-slow-reverse 6s linear infinite;
 }
 
+/* Enhanced Dark Mode Improvements - Everest Preparatórios */
+
+@layer components {
+  /* Transições suaves para mudança de tema */
+  * {
+    transition: 
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  /* Melhorias específicas para dark mode */
+  .dark {
+    /* Background com gradiente sutil */
+    background: linear-gradient(135deg, 
+      hsl(222.2 84% 4.9%) 0%, 
+      hsl(217.2 32.6% 8%) 50%, 
+      hsl(222.2 84% 4.9%) 100%
+    ) !important;
+    background-attachment: fixed;
+    color-scheme: dark;
+  }
+
+  /* Cards no dark mode com gradientes */
+  .dark .card,
+  .dark [data-card],
+  .dark .bg-white {
+    background: linear-gradient(135deg, 
+      hsl(222.2 84% 4.9%) 0%, 
+      hsl(217.2 32.6% 17.5%) 100%
+    ) !important;
+    border: 1px solid hsl(217.2 32.6% 17.5%) !important;
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.3),
+      0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Botões no dark mode */
+  .dark .btn-primary,
+  .dark [data-primary],
+  .dark button[class*="bg-orange"] {
+    background: linear-gradient(135deg, hsl(24.6 95% 53.1%), hsl(262.1 83.3% 57.8%)) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.3) !important;
+  }
+
+  .dark .btn-primary:hover,
+  .dark [data-primary]:hover,
+  .dark button[class*="bg-orange"]:hover {
+    background: linear-gradient(135deg, 
+      hsl(24.6 95% 63.1%), 
+      hsl(262.1 83.3% 67.8%)
+    ) !important;
+    box-shadow: 0 6px 20px 0 rgba(249, 115, 22, 0.4) !important;
+    transform: translateY(-2px);
+  }
+
+  /* Inputs no dark mode */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    background: hsl(217.2 32.6% 17.5%) !important;
+    border: 1px solid hsl(217.2 32.6% 25%) !important;
+    color: hsl(210 40% 98%) !important;
+  }
+
+  .dark input:focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    border-color: hsl(24.6 95% 53.1%) !important;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
+  }
+
+  /* Professor photo no dark mode */
+  .dark .professor-photo {
+    border: 3px solid transparent !important;
+    background: linear-gradient(45deg, 
+      hsl(24.6 95% 53.1%), 
+      hsl(262.1 83.3% 57.8%),
+      hsl(24.6 95% 53.1%)
+    ) border-box !important;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3) !important;
+  }
+
+  /* Hero section no dark mode */
+  .dark .hero-section {
+    background: linear-gradient(135deg, 
+      hsl(222.2 84% 4.9%) 0%, 
+      hsl(217.2 32.6% 8%) 50%, 
+      hsl(222.2 84% 4.9%) 100%
+    ) !important;
+  }
+
+  .dark .hero-title {
+    background: linear-gradient(45deg, #f97316, #ea580c, #8b5cf6) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    text-shadow: 0 0 30px rgba(249, 115, 22, 0.5) !important;
+  }
+
+  /* Scrollbar personalizada para dark mode */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: hsl(217.2 32.6% 17.5%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(24.6 95% 53.1%);
+    border-radius: 4px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(24.6 95% 63.1%);
+  }
+
+  /* Efeitos de brilho para dark mode */
+  .dark .glow-effect {
+    animation: dark-mode-glow 3s ease-in-out infinite;
+  }
+
+  /* Efeito de brilho nos cards importantes */
+  .dark .feature-card:hover,
+  .dark [data-feature-card]:hover,
+  .dark .card:hover {
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.2) !important;
+    transform: translateY(-4px);
+    transition: all 0.3s ease;
+  }
+
+  /* Sidebar no dark mode */
+  .dark .sidebar,
+  .dark [data-sidebar] {
+    background: linear-gradient(180deg, 
+      hsl(222.2 84% 4.9%) 0%, 
+      hsl(217.2 32.6% 17.5%) 100%
+    ) !important;
+    border-right: 1px solid hsl(217.2 32.6% 17.5%) !important;
+  }
+
+  /* Responsividade para dark mode */
+  @media (max-width: 768px) {
+    .dark {
+      /* Reduzir efeitos em mobile para performance */
+      background: hsl(222.2 84% 4.9%) !important;
+    }
+    
+    .dark .card {
+      background: hsl(222.2 84% 4.9%) !important;
+    }
+    
+    .dark .sidebar {
+      background: hsl(222.2 84% 4.9%) !important;
+    }
+  }
+}
+
+/* Efeitos de brilho para dark mode */
+@keyframes dark-mode-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(249, 115, 22, 0.5);
+  }
+}
 

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Clock, User, BookOpen, ChevronRight } from "lucide-react"
+import { Clock, User, BookOpen, ChevronRight, FileText } from "lucide-react"
 
 interface CourseCardProps {
   title: string
@@ -17,6 +17,7 @@ interface CourseCardProps {
   completedLessons: number
   author?: string
   duration?: string
+  totalFlashcards?: number
   onClick?: () => void
   className?: string
 }
@@ -59,8 +60,9 @@ export function CourseCard({
   progress,
   totalLessons,
   completedLessons,
-  author = 'Everest Preparatórios',
+  author = 'Prof. Tiago Costa',
   duration = 'Duração não informada',
+  totalFlashcards = 0,
   onClick,
   className = ''
 }: CourseCardProps) {
@@ -68,18 +70,18 @@ export function CourseCard({
   const color = categoryColor || categoryColors[category as keyof typeof categoryColors] || categoryColors.default
   
   const isDisabled = status === 'coming-soon'
-  const buttonText = status === 'completed' ? 'Revisar curso' : 
-                    status === 'in-progress' ? 'Continuar curso' : 
-                    'Iniciar curso'
+  const buttonText = status === 'completed' ? 'Revisar estudos' : 
+                    status === 'in-progress' ? 'Continuar estudos' : 
+                    'Iniciar estudos'
 
   return (
-    <Card 
+    <div 
       className={`
         relative h-[420px] w-full max-w-[380px] mx-auto
         bg-card border-border rounded-3xl p-4 sm:p-5 md:p-6
-        shadow-xl cursor-pointer transition-all duration-200
-        hover:shadow-2xl flex flex-col overflow-hidden
-        ${isDisabled ? 'opacity-60 cursor-not-allowed grayscale hover:grayscale-0' : ''}
+        shadow-xl transition-all duration-200 hover:shadow-2xl 
+        flex flex-col overflow-hidden
+        ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]'}
         ${className}
       `}
       onClick={!isDisabled ? onClick : undefined}
@@ -122,16 +124,16 @@ export function CourseCard({
           {/* Informações do curso */}
           <div className="space-y-2">
             <div className="flex items-center text-sm text-muted-foreground">
+              <BookOpen className="h-4 w-4 mr-2" />
+              <span>{totalLessons} Tópicos</span>
+            </div>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <FileText className="h-4 w-4 mr-2" />
+              <span>{totalFlashcards} flashcards</span>
+            </div>
+            <div className="flex items-center text-sm text-muted-foreground">
               <User className="h-4 w-4 mr-2" />
               <span>{author}</span>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 mr-2" />
-              <span>{duration}</span>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <BookOpen className="h-4 w-4 mr-2" />
-              <span>{totalLessons} aulas</span>
             </div>
           </div>
         </div>
@@ -140,7 +142,7 @@ export function CourseCard({
         <div className="mt-auto space-y-2 pt-4 border-t border-border">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground font-medium">
-              {completedLessons}/{totalLessons} aulas
+              {completedLessons}/{totalLessons} tópicos
             </span>
             <span className="text-foreground font-bold">
               {progress}%
@@ -166,14 +168,14 @@ export function CourseCard({
           )}
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
 // Componente para grid de cursos
 export function CourseGrid({ children, className = '' }: { children: React.ReactNode, className?: string }) {
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 ${className}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 ${className}`}>
       {children}
     </div>
   )

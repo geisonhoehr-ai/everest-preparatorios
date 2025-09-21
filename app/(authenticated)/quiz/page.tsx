@@ -5,6 +5,7 @@ import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { SubjectCard } from "@/components/ui/subject-card"
 import { TopicCard } from "@/components/ui/topic-card"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, BookOpen, Play, RotateCcw, CheckCircle, XCircle, Trophy, Clock } from "lucide-react"
 import { getAllSubjects, getSubjectsWithStats, getTopicsBySubject, getAllQuizzes, getQuizWithQuestions, startQuizAttempt, submitQuestionAnswer, finishQuizAttempt } from "../../server-actions"
@@ -236,6 +237,7 @@ export default function QuizPage() {
       <div className="container mx-auto py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
+          <BackButton pageName="Quiz" />
           {currentView === 'quizzes' && (
             <Button 
               variant="ghost" 

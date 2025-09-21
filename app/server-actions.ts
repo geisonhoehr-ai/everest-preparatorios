@@ -141,28 +141,6 @@ export async function updateTopicProgress(topicId: string, type: "correct" | "in
   return { success: true }
 }
 
-export async function getFlashcardsForReview(topicId: string, limit = 10) {
-  const supabase = await getSupabase()
-  console.log(`📚 [Server Action] Buscando flashcards para revisão do tópico: ${topicId}, limite: ${limit}`)
-
-  const offset = 0 // Sempre começar do início para revisão
-
-  const { data, error } = await supabase
-    .from("flashcards")
-    .select("id, topic_id, question, answer")
-    .eq("topic_id", topicId)
-    .order("id", { ascending: false })
-    .range(offset, offset + limit - 1)
-
-  if (error) {
-    console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
-    return []
-  }
-
-  console.log(`✅ [Server Action] Flashcards encontrados: ${data?.length}`)
-  console.log(`📋 [Server Action] IDs dos flashcards:`, data?.map(f => f.id))
-  return data || []
-}
 
 // Função para verificar se o usuário é professor ou admin
 export async function checkTeacherOrAdminAccess(userUuid: string): Promise<boolean> {
@@ -4303,7 +4281,8 @@ export async function getSubjectsWithStats(userId?: string) {
           averageProgress,
           lessonsCompleted: completedFlashcards,
           includedItems: includedItems.slice(0, 3), // Mostrar apenas os primeiros 3
-          overallProgress: averageProgress
+          overallProgress: averageProgress,
+          totalFlashcards: totalFlashcards
         }
       })
     )
@@ -4314,6 +4293,2322 @@ export async function getSubjectsWithStats(userId?: string) {
   } catch (error) {
     console.error("❌ [Server Action] Erro inesperado em getSubjectsWithStats:", error)
     return []
+  }
+}
+
+// ==================== DASHBOARD ANALYTICS ====================
+
+// Função para obter estatísticas do dashboard baseadas no perfil do usuário
+export async function getDashboardStats(userId?: string, userRole?: string) {
+  console.log("🔍 [Server Action] getDashboardStats() iniciada")
+  console.log("🔍 [Server Action] User ID:", userId)
+  console.log("🔍 [Server Action] User Role:", userRole)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    if (userRole === 'student') {
+      return await getStudentDashboardStats(userId)
+    } else if (userRole === 'teacher') {
+      return await getTeacherDashboardStats(userId)
+    } else if (userRole === 'administrator') {
+      return await getAdminDashboardStats()
+    } else {
+      return await getDefaultDashboardStats()
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getDashboardStats:", error)
+    return getDefaultDashboardStats()
+  }
+}
+
+// Dashboard para Alunos
+async function getStudentDashboardStats(userId?: string) {
+  const supabase = await getSupabase()
+  
+  try {
+    // Progresso em flashcards
+    const { data: flashcardProgress } = await supabase
+      .from("flashcard_progress")
+      .select("flashcard_id, repetitions, ease_factor, quality")
+      .eq("user_id", userId)
+    
+    // Progresso em quizzes
+    const { data: quizAttempts } = await supabase
+      .from("quiz_attempts")
+      .select("score, total_questions, attempt_date")
+      .eq("user_id", userId)
+      .order("attempt_date", { ascending: false })
+      .limit(10)
+    
+    // Progresso geral por tópico
+    const { data: userProgress } = await supabase
+      .from("user_progress")
+      .select("topic_id, completion_percentage, last_accessed_at")
+      .eq("user_id", userId)
+    
+    // Pontuações do usuário
+    const { data: userScores } = await supabase
+      .from("scores")
+      .select("score_value, activity_type, recorded_at")
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
+      .limit(10)
+    
+    // Redações do aluno
+    const { data: studentEssays } = await supabase
+      .from("essays")
+      .select("id, status, final_grade, submission_date")
+      .eq("student_id", userId)
+    
+    // Progresso em áudio
+    const { data: audioProgress } = await supabase
+      .from("audio_progress")
+      .select("lesson_id, progress_percentage, is_completed")
+      .eq("user_id", userId)
+    
+    // Calcular estatísticas
+    const totalFlashcardsStudied = flashcardProgress?.length || 0
+    const averageQuizScore = quizAttempts?.length > 0 
+      ? Math.round(quizAttempts.reduce((sum, attempt) => sum + (attempt.score / attempt.total_questions * 100), 0) / quizAttempts.length)
+      : 0
+    
+    const totalScore = userScores?.reduce((sum, score) => sum + score.score_value, 0) || 0
+    const completedEssays = studentEssays?.filter(essay => essay.status === 'corrected').length || 0
+    const pendingEssays = studentEssays?.filter(essay => essay.status === 'pending').length || 0
+    
+    const completedAudioLessons = audioProgress?.filter(progress => progress.is_completed).length || 0
+    
+    // Streak de atividade (últimos 7 dias)
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      return date.toISOString().split('T')[0]
+    })
+    
+    const activityStreak = last7Days.map(date => {
+      const hasActivity = userScores?.some(score => 
+        score.recorded_at.startsWith(date)
+      ) || quizAttempts?.some(attempt => 
+        attempt.attempt_date.startsWith(date)
+      )
+      return hasActivity
+    }).reverse()
+    
+    const currentStreak = calculateStreak(activityStreak)
+    
+    return {
+      userType: 'student',
+      stats: {
+        totalFlashcardsStudied,
+        averageQuizScore,
+        totalScore,
+        completedEssays,
+        pendingEssays,
+        completedAudioLessons,
+        currentStreak,
+        activityStreak
+      },
+      recentActivity: {
+        quizAttempts: quizAttempts?.slice(0, 5) || [],
+        scores: userScores?.slice(0, 5) || [],
+        essays: studentEssays?.slice(0, 3) || []
+      }
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getStudentDashboardStats:", error)
+    return getDefaultDashboardStats()
+  }
+}
+
+// Dashboard para Professores
+async function getTeacherDashboardStats(userId?: string) {
+  const supabase = await getSupabase()
+  
+  try {
+    // Conteúdo criado pelo professor
+    const { data: createdSubjects } = await supabase
+      .from("subjects")
+      .select("id, name")
+      .eq("created_by_user_id", userId)
+    
+    const { data: createdTopics } = await supabase
+      .from("topics")
+      .select("id, name")
+      .eq("created_by_user_id", userId)
+    
+    const { data: createdFlashcards } = await supabase
+      .from("flashcards")
+      .select("id, question")
+      .eq("created_by_user_id", userId)
+    
+    const { data: createdQuizzes } = await supabase
+      .from("quizzes")
+      .select("id, title")
+      .eq("created_by_user_id", userId)
+    
+    // Redações para corrigir
+    const { data: essaysToCorrect } = await supabase
+      .from("essays")
+      .select("id, status, submission_date")
+      .eq("teacher_id", userId)
+      .eq("status", "pending")
+    
+    // Progresso dos alunos (se o professor tem turmas)
+    const { data: teacherClasses } = await supabase
+      .from("classes")
+      .select("id, name")
+      .eq("teacher_id", userId)
+    
+    let totalStudents = 0
+    let averageStudentProgress = 0
+    
+    if (teacherClasses && teacherClasses.length > 0) {
+      const classIds = teacherClasses.map(cls => cls.id)
+      
+      const { data: studentClasses } = await supabase
+        .from("student_classes")
+        .select("user_id")
+        .in("class_id", classIds)
+      
+      totalStudents = studentClasses?.length || 0
+      
+      if (totalStudents > 0) {
+        const { data: allStudentProgress } = await supabase
+          .from("user_progress")
+          .select("completion_percentage")
+          .in("user_id", studentClasses?.map(sc => sc.user_id) || [])
+        
+        averageStudentProgress = allStudentProgress?.length > 0
+          ? Math.round(allStudentProgress.reduce((sum, progress) => sum + parseFloat(progress.completion_percentage.toString()), 0) / allStudentProgress.length)
+          : 0
+      }
+    }
+    
+    return {
+      userType: 'teacher',
+      stats: {
+        subjectsCreated: createdSubjects?.length || 0,
+        topicsCreated: createdTopics?.length || 0,
+        flashcardsCreated: createdFlashcards?.length || 0,
+        quizzesCreated: createdQuizzes?.length || 0,
+        essaysToCorrect: essaysToCorrect?.length || 0,
+        totalStudents: totalStudents,
+        averageStudentProgress: averageStudentProgress
+      },
+      recentActivity: {
+        essaysToCorrect: essaysToCorrect?.slice(0, 5) || [],
+        classes: teacherClasses || []
+      }
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getTeacherDashboardStats:", error)
+    return getDefaultDashboardStats()
+  }
+}
+
+// Dashboard para Administradores
+async function getAdminDashboardStats() {
+  const supabase = await getSupabase()
+  
+  try {
+    // Estatísticas gerais da plataforma
+    const { data: totalUsers } = await supabase
+      .from("users")
+      .select("id", { count: 'exact' })
+    
+    const { data: totalStudents } = await supabase
+      .from("users")
+      .select("id", { count: 'exact' })
+      .eq("role", "student")
+    
+    const { data: totalTeachers } = await supabase
+      .from("users")
+      .select("id", { count: 'exact' })
+      .eq("role", "teacher")
+    
+    const { data: totalFlashcards } = await supabase
+      .from("flashcards")
+      .select("id", { count: 'exact' })
+    
+    const { data: totalQuizzes } = await supabase
+      .from("quizzes")
+      .select("id", { count: 'exact' })
+    
+    const { data: totalSubjects } = await supabase
+      .from("subjects")
+      .select("id", { count: 'exact' })
+    
+    // Atividade recente
+    const { data: recentQuizAttempts } = await supabase
+      .from("quiz_attempts")
+      .select("id, attempt_date, score")
+      .order("attempt_date", { ascending: false })
+      .limit(10)
+    
+    const { data: recentScores } = await supabase
+      .from("scores")
+      .select("id, recorded_at, score_value")
+      .order("recorded_at", { ascending: false })
+      .limit(10)
+    
+    return {
+      userType: 'admin',
+      stats: {
+        totalUsers: totalUsers?.length || 0,
+        totalStudents: totalStudents?.length || 0,
+        totalTeachers: totalTeachers?.length || 0,
+        totalFlashcards: totalFlashcards?.length || 0,
+        totalQuizzes: totalQuizzes?.length || 0,
+        totalSubjects: totalSubjects?.length || 0
+      },
+      recentActivity: {
+        quizAttempts: recentQuizAttempts || [],
+        scores: recentScores || []
+      }
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getAdminDashboardStats:", error)
+    return getDefaultDashboardStats()
+  }
+}
+
+// Dashboard padrão (fallback)
+function getDefaultDashboardStats() {
+  return {
+    userType: 'default',
+    stats: {
+      totalUsers: 0,
+      totalContent: 0,
+      totalTests: 0,
+      userRanking: 0
+    },
+    recentActivity: {
+      quizAttempts: [],
+      scores: []
+    }
+  }
+}
+
+// Função auxiliar para calcular streak
+function calculateStreak(activityArray: boolean[]): number {
+  let streak = 0
+  for (let i = activityArray.length - 1; i >= 0; i--) {
+    if (activityArray[i]) {
+      streak++
+    } else {
+      break
+    }
+  }
+  return streak
+}
+
+// ==================== SISTEMA DE RANKING ====================
+
+// Função para obter ranking global dos usuários
+export async function getGlobalRanking(limit: number = 50) {
+  console.log("🏆 [Server Action] getGlobalRanking() iniciada")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca usuários com suas pontuações da tabela scores
+    const { data: users, error } = await supabase
+      .from("users")
+      .select(`
+        id,
+        first_name,
+        last_name,
+        role,
+        scores!inner(score_value, activity_type, recorded_at)
+      `)
+      .eq("role", "student")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar usuários:", error)
+      return { success: false, rankings: [] }
+    }
+
+    // Processa dados e calcula pontuação total por usuário
+    const userScores = new Map()
+    
+    users?.forEach(user => {
+      const totalScore = user.scores?.reduce((sum: number, score: any) => sum + score.score_value, 0) || 0
+      
+      if (!userScores.has(user.id) || userScores.get(user.id).totalScore < totalScore) {
+        userScores.set(user.id, {
+          user_id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          total_score: totalScore,
+          scores_count: user.scores?.length || 0
+        })
+      }
+    })
+
+    // Converte para array e ordena por pontuação
+    const rankings = Array.from(userScores.values())
+      .sort((a, b) => b.total_score - a.total_score)
+      .map((user, index) => ({
+        ...user,
+        rank_position: index + 1,
+        user_profiles: [{
+          display_name: `${user.first_name} ${user.last_name}`,
+          role: 'student'
+        }]
+      }))
+      .slice(0, limit)
+
+    console.log("🏆 [Server Action] Ranking gerado:", rankings.length, "usuários")
+    
+    return { success: true, rankings }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getGlobalRanking:", error)
+    return { success: false, rankings: [] }
+  }
+}
+
+// Função para obter progresso do usuário
+export async function getUserProgress(userId: string) {
+  console.log("📊 [Server Action] getUserProgress() para usuário:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca pontuações do usuário
+    const { data: scores, error: scoresError } = await supabase
+      .from("scores")
+      .select("score_value, activity_type, recorded_at")
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
+
+    if (scoresError) {
+      console.error("❌ [Server Action] Erro ao buscar scores:", scoresError)
+      return { success: false, stats: null }
+    }
+
+    // Busca progresso em flashcards
+    const { data: flashcardProgress } = await supabase
+      .from("flashcard_progress")
+      .select("id")
+      .eq("user_id", userId)
+
+    // Busca tentativas de quiz
+    const { data: quizAttempts } = await supabase
+      .from("quiz_attempts")
+      .select("score, total_questions")
+      .eq("user_id", userId)
+
+    // Calcula estatísticas
+    const totalScore = scores?.reduce((sum, score) => sum + score.score_value, 0) || 0
+    const totalXP = totalScore // XP = Score por enquanto
+    const level = Math.floor(totalXP / 100) + 1
+    const flashcardsStudied = flashcardProgress?.length || 0
+    const quizzesCompleted = quizAttempts?.length || 0
+    
+    // Calcula acertos em quizzes
+    const correctAnswers = quizAttempts?.reduce((sum, attempt) => sum + attempt.score, 0) || 0
+    const totalAnswers = quizAttempts?.reduce((sum, attempt) => sum + attempt.total_questions, 0) || 0
+
+    const stats = {
+      total_xp: totalXP,
+      level: level,
+      flashcards_studied: flashcardsStudied,
+      quizzes_completed: quizzesCompleted,
+      correct_answers: correctAnswers,
+      total_answers: totalAnswers,
+      total_score: totalScore
+    }
+
+    console.log("📊 [Server Action] Stats do usuário:", stats)
+    
+    return { success: true, stats }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getUserProgress:", error)
+    return { success: false, stats: null }
+  }
+}
+
+// Função para registrar pontuação do usuário
+export async function addUserScore(userId: string, activityType: string, scoreValue: number, activityId?: string) {
+  console.log("🎯 [Server Action] addUserScore() - Usuário:", userId, "Tipo:", activityType, "Pontos:", scoreValue)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const { error } = await supabase
+      .from("scores")
+      .insert({
+        user_id: userId,
+        activity_type: activityType,
+        score_value: scoreValue,
+        activity_id: activityId,
+        recorded_at: new Date().toISOString()
+      })
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao inserir score:", error)
+      return { success: false }
+    }
+
+    console.log("✅ [Server Action] Score registrado com sucesso")
+    return { success: true }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em addUserScore:", error)
+    return { success: false }
+  }
+}
+
+// Função para obter rank do usuário baseado na pontuação
+export async function getUserRank(userId: string) {
+  console.log("🏅 [Server Action] getUserRank() para usuário:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca pontuação total do usuário
+    const { data: scores } = await supabase
+      .from("scores")
+      .select("score_value")
+      .eq("user_id", userId)
+
+    const totalScore = scores?.reduce((sum, score) => sum + score.score_value, 0) || 0
+    
+    // Busca posição no ranking
+    const { data: allUsers } = await supabase
+      .from("users")
+      .select(`
+        id,
+        scores(score_value)
+      `)
+      .eq("role", "student")
+
+    const userScores = allUsers?.map(user => ({
+      id: user.id,
+      totalScore: user.scores?.reduce((sum: any, score: any) => sum + score.score_value, 0) || 0
+    })) || []
+
+    userScores.sort((a, b) => b.totalScore - a.totalScore)
+    
+    const position = userScores.findIndex(user => user.id === userId) + 1
+    const totalUsers = userScores.length
+
+    // Determina rank baseado na pontuação
+    let rank = "Novato da Guilda"
+    let league = "Aprendizes"
+    
+    if (totalScore >= 1000) { rank = "Aprendiz de Batalha"; league = "Aprendizes" }
+    else if (totalScore >= 600) { rank = "Portador da Chama"; league = "Aprendizes" }
+    else if (totalScore >= 300) { rank = "Explorador das Ruínas"; league = "Aprendizes" }
+    else if (totalScore >= 100) { rank = "Estudante Arcano"; league = "Aprendizes" }
+
+    const rankInfo = {
+      position,
+      totalUsers,
+      totalScore,
+      rank,
+      league,
+      level: Math.floor(totalScore / 100) + 1
+    }
+
+    console.log("🏅 [Server Action] Rank do usuário:", rankInfo)
+    
+    return { success: true, rankInfo }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getUserRank:", error)
+    return { success: false, rankInfo: null }
+  }
+}
+
+// Função para adicionar pontuações de exemplo (para teste)
+export async function addSampleScores() {
+  console.log("🎯 [Server Action] addSampleScores() - Adicionando pontuações de exemplo")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca usuários estudantes
+    const { data: students } = await supabase
+      .from("users")
+      .select("id, first_name")
+      .eq("role", "student")
+      .limit(5)
+
+    if (!students || students.length === 0) {
+      console.log("❌ [Server Action] Nenhum estudante encontrado")
+      return { success: false }
+    }
+
+    // Adiciona pontuações variadas para cada estudante
+    const sampleScores = [
+      { activityType: 'flashcard', scoreValue: 50 },
+      { activityType: 'quiz', scoreValue: 75 },
+      { activityType: 'flashcard', scoreValue: 25 },
+      { activityType: 'lesson', scoreValue: 100 },
+      { activityType: 'quiz', scoreValue: 60 }
+    ]
+
+    for (const student of students) {
+      const randomScores = sampleScores.slice(0, Math.floor(Math.random() * 3) + 2)
+      
+      for (const score of randomScores) {
+        const { error } = await supabase
+          .from("scores")
+          .insert({
+            user_id: student.id,
+            activity_type: score.activityType,
+            score_value: score.scoreValue,
+            recorded_at: new Date().toISOString()
+          })
+
+        if (error) {
+          console.error(`❌ [Server Action] Erro ao inserir score para ${student.first_name}:`, error)
+        }
+      }
+    }
+
+    console.log("✅ [Server Action] Pontuações de exemplo adicionadas")
+    return { success: true }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em addSampleScores:", error)
+    return { success: false }
+  }
+}
+
+// ==================== SISTEMA DE REPETIÇÃO ESPAÇADA ====================
+
+// Função para registrar resposta de flashcard com qualidade
+export async function recordFlashcardResponse(userId: string, flashcardId: string, isCorrect: boolean, quality: number = 3) {
+  console.log("🎯 [Server Action] recordFlashcardResponse() - Usuário:", userId, "Flashcard:", flashcardId, "Correto:", isCorrect, "Qualidade:", quality)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Calcula pontuação baseada na qualidade da resposta
+    let scoreValue = 0
+    if (isCorrect) {
+      switch (quality) {
+        case 5: scoreValue = 25 // Excelente
+        case 4: scoreValue = 20 // Bom
+        case 3: scoreValue = 15 // Médio
+        case 2: scoreValue = 10 // Ruim
+        case 1: scoreValue = 5  // Muito ruim
+        default: scoreValue = 15
+      }
+    } else {
+      scoreValue = 2 // Pontos por tentativa
+    }
+
+    // Registra pontuação
+    const { error: scoreError } = await supabase
+      .from("scores")
+      .insert({
+        user_id: userId,
+        activity_type: 'flashcard',
+        score_value: scoreValue,
+        activity_id: flashcardId,
+        recorded_at: new Date().toISOString()
+      })
+
+    if (scoreError) {
+      console.error("❌ [Server Action] Erro ao registrar pontuação:", scoreError)
+      return { success: false }
+    }
+
+    // Busca progresso existente ou cria novo
+    const { data: existingProgress } = await supabase
+      .from("flashcard_progress")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("flashcard_id", flashcardId)
+      .single()
+
+    const now = new Date().toISOString()
+    let newProgress
+
+    if (existingProgress) {
+      // Atualiza progresso existente (algoritmo SM-2 simplificado)
+      let repetitions = existingProgress.repetitions + 1
+      let easeFactor = existingProgress.ease_factor || 2.5
+      let intervalDays = existingProgress.interval_days || 1
+
+      if (isCorrect) {
+        if (repetitions === 1) {
+          intervalDays = 1
+        } else if (repetitions === 2) {
+          intervalDays = 6
+        } else {
+          intervalDays = Math.round(intervalDays * easeFactor)
+        }
+        easeFactor = Math.max(1.3, easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
+      } else {
+        repetitions = 1
+        intervalDays = 1
+        easeFactor = Math.max(1.3, easeFactor - 0.2)
+      }
+
+      const nextReview = new Date()
+      nextReview.setDate(nextReview.getDate() + intervalDays)
+
+      newProgress = {
+        repetitions,
+        ease_factor: easeFactor,
+        interval_days: intervalDays,
+        last_reviewed_at: now,
+        next_review_at: nextReview.toISOString(),
+        quality: quality
+      }
+
+      const { error: updateError } = await supabase
+        .from("flashcard_progress")
+        .update(newProgress)
+        .eq("user_id", userId)
+        .eq("flashcard_id", flashcardId)
+
+      if (updateError) {
+        console.error("❌ [Server Action] Erro ao atualizar progresso:", updateError)
+      }
+    } else {
+      // Cria novo progresso
+      const nextReview = new Date()
+      nextReview.setDate(nextReview.getDate() + 1)
+
+      newProgress = {
+        user_id: userId,
+        flashcard_id: flashcardId,
+        repetitions: 1,
+        ease_factor: 2.5,
+        interval_days: 1,
+        last_reviewed_at: now,
+        next_review_at: nextReview.toISOString(),
+        quality: quality
+      }
+
+      const { error: insertError } = await supabase
+        .from("flashcard_progress")
+        .insert(newProgress)
+
+      if (insertError) {
+        console.error("❌ [Server Action] Erro ao criar progresso:", insertError)
+      }
+    }
+
+    console.log("✅ [Server Action] Flashcard processado e progresso registrado:", newProgress)
+    
+    // Verificar e conceder conquistas após cada resposta
+    try {
+      const achievementsResult = await checkAndGrantAchievements(userId)
+      if (achievementsResult.success && achievementsResult.granted.length > 0) {
+        console.log(`🏆 [Server Action] ${achievementsResult.granted.length} conquistas concedidas após resposta do flashcard`)
+        return { 
+          success: true, 
+          score: scoreValue, 
+          progress: newProgress, 
+          achievements: achievementsResult.granted 
+        }
+      }
+    } catch (error) {
+      console.error("❌ [Server Action] Erro ao verificar conquistas:", error)
+    }
+    
+    return { success: true, score: scoreValue, progress: newProgress }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em recordFlashcardResponse:", error)
+    return { success: false }
+  }
+}
+
+// Função para obter flashcards que precisam de revisão
+export async function getFlashcardsForReview(userId: string, topicId?: string) {
+  console.log("📚 [Server Action] getFlashcardsForReview() para usuário:", userId, "Tópico:", topicId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const now = new Date().toISOString()
+    
+    let query = supabase
+      .from("flashcard_progress")
+      .select(`
+        *,
+        flashcards!inner (
+          id,
+          question,
+          answer,
+          topic_id,
+          topics!inner (
+            id,
+            name,
+            subject_id
+          )
+        )
+      `)
+      .eq("user_id", userId)
+      .lte("next_review_at", now)
+      .order("next_review_at", { ascending: true })
+
+    if (topicId) {
+      query = query.eq("flashcards.topic_id", topicId)
+    }
+
+    const { data: reviewFlashcards, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards para revisão:", error)
+      return { success: false, flashcards: [] }
+    }
+
+    console.log("✅ [Server Action] Flashcards para revisão encontrados:", reviewFlashcards?.length || 0)
+    return { success: true, flashcards: reviewFlashcards || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getFlashcardsForReview:", error)
+    return { success: false, flashcards: [] }
+  }
+}
+
+// Função para obter flashcards com maior dificuldade (mais erros)
+export async function getDifficultFlashcards(userId: string, topicId?: string, limit: number = 10) {
+  console.log("🔥 [Server Action] getDifficultFlashcards() para usuário:", userId, "Tópico:", topicId, "Limit:", limit)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    let query = supabase
+      .from("flashcard_progress")
+      .select(`
+        *,
+        flashcards!inner (
+          id,
+          question,
+          answer,
+          topic_id,
+          topics!inner (
+            id,
+            name,
+            subject_id
+          )
+        )
+      `)
+      .eq("user_id", userId)
+      .order("ease_factor", { ascending: true })
+      .order("repetitions", { ascending: true })
+      .limit(limit)
+
+    if (topicId) {
+      query = query.eq("flashcards.topic_id", topicId)
+    }
+
+    const { data: difficultFlashcards, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards difíceis:", error)
+      return { success: false, flashcards: [] }
+    }
+
+    console.log("✅ [Server Action] Flashcards difíceis encontrados:", difficultFlashcards?.length || 0)
+    return { success: true, flashcards: difficultFlashcards || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getDifficultFlashcards:", error)
+    return { success: false, flashcards: [] }
+  }
+}
+
+// ==================== SISTEMA DE CATEGORIZAÇÃO ====================
+
+// Função para criar categorias básicas de flashcards
+export async function createBasicFlashcardCategories() {
+  console.log("🏷️ [Server Action] createBasicFlashcardCategories() - Criando categorias básicas")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const categories = [
+      { name: 'Definições', description: 'Flashcards com definições de conceitos e termos' },
+      { name: 'Fórmulas', description: 'Flashcards com fórmulas matemáticas e científicas' },
+      { name: 'Exemplos', description: 'Flashcards com exemplos práticos e aplicações' },
+      { name: 'Conceitos', description: 'Flashcards com conceitos teóricos fundamentais' },
+      { name: 'Vocabulário', description: 'Flashcards com vocabulário específico da matéria' }
+    ]
+
+    for (const category of categories) {
+      const { error } = await supabase
+        .from("flashcard_categories")
+        .upsert(category, { onConflict: 'name' })
+
+      if (error) {
+        console.error("❌ [Server Action] Erro ao criar categoria:", category.name, error)
+      }
+    }
+
+    console.log("✅ [Server Action] Categorias básicas criadas com sucesso")
+    return { success: true }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em createBasicFlashcardCategories:", error)
+    return { success: false }
+  }
+}
+
+// Função para criar tags básicas de flashcards
+export async function createBasicFlashcardTags() {
+  console.log("🏷️ [Server Action] createBasicFlashcardTags() - Criando tags básicas")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const tags = [
+      'Importante', 'Revisar', 'Fácil', 'Difícil', 'ENEM', 'Concurso', 'Fundamental', 'Avançado'
+    ]
+
+    for (const tagName of tags) {
+      const { error } = await supabase
+        .from("flashcard_tags")
+        .upsert({ name: tagName }, { onConflict: 'name' })
+
+      if (error) {
+        console.error("❌ [Server Action] Erro ao criar tag:", tagName, error)
+      }
+    }
+
+    console.log("✅ [Server Action] Tags básicas criadas com sucesso")
+    return { success: true }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em createBasicFlashcardTags:", error)
+    return { success: false }
+  }
+}
+
+// Função para criar dados de exemplo para o sistema de repetição espaçada
+export async function createSampleFlashcardProgress() {
+  console.log("📊 [Server Action] createSampleFlashcardProgress() - Criando dados de exemplo")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca usuários estudantes
+    const { data: students } = await supabase
+      .from("users")
+      .select("id")
+      .eq("role", "student")
+      .limit(3)
+
+    if (!students || students.length === 0) {
+      console.log("⚠️ [Server Action] Nenhum estudante encontrado para criar dados de exemplo")
+      return { success: false }
+    }
+
+    // Busca alguns flashcards
+    const { data: flashcards } = await supabase
+      .from("flashcards")
+      .select("id")
+      .limit(20)
+
+    if (!flashcards || flashcards.length === 0) {
+      console.log("⚠️ [Server Action] Nenhum flashcard encontrado para criar dados de exemplo")
+      return { success: false }
+    }
+
+    const now = new Date()
+    const progressData = []
+
+    // Cria dados de progresso para cada estudante
+    for (const student of students) {
+      // Seleciona alguns flashcards aleatórios para este estudante
+      const studentFlashcards = flashcards.slice(0, Math.min(10, flashcards.length))
+      
+      for (const flashcard of studentFlashcards) {
+        // Gera dados aleatórios para simular progresso
+        const repetitions = Math.floor(Math.random() * 5) + 1
+        const quality = Math.floor(Math.random() * 5) + 1
+        const easeFactor = 2.5 + (Math.random() - 0.5) * 0.5 // Entre 2.0 e 3.0
+        const intervalDays = Math.floor(Math.random() * 10) + 1
+        
+        const lastReviewed = new Date(now.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000) // Última semana
+        const nextReview = new Date(lastReviewed.getTime() + intervalDays * 24 * 60 * 60 * 1000)
+
+        progressData.push({
+          user_id: student.id,
+          flashcard_id: flashcard.id,
+          repetitions,
+          ease_factor: easeFactor,
+          interval_days: intervalDays,
+          last_reviewed_at: lastReviewed.toISOString(),
+          next_review_at: nextReview.toISOString(),
+          quality
+        })
+      }
+    }
+
+    // Insere os dados em lote
+    const { error } = await supabase
+      .from("flashcard_progress")
+      .insert(progressData)
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao inserir dados de progresso:", error)
+      return { success: false }
+    }
+
+    console.log(`✅ [Server Action] ${progressData.length} registros de progresso criados`)
+    return { success: true, count: progressData.length }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em createSampleFlashcardProgress:", error)
+    return { success: false }
+  }
+}
+
+// ==================== OTIMIZAÇÃO DE BANCO DE DADOS ====================
+
+// Função para otimizar índices do banco de dados
+export async function optimizeDatabaseIndexes() {
+  console.log("🔧 [Server Action] optimizeDatabaseIndexes() - Otimizando índices do banco")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Lista de índices para criar
+    const indexes = [
+      {
+        name: 'idx_flashcards_topic_id',
+        table: 'flashcards',
+        column: 'topic_id',
+        description: 'Índice para consultas por tópico'
+      },
+      {
+        name: 'idx_flashcards_created_by',
+        table: 'flashcards',
+        column: 'created_by_user_id',
+        description: 'Índice para consultas por criador'
+      },
+      {
+        name: 'idx_flashcards_difficulty',
+        table: 'flashcards',
+        column: 'difficulty',
+        description: 'Índice para consultas por dificuldade'
+      },
+      {
+        name: 'idx_flashcard_progress_user_id',
+        table: 'flashcard_progress',
+        column: 'user_id',
+        description: 'Índice para consultas de progresso por usuário'
+      },
+      {
+        name: 'idx_flashcard_progress_flashcard_id',
+        table: 'flashcard_progress',
+        column: 'flashcard_id',
+        description: 'Índice para consultas de progresso por flashcard'
+      },
+      {
+        name: 'idx_flashcard_progress_next_review',
+        table: 'flashcard_progress',
+        column: 'next_review_at',
+        description: 'Índice para consultas de revisão agendada'
+      },
+      {
+        name: 'idx_flashcard_progress_ease_factor',
+        table: 'flashcard_progress',
+        column: 'ease_factor',
+        description: 'Índice para consultas por fator de facilidade'
+      },
+      {
+        name: 'idx_scores_user_id',
+        table: 'scores',
+        column: 'user_id',
+        description: 'Índice para consultas de pontuação por usuário'
+      },
+      {
+        name: 'idx_scores_activity_type',
+        table: 'scores',
+        column: 'activity_type',
+        description: 'Índice para consultas por tipo de atividade'
+      },
+      {
+        name: 'idx_scores_recorded_at',
+        table: 'scores',
+        column: 'recorded_at',
+        description: 'Índice para consultas por data de registro'
+      }
+    ]
+
+    const results = []
+    
+    for (const index of indexes) {
+      try {
+        // Verificar se o índice já existe
+        const { data: existingIndexes } = await supabase.rpc('check_index_exists', {
+          index_name: index.name
+        })
+        
+        if (!existingIndexes) {
+          // Criar o índice usando SQL direto
+          const { error } = await supabase.rpc('create_index_if_not_exists', {
+            index_name: index.name,
+            table_name: index.table,
+            column_name: index.column
+          })
+          
+          if (error) {
+            console.error(`❌ [Server Action] Erro ao criar índice ${index.name}:`, error)
+            results.push({ name: index.name, status: 'error', message: error.message })
+          } else {
+            console.log(`✅ [Server Action] Índice ${index.name} criado com sucesso`)
+            results.push({ name: index.name, status: 'success', message: 'Índice criado' })
+          }
+        } else {
+          console.log(`ℹ️ [Server Action] Índice ${index.name} já existe`)
+          results.push({ name: index.name, status: 'exists', message: 'Índice já existe' })
+        }
+      } catch (error) {
+        console.error(`❌ [Server Action] Erro ao processar índice ${index.name}:`, error)
+        results.push({ name: index.name, status: 'error', message: 'Erro na criação' })
+      }
+    }
+
+    console.log(`✅ [Server Action] Processamento de índices concluído: ${results.length} índices processados`)
+    return { success: true, results }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em optimizeDatabaseIndexes:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Função para analisar estatísticas do banco de dados
+export async function analyzeDatabaseStats() {
+  console.log("📊 [Server Action] analyzeDatabaseStats() - Analisando estatísticas do banco")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const stats = {}
+    
+    // Estatísticas de flashcards
+    const { data: flashcardStats } = await supabase
+      .from("flashcards")
+      .select("difficulty")
+    
+    if (flashcardStats) {
+      stats.flashcards = {
+        total: flashcardStats.length,
+        byDifficulty: flashcardStats.reduce((acc, card) => {
+          acc[card.difficulty] = (acc[card.difficulty] || 0) + 1
+          return acc
+        }, {})
+      }
+    }
+    
+    // Estatísticas de progresso
+    const { data: progressStats } = await supabase
+      .from("flashcard_progress")
+      .select("ease_factor, repetitions")
+    
+    if (progressStats) {
+      const avgEaseFactor = progressStats.reduce((sum, p) => sum + parseFloat(p.ease_factor), 0) / progressStats.length
+      const avgRepetitions = progressStats.reduce((sum, p) => sum + p.repetitions, 0) / progressStats.length
+      
+      stats.progress = {
+        total: progressStats.length,
+        avgEaseFactor: Math.round(avgEaseFactor * 100) / 100,
+        avgRepetitions: Math.round(avgRepetitions * 100) / 100
+      }
+    }
+    
+    // Estatísticas de pontuação
+    const { data: scoreStats } = await supabase
+      .from("scores")
+      .select("score_value, activity_type")
+    
+    if (scoreStats) {
+      const totalScore = scoreStats.reduce((sum, s) => sum + s.score_value, 0)
+      const byActivity = scoreStats.reduce((acc, s) => {
+        acc[s.activity_type] = (acc[s.activity_type] || 0) + 1
+        return acc
+      }, {})
+      
+      stats.scores = {
+        total: scoreStats.length,
+        totalScore,
+        avgScore: Math.round(totalScore / scoreStats.length),
+        byActivity
+      }
+    }
+    
+    // Estatísticas de usuários
+    const { data: userStats } = await supabase
+      .from("users")
+      .select("role")
+    
+    if (userStats) {
+      stats.users = {
+        total: userStats.length,
+        byRole: userStats.reduce((acc, u) => {
+          acc[u.role] = (acc[u.role] || 0) + 1
+          return acc
+        }, {})
+      }
+    }
+    
+    console.log("✅ [Server Action] Análise de estatísticas concluída")
+    return { success: true, stats }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em analyzeDatabaseStats:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Função para limpeza de dados antigos
+export async function cleanupOldData() {
+  console.log("🧹 [Server Action] cleanupOldData() - Limpando dados antigos")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const results = []
+    
+    // Limpar progresso muito antigo (mais de 1 ano sem atividade)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    
+    const { data: oldProgress, error: progressError } = await supabase
+      .from("flashcard_progress")
+      .delete()
+      .lt("last_reviewed_at", oneYearAgo.toISOString())
+      .select()
+    
+    if (progressError) {
+      console.error("❌ [Server Action] Erro ao limpar progresso antigo:", progressError)
+      results.push({ table: 'flashcard_progress', status: 'error', message: progressError.message })
+    } else {
+      console.log(`✅ [Server Action] ${oldProgress?.length || 0} registros de progresso antigos removidos`)
+      results.push({ table: 'flashcard_progress', status: 'success', count: oldProgress?.length || 0 })
+    }
+    
+    // Limpar flashcards incorretos muito antigos (mais de 6 meses)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    
+    const { data: oldIncorrect, error: incorrectError } = await supabase
+      .from("user_incorrect_flashcards")
+      .delete()
+      .lt("last_incorrect_at", sixMonthsAgo.toISOString())
+      .select()
+    
+    if (incorrectError) {
+      console.error("❌ [Server Action] Erro ao limpar flashcards incorretos antigos:", incorrectError)
+      results.push({ table: 'user_incorrect_flashcards', status: 'error', message: incorrectError.message })
+    } else {
+      console.log(`✅ [Server Action] ${oldIncorrect?.length || 0} registros de flashcards incorretos antigos removidos`)
+      results.push({ table: 'user_incorrect_flashcards', status: 'success', count: oldIncorrect?.length || 0 })
+    }
+    
+    console.log("✅ [Server Action] Limpeza de dados antigos concluída")
+    return { success: true, results }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em cleanupOldData:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// ==================== MELHORIAS DE PERFORMANCE ====================
+
+// Cache simples em memória para consultas frequentes
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>()
+
+// Função para limpar cache expirado
+function cleanExpiredCache() {
+  const now = Date.now()
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > value.ttl) {
+      cache.delete(key)
+    }
+  }
+}
+
+// Função para obter dados do cache
+function getFromCache<T>(key: string): T | null {
+  cleanExpiredCache()
+  const cached = cache.get(key)
+  if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    return cached.data
+  }
+  return null
+}
+
+// Função para salvar dados no cache
+function setCache<T>(key: string, data: T, ttl: number = 5 * 60 * 1000) { // 5 minutos por padrão
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl
+  })
+}
+
+// Função otimizada para buscar flashcards com cache
+export async function getFlashcardsByTopicOptimized(topicId: string, limit = 10, offset = 0) {
+  const cacheKey = `flashcards_${topicId}_${limit}_${offset}`
+  
+  // Verificar cache primeiro
+  const cached = getFromCache(cacheKey)
+  if (cached) {
+    console.log("📦 [Server Action] Cache hit para flashcards do tópico:", topicId)
+    return cached
+  }
+
+  console.log(`📚 [Server Action] getFlashcardsByTopicOptimized() - Tópico: ${topicId}, limite: ${limit}, offset: ${offset}`)
+  
+  const supabase = await getSupabase()
+
+  try {
+    // Buscar flashcards com informações relacionadas em uma única query
+    const { data, error } = await supabase
+      .from("flashcards")
+      .select(`
+        id,
+        topic_id,
+        question,
+        answer,
+        difficulty,
+        created_at,
+        topics!inner (
+          id,
+          name,
+          subject_id,
+          subjects!inner (
+            id,
+            name
+          )
+        )
+      `)
+      .eq("topic_id", topicId)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
+      return []
+    }
+
+    // Processar dados para incluir informações relacionadas
+    const processedData = data?.map(flashcard => ({
+      id: flashcard.id,
+      topic_id: flashcard.topic_id,
+      question: flashcard.question,
+      answer: flashcard.answer,
+      difficulty: flashcard.difficulty,
+      created_at: flashcard.created_at,
+      topic_name: flashcard.topics?.name,
+      subject_name: flashcard.topics?.subjects?.name,
+      subject_id: flashcard.topics?.subject_id
+    })) || []
+
+    // Salvar no cache por 5 minutos
+    setCache(cacheKey, processedData, 5 * 60 * 1000)
+    
+    console.log(`✅ [Server Action] ${processedData.length} flashcards encontrados e cacheados`)
+    return processedData
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getFlashcardsByTopicOptimized:", error)
+    return []
+  }
+}
+
+// Função otimizada para buscar estatísticas de tópicos
+export async function getTopicsWithStatsOptimized(subjectId: string) {
+  const cacheKey = `topics_stats_${subjectId}`
+  
+  // Verificar cache primeiro
+  const cached = getFromCache(cacheKey)
+  if (cached) {
+    console.log("📦 [Server Action] Cache hit para estatísticas de tópicos:", subjectId)
+    return cached
+  }
+
+  console.log(`📊 [Server Action] getTopicsWithStatsOptimized() - Matéria: ${subjectId}`)
+  
+  const supabase = await getSupabase()
+
+  try {
+    // Query otimizada para buscar tópicos com estatísticas
+    const { data, error } = await supabase
+      .from("topics")
+      .select(`
+        id,
+        name,
+        description,
+        created_at,
+        flashcards (
+          id,
+          difficulty
+        ),
+        user_progress (
+          id,
+          completion_percentage,
+          last_accessed_at
+        )
+      `)
+      .eq("subject_id", subjectId)
+      .order("name", { ascending: true })
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar tópicos:", error)
+      return []
+    }
+
+    // Processar dados para incluir estatísticas
+    const processedData = data?.map(topic => ({
+      id: topic.id,
+      name: topic.name,
+      description: topic.description,
+      created_at: topic.created_at,
+      totalFlashcards: topic.flashcards?.length || 0,
+      totalLessons: topic.flashcards?.length || 0, // Para compatibilidade
+      completedLessons: topic.user_progress?.length || 0,
+      completionPercentage: topic.user_progress?.[0]?.completion_percentage || 0,
+      lastAccessed: topic.user_progress?.[0]?.last_accessed_at,
+      difficulty: topic.flashcards?.reduce((sum, card) => sum + card.difficulty, 0) / (topic.flashcards?.length || 1)
+    })) || []
+
+    // Salvar no cache por 10 minutos
+    setCache(cacheKey, processedData, 10 * 60 * 1000)
+    
+    console.log(`✅ [Server Action] ${processedData.length} tópicos processados e cacheados`)
+    return processedData
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getTopicsWithStatsOptimized:", error)
+    return []
+  }
+}
+
+// Função para invalidar cache específico
+export async function invalidateCache(pattern?: string) {
+  console.log("🗑️ [Server Action] invalidateCache() - Limpando cache")
+  
+  if (pattern) {
+    // Limpar apenas entradas que correspondem ao padrão
+    for (const key of cache.keys()) {
+      if (key.includes(pattern)) {
+        cache.delete(key)
+      }
+    }
+    console.log(`✅ [Server Action] Cache limpo para padrão: ${pattern}`)
+  } else {
+    // Limpar todo o cache
+    cache.clear()
+    console.log("✅ [Server Action] Cache completamente limpo")
+  }
+  
+  return { success: true }
+}
+
+// Função para obter estatísticas do cache
+export async function getCacheStats() {
+  console.log("📊 [Server Action] getCacheStats() - Obtendo estatísticas do cache")
+  
+  cleanExpiredCache()
+  
+  const stats = {
+    totalEntries: cache.size,
+    entries: Array.from(cache.entries()).map(([key, value]) => ({
+      key,
+      age: Date.now() - value.timestamp,
+      ttl: value.ttl,
+      expiresIn: value.ttl - (Date.now() - value.timestamp)
+    }))
+  }
+  
+  console.log(`✅ [Server Action] Cache tem ${stats.totalEntries} entradas`)
+  return { success: true, stats }
+}
+
+// ==================== SISTEMA DE CONQUISTAS E BADGES ====================
+
+// Função para criar conquistas básicas
+export async function createBasicAchievements() {
+  console.log("🏆 [Server Action] createBasicAchievements() - Criando conquistas básicas")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const achievements = [
+      {
+        name: 'Primeiro Passo',
+        description: 'Estude seu primeiro flashcard',
+        icon: '🎯',
+        condition_type: 'flashcards_studied',
+        condition_value: 1,
+        points_reward: 10,
+        category: 'study'
+      },
+      {
+        name: 'Estudioso',
+        description: 'Estude 50 flashcards',
+        icon: '📚',
+        condition_type: 'flashcards_studied',
+        condition_value: 50,
+        points_reward: 50,
+        category: 'study'
+      },
+      {
+        name: 'Maratonista',
+        description: 'Estude 200 flashcards',
+        icon: '🏃',
+        condition_type: 'flashcards_studied',
+        condition_value: 200,
+        points_reward: 200,
+        category: 'study'
+      },
+      {
+        name: 'Perfeccionista',
+        description: 'Mantenha 90% de acertos em 50 flashcards',
+        icon: '⭐',
+        condition_type: 'accuracy',
+        condition_value: 90,
+        points_reward: 100,
+        category: 'performance'
+      },
+      {
+        name: 'Consistente',
+        description: 'Estude por 7 dias consecutivos',
+        icon: '🔥',
+        condition_type: 'streak',
+        condition_value: 7,
+        points_reward: 75,
+        category: 'consistency'
+      },
+      {
+        name: 'Revisor Expert',
+        description: 'Revise 100 flashcards',
+        icon: '🔄',
+        condition_type: 'flashcards_reviewed',
+        condition_value: 100,
+        points_reward: 150,
+        category: 'review'
+      },
+      {
+        name: 'Conquistador',
+        description: 'Alcance 1000 pontos totais',
+        icon: '👑',
+        condition_type: 'total_points',
+        condition_value: 1000,
+        points_reward: 300,
+        category: 'milestone'
+      },
+      {
+        name: 'Mestre dos Flashcards',
+        description: 'Estude 500 flashcards com 80% de acertos',
+        icon: '🎓',
+        condition_type: 'mastery',
+        condition_value: 500,
+        points_reward: 500,
+        category: 'mastery'
+      }
+    ]
+
+    // Criar tabela de conquistas se não existir
+    const { error: createTableError } = await supabase.rpc('create_achievements_table_if_not_exists')
+    if (createTableError) {
+      console.error("❌ [Server Action] Erro ao criar tabela de conquistas:", createTableError)
+    }
+
+    const results = []
+    for (const achievement of achievements) {
+      const { error } = await supabase
+        .from("achievements")
+        .upsert(achievement, { onConflict: 'name' })
+
+      if (error) {
+        console.error("❌ [Server Action] Erro ao criar conquista:", achievement.name, error)
+        results.push({ name: achievement.name, status: 'error', message: error.message })
+      } else {
+        console.log(`✅ [Server Action] Conquista ${achievement.name} criada com sucesso`)
+        results.push({ name: achievement.name, status: 'success', message: 'Conquista criada' })
+      }
+    }
+
+    console.log("✅ [Server Action] Conquistas básicas criadas com sucesso")
+    return { success: true, results }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em createBasicAchievements:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Função para verificar e conceder conquistas
+export async function checkAndGrantAchievements(userId: string) {
+  console.log("🔍 [Server Action] checkAndGrantAchievements() - Usuário:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Buscar conquistas disponíveis
+    const { data: achievements } = await supabase
+      .from("achievements")
+      .select("*")
+
+    if (!achievements || achievements.length === 0) {
+      console.log("⚠️ [Server Action] Nenhuma conquista encontrada")
+      return { success: true, granted: [] }
+    }
+
+    // Buscar conquistas já concedidas ao usuário
+    const { data: userAchievements } = await supabase
+      .from("user_achievements")
+      .select("achievement_id")
+      .eq("user_id", userId)
+
+    const grantedAchievementIds = userAchievements?.map(ua => ua.achievement_id) || []
+
+    // Buscar estatísticas do usuário
+    const userStats = await getUserDetailedStats(userId)
+    if (!userStats.success) {
+      console.error("❌ [Server Action] Erro ao obter estatísticas do usuário")
+      return { success: false, error: "Erro ao obter estatísticas" }
+    }
+
+    const stats = userStats.stats
+    const granted = []
+
+    // Verificar cada conquista
+    for (const achievement of achievements) {
+      if (grantedAchievementIds.includes(achievement.id)) {
+        continue // Já concedida
+      }
+
+      let shouldGrant = false
+
+      switch (achievement.condition_type) {
+        case 'flashcards_studied':
+          shouldGrant = stats.flashcardsStudied >= achievement.condition_value
+          break
+        case 'accuracy':
+          shouldGrant = stats.accuracy >= achievement.condition_value
+          break
+        case 'streak':
+          shouldGrant = stats.currentStreak >= achievement.condition_value
+          break
+        case 'flashcards_reviewed':
+          shouldGrant = stats.flashcardsReviewed >= achievement.condition_value
+          break
+        case 'total_points':
+          shouldGrant = stats.totalScore >= achievement.condition_value
+          break
+        case 'mastery':
+          shouldGrant = stats.flashcardsStudied >= achievement.condition_value && stats.accuracy >= 80
+          break
+      }
+
+      if (shouldGrant) {
+        // Conceder conquista
+        const { error: grantError } = await supabase
+          .from("user_achievements")
+          .insert({
+            user_id: userId,
+            achievement_id: achievement.id,
+            granted_at: new Date().toISOString()
+          })
+
+        if (grantError) {
+          console.error("❌ [Server Action] Erro ao conceder conquista:", achievement.name, grantError)
+        } else {
+          // Adicionar pontos de recompensa
+          await supabase
+            .from("scores")
+            .insert({
+              user_id: userId,
+              score_value: achievement.points_reward,
+              activity_type: 'achievement',
+              activity_id: achievement.id
+            })
+
+          granted.push({
+            id: achievement.id,
+            name: achievement.name,
+            description: achievement.description,
+            icon: achievement.icon,
+            points_reward: achievement.points_reward
+          })
+
+          console.log(`🏆 [Server Action] Conquista concedida: ${achievement.name}`)
+        }
+      }
+    }
+
+    console.log(`✅ [Server Action] ${granted.length} conquistas concedidas`)
+    return { success: true, granted }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em checkAndGrantAchievements:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Função para obter conquistas do usuário
+export async function getUserAchievements(userId: string) {
+  console.log("🏆 [Server Action] getUserAchievements() - Usuário:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const { data, error } = await supabase
+      .from("user_achievements")
+      .select(`
+        *,
+        achievements (
+          id,
+          name,
+          description,
+          icon,
+          category,
+          points_reward
+        )
+      `)
+      .eq("user_id", userId)
+      .order("granted_at", { ascending: false })
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar conquistas do usuário:", error)
+      return { success: false, achievements: [] }
+    }
+
+    const achievements = data?.map(ua => ({
+      id: ua.id,
+      granted_at: ua.granted_at,
+      achievement: ua.achievements
+    })) || []
+
+    console.log(`✅ [Server Action] ${achievements.length} conquistas encontradas`)
+    return { success: true, achievements }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getUserAchievements:", error)
+    return { success: false, achievements: [] }
+  }
+}
+
+// Função para obter todas as conquistas disponíveis
+export async function getAllAchievements() {
+  console.log("🏆 [Server Action] getAllAchievements() - Buscando todas as conquistas")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const { data, error } = await supabase
+      .from("achievements")
+      .select("*")
+      .order("points_reward", { ascending: true })
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar conquistas:", error)
+      return { success: false, achievements: [] }
+    }
+
+    console.log(`✅ [Server Action] ${data?.length || 0} conquistas encontradas`)
+    return { success: true, achievements: data || [] }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getAllAchievements:", error)
+    return { success: false, achievements: [] }
+  }
+}
+
+// ==================== SISTEMA DE EXPORTAÇÃO E IMPORTAÇÃO ====================
+
+// Função para exportar flashcards para arquivo TXT
+export async function exportFlashcardsToTxt(subjectId?: string, topicId?: string) {
+  console.log("📤 [Server Action] exportFlashcardsToTxt() - Subject:", subjectId, "Topic:", topicId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    let query = supabase
+      .from("flashcards")
+      .select(`
+        id,
+        question,
+        answer,
+        difficulty,
+        created_at,
+        topics!inner (
+          id,
+          name,
+          subject_id,
+          subjects!inner (
+            id,
+            name
+          )
+        )
+      `)
+      .order("created_at", { ascending: true })
+
+    // Filtrar por assunto se especificado
+    if (subjectId) {
+      query = query.eq("topics.subject_id", subjectId)
+    }
+
+    // Filtrar por tópico se especificado
+    if (topicId) {
+      query = query.eq("topic_id", topicId)
+    }
+
+    const { data: flashcards, error } = await query
+
+    if (error) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards:", error)
+      return { success: false, error: error.message }
+    }
+
+    if (!flashcards || flashcards.length === 0) {
+      console.log("⚠️ [Server Action] Nenhum flashcard encontrado para exportação")
+      return { success: false, error: "Nenhum flashcard encontrado" }
+    }
+
+    // Gerar conteúdo do arquivo TXT
+    let content = `# EXPORTAÇÃO DE FLASHCARDS\n`
+    content += `# Gerado em: ${new Date().toLocaleString('pt-BR')}\n`
+    content += `# Total de flashcards: ${flashcards.length}\n\n`
+
+    // Agrupar por assunto e tópico
+    const groupedFlashcards = flashcards.reduce((acc, flashcard) => {
+      const subjectName = flashcard.topics?.subjects?.name || 'Sem assunto'
+      const topicName = flashcard.topics?.name || 'Sem tópico'
+      
+      if (!acc[subjectName]) {
+        acc[subjectName] = {}
+      }
+      if (!acc[subjectName][topicName]) {
+        acc[subjectName][topicName] = []
+      }
+      
+      acc[subjectName][topicName].push(flashcard)
+      return acc
+    }, {} as Record<string, Record<string, any[]>>)
+
+    // Gerar conteúdo organizado
+    Object.entries(groupedFlashcards).forEach(([subjectName, topics]) => {
+      content += `## ASSUNTO: ${subjectName.toUpperCase()}\n\n`
+      
+      Object.entries(topics).forEach(([topicName, topicFlashcards]) => {
+        content += `### TÓPICO: ${topicName}\n\n`
+        
+        topicFlashcards.forEach((flashcard, index) => {
+          content += `[${index + 1}] ID: ${flashcard.id}\n`
+          content += `PERGUNTA: ${flashcard.question}\n`
+          content += `RESPOSTA: ${flashcard.answer}\n`
+          content += `DIFICULDADE: ${flashcard.difficulty}\n`
+          content += `CRIADO EM: ${new Date(flashcard.created_at).toLocaleString('pt-BR')}\n`
+          content += `---\n\n`
+        })
+      })
+    })
+
+    console.log(`✅ [Server Action] ${flashcards.length} flashcards exportados`)
+    return { 
+      success: true, 
+      content, 
+      filename: `flashcards_${new Date().toISOString().split('T')[0]}.txt`,
+      count: flashcards.length
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em exportFlashcardsToTxt:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Função para importar flashcards de arquivo TXT
+export async function importFlashcardsFromTxt(content: string, userId: string) {
+  console.log("📥 [Server Action] importFlashcardsFromTxt() - User:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    const lines = content.split('\n')
+    const flashcards = []
+    let currentFlashcard: any = null
+    let currentSubject = ''
+    let currentTopic = ''
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      // Pular comentários e linhas vazias
+      if (line.startsWith('#') || line.startsWith('//') || line === '' || line === '---') {
+        continue
+      }
+      
+      // Detectar assunto
+      if (line.startsWith('## ASSUNTO:')) {
+        currentSubject = line.replace('## ASSUNTO:', '').trim()
+        continue
+      }
+      
+      // Detectar tópico
+      if (line.startsWith('### TÓPICO:')) {
+        currentTopic = line.replace('### TÓPICO:', '').trim()
+        continue
+      }
+      
+      // Detectar início de flashcard
+      if (line.startsWith('[') && line.includes('] ID:')) {
+        // Salvar flashcard anterior se existir
+        if (currentFlashcard && currentFlashcard.question && currentFlashcard.answer) {
+          flashcards.push(currentFlashcard)
+        }
+        
+        // Iniciar novo flashcard
+        const id = line.split('ID: ')[1]
+        currentFlashcard = {
+          id,
+          question: '',
+          answer: '',
+          difficulty: 3, // Padrão
+          subject: currentSubject,
+          topic: currentTopic
+        }
+        continue
+      }
+      
+      // Extrair dados do flashcard
+      if (currentFlashcard) {
+        if (line.startsWith('PERGUNTA:')) {
+          currentFlashcard.question = line.replace('PERGUNTA:', '').trim()
+        } else if (line.startsWith('RESPOSTA:')) {
+          currentFlashcard.answer = line.replace('RESPOSTA:', '').trim()
+        } else if (line.startsWith('DIFICULDADE:')) {
+          currentFlashcard.difficulty = parseInt(line.replace('DIFICULDADE:', '').trim()) || 3
+        }
+      }
+    }
+    
+    // Adicionar último flashcard se existir
+    if (currentFlashcard && currentFlashcard.question && currentFlashcard.answer) {
+      flashcards.push(currentFlashcard)
+    }
+    
+    if (flashcards.length === 0) {
+      console.log("⚠️ [Server Action] Nenhum flashcard válido encontrado no arquivo")
+      return { success: false, error: "Nenhum flashcard válido encontrado no arquivo" }
+    }
+    
+    console.log(`📥 [Server Action] ${flashcards.length} flashcards encontrados no arquivo`)
+    
+    // Buscar IDs de assuntos e tópicos
+    const subjectTopicMap = new Map()
+    const results = []
+    
+    for (const flashcard of flashcards) {
+      try {
+        // Buscar ou criar assunto
+        let { data: subject } = await supabase
+          .from("subjects")
+          .select("id")
+          .eq("name", flashcard.subject)
+          .single()
+        
+        if (!subject) {
+          const { data: newSubject, error: subjectError } = await supabase
+            .from("subjects")
+            .insert({
+              name: flashcard.subject,
+              description: `Assunto criado via importação - ${new Date().toLocaleString('pt-BR')}`,
+              created_by_user_id: userId
+            })
+            .select("id")
+            .single()
+          
+          if (subjectError) {
+            console.error("❌ [Server Action] Erro ao criar assunto:", subjectError)
+            results.push({ 
+              flashcard, 
+              status: 'error', 
+              error: `Erro ao criar assunto: ${subjectError.message}` 
+            })
+            continue
+          }
+          subject = newSubject
+        }
+        
+        // Buscar ou criar tópico
+        const topicKey = `${subject.id}_${flashcard.topic}`
+        let topicId = subjectTopicMap.get(topicKey)
+        
+        if (!topicId) {
+          let { data: topic } = await supabase
+            .from("topics")
+            .select("id")
+            .eq("name", flashcard.topic)
+            .eq("subject_id", subject.id)
+            .single()
+          
+          if (!topic) {
+            const { data: newTopic, error: topicError } = await supabase
+              .from("topics")
+              .insert({
+                name: flashcard.topic,
+                description: `Tópico criado via importação - ${new Date().toLocaleString('pt-BR')}`,
+                subject_id: subject.id,
+                created_by_user_id: userId
+              })
+              .select("id")
+              .single()
+            
+            if (topicError) {
+              console.error("❌ [Server Action] Erro ao criar tópico:", topicError)
+              results.push({ 
+                flashcard, 
+                status: 'error', 
+                error: `Erro ao criar tópico: ${topicError.message}` 
+              })
+              continue
+            }
+            topic = newTopic
+          }
+          
+          topicId = topic.id
+          subjectTopicMap.set(topicKey, topicId)
+        }
+        
+        // Atualizar flashcard existente ou criar novo
+        const { data: existingFlashcard } = await supabase
+          .from("flashcards")
+          .select("id")
+          .eq("id", flashcard.id)
+          .single()
+        
+        if (existingFlashcard) {
+          // Atualizar flashcard existente
+          const { error: updateError } = await supabase
+            .from("flashcards")
+            .update({
+              question: flashcard.question,
+              answer: flashcard.answer,
+              difficulty: flashcard.difficulty,
+              topic_id: topicId
+            })
+            .eq("id", flashcard.id)
+          
+          if (updateError) {
+            console.error("❌ [Server Action] Erro ao atualizar flashcard:", updateError)
+            results.push({ 
+              flashcard, 
+              status: 'error', 
+              error: `Erro ao atualizar: ${updateError.message}` 
+            })
+          } else {
+            results.push({ 
+              flashcard, 
+              status: 'updated', 
+              message: 'Flashcard atualizado com sucesso' 
+            })
+          }
+        } else {
+          // Criar novo flashcard
+          const { error: insertError } = await supabase
+            .from("flashcards")
+            .insert({
+              id: flashcard.id,
+              question: flashcard.question,
+              answer: flashcard.answer,
+              difficulty: flashcard.difficulty,
+              topic_id: topicId,
+              created_by_user_id: userId
+            })
+          
+          if (insertError) {
+            console.error("❌ [Server Action] Erro ao criar flashcard:", insertError)
+            results.push({ 
+              flashcard, 
+              status: 'error', 
+              error: `Erro ao criar: ${insertError.message}` 
+            })
+          } else {
+            results.push({ 
+              flashcard, 
+              status: 'created', 
+              message: 'Flashcard criado com sucesso' 
+            })
+          }
+        }
+        
+      } catch (error) {
+        console.error("❌ [Server Action] Erro ao processar flashcard:", error)
+        results.push({ 
+          flashcard, 
+          status: 'error', 
+          error: `Erro no processamento: ${error.message}` 
+        })
+      }
+    }
+    
+    const successCount = results.filter(r => r.status === 'updated' || r.status === 'created').length
+    const errorCount = results.filter(r => r.status === 'error').length
+    
+    console.log(`✅ [Server Action] Importação concluída: ${successCount} sucessos, ${errorCount} erros`)
+    
+    return { 
+      success: true, 
+      results, 
+      summary: {
+        total: flashcards.length,
+        success: successCount,
+        errors: errorCount
+      }
+    }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em importFlashcardsFromTxt:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// ==================== SISTEMA DE PONTUAÇÃO AUTOMÁTICA ====================
+
+// Função para registrar pontuação quando usuário completa flashcard
+export async function recordFlashcardCompletion(userId: string, flashcardId: string, isCorrect: boolean, quality: number = 3) {
+  console.log("🎯 [Server Action] recordFlashcardCompletion() - Usuário:", userId, "Flashcard:", flashcardId, "Correto:", isCorrect)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Calcula pontuação baseada na qualidade da resposta
+    let scoreValue = 0
+    if (isCorrect) {
+      switch (quality) {
+        case 5: scoreValue = 25 // Excelente
+        case 4: scoreValue = 20 // Bom
+        case 3: scoreValue = 15 // Médio
+        case 2: scoreValue = 10 // Ruim
+        case 1: scoreValue = 5  // Muito ruim
+        default: scoreValue = 15
+      }
+    } else {
+      scoreValue = 2 // Pontos por tentativa
+    }
+
+    // Registra pontuação
+    const { error: scoreError } = await supabase
+      .from("scores")
+      .insert({
+        user_id: userId,
+        activity_type: 'flashcard',
+        score_value: scoreValue,
+        activity_id: flashcardId,
+        recorded_at: new Date().toISOString()
+      })
+
+    if (scoreError) {
+      console.error("❌ [Server Action] Erro ao registrar pontuação:", scoreError)
+      return { success: false }
+    }
+
+    // Registra progresso do flashcard
+    const { error: progressError } = await supabase
+      .from("flashcard_progress")
+      .upsert({
+        user_id: userId,
+        flashcard_id: flashcardId,
+        last_reviewed_at: new Date().toISOString(),
+        quality: quality,
+        repetitions: 1,
+        ease_factor: 2.5,
+        interval_days: 1
+      })
+
+    if (progressError) {
+      console.error("❌ [Server Action] Erro ao registrar progresso:", progressError)
+    }
+
+    console.log("✅ [Server Action] Flashcard completado e pontuação registrada:", scoreValue)
+    return { success: true, score: scoreValue }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em recordFlashcardCompletion:", error)
+    return { success: false }
+  }
+}
+
+// Função para registrar pontuação quando usuário completa quiz
+export async function recordQuizCompletion(userId: string, quizId: string, score: number, totalQuestions: number, durationSeconds: number) {
+  console.log("🎯 [Server Action] recordQuizCompletion() - Usuário:", userId, "Quiz:", quizId, "Pontuação:", score, "/", totalQuestions)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Calcula pontuação baseada na performance
+    const accuracy = (score / totalQuestions) * 100
+    let scoreValue = 0
+    
+    if (accuracy >= 90) scoreValue = 100      // Excelente
+    else if (accuracy >= 80) scoreValue = 80  // Muito bom
+    else if (accuracy >= 70) scoreValue = 60  // Bom
+    else if (accuracy >= 60) scoreValue = 40  // Médio
+    else if (accuracy >= 50) scoreValue = 20  // Ruim
+    else scoreValue = 10                      // Muito ruim
+
+    // Bonus por velocidade (se completou em tempo razoável)
+    if (durationSeconds < 300) { // Menos de 5 minutos
+      scoreValue += 20
+    } else if (durationSeconds < 600) { // Menos de 10 minutos
+      scoreValue += 10
+    }
+
+    // Registra pontuação
+    const { error: scoreError } = await supabase
+      .from("scores")
+      .insert({
+        user_id: userId,
+        activity_type: 'quiz',
+        score_value: scoreValue,
+        activity_id: quizId,
+        recorded_at: new Date().toISOString()
+      })
+
+    if (scoreError) {
+      console.error("❌ [Server Action] Erro ao registrar pontuação:", scoreError)
+      return { success: false }
+    }
+
+    // Registra tentativa do quiz
+    const { error: attemptError } = await supabase
+      .from("quiz_attempts")
+      .insert({
+        user_id: userId,
+        quiz_id: quizId,
+        score: score,
+        total_questions: totalQuestions,
+        duration_seconds: durationSeconds,
+        attempt_date: new Date().toISOString()
+      })
+
+    if (attemptError) {
+      console.error("❌ [Server Action] Erro ao registrar tentativa:", attemptError)
+    }
+
+    console.log("✅ [Server Action] Quiz completado e pontuação registrada:", scoreValue)
+    return { success: true, score: scoreValue, accuracy: Math.round(accuracy) }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em recordQuizCompletion:", error)
+    return { success: false }
+  }
+}
+
+// Função para registrar pontuação quando usuário completa aula/lição
+export async function recordLessonCompletion(userId: string, lessonId: string, durationMinutes: number) {
+  console.log("🎯 [Server Action] recordLessonCompletion() - Usuário:", userId, "Aula:", lessonId, "Duração:", durationMinutes, "min")
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Calcula pontuação baseada na duração da aula
+    let scoreValue = 50 // Pontuação base
+    
+    if (durationMinutes >= 30) scoreValue += 50      // Aula longa
+    else if (durationMinutes >= 15) scoreValue += 25  // Aula média
+    else scoreValue += 10                            // Aula curta
+
+    // Registra pontuação
+    const { error: scoreError } = await supabase
+      .from("scores")
+      .insert({
+        user_id: userId,
+        activity_type: 'lesson',
+        score_value: scoreValue,
+        activity_id: lessonId,
+        recorded_at: new Date().toISOString()
+      })
+
+    if (scoreError) {
+      console.error("❌ [Server Action] Erro ao registrar pontuação:", scoreError)
+      return { success: false }
+    }
+
+    console.log("✅ [Server Action] Aula completada e pontuação registrada:", scoreValue)
+    return { success: true, score: scoreValue }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em recordLessonCompletion:", error)
+    return { success: false }
+  }
+}
+
+// Função para obter estatísticas detalhadas do usuário
+export async function getUserDetailedStats(userId: string) {
+  console.log("📊 [Server Action] getUserDetailedStats() para usuário:", userId)
+  
+  const supabase = await getSupabase()
+  
+  try {
+    // Busca todas as pontuações do usuário
+    const { data: scores } = await supabase
+      .from("scores")
+      .select("activity_type, score_value, recorded_at")
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
+
+    // Busca progresso em flashcards
+    const { data: flashcardProgress } = await supabase
+      .from("flashcard_progress")
+      .select("id, quality, repetitions")
+      .eq("user_id", userId)
+
+    // Busca tentativas de quiz
+    const { data: quizAttempts } = await supabase
+      .from("quiz_attempts")
+      .select("score, total_questions, duration_seconds, attempt_date")
+      .eq("user_id", userId)
+
+    // Calcula estatísticas
+    const totalScore = scores?.reduce((sum, score) => sum + score.score_value, 0) || 0
+    const totalXP = totalScore
+    const level = Math.floor(totalXP / 100) + 1
+    
+    // Estatísticas por tipo de atividade
+    const flashcardScores = scores?.filter(s => s.activity_type === 'flashcard') || []
+    const quizScores = scores?.filter(s => s.activity_type === 'quiz') || []
+    const lessonScores = scores?.filter(s => s.activity_type === 'lesson') || []
+    
+    // Estatísticas de flashcards
+    const flashcardsStudied = flashcardProgress?.length || 0
+    const averageFlashcardQuality = flashcardProgress?.length > 0 
+      ? flashcardProgress.reduce((sum, fp) => sum + (fp.quality || 0), 0) / flashcardProgress.length 
+      : 0
+    
+    // Estatísticas de quizzes
+    const quizzesCompleted = quizAttempts?.length || 0
+    const averageQuizScore = quizAttempts?.length > 0
+      ? quizAttempts.reduce((sum, qa) => sum + qa.score, 0) / quizAttempts.length
+      : 0
+    const averageQuizAccuracy = quizAttempts?.length > 0
+      ? quizAttempts.reduce((sum, qa) => sum + (qa.score / qa.total_questions * 100), 0) / quizAttempts.length
+      : 0
+    
+    // Estatísticas de aulas
+    const lessonsCompleted = lessonScores?.length || 0
+    
+    // Streak (dias consecutivos estudando)
+    const studyDates = scores?.map(s => new Date(s.recorded_at).toDateString()) || []
+    const uniqueDates = [...new Set(studyDates)]
+    const currentStreak = calculateStreak(uniqueDates.map(date => {
+      const studyDate = new Date(date)
+      const today = new Date()
+      const diffTime = today.getTime() - studyDate.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays <= 1 // Estudou hoje ou ontem
+    }))
+
+    const stats = {
+      totalScore,
+      totalXP,
+      level,
+      flashcardsStudied,
+      averageFlashcardQuality: Math.round(averageFlashcardQuality * 10) / 10,
+      quizzesCompleted,
+      averageQuizScore: Math.round(averageQuizScore * 10) / 10,
+      averageQuizAccuracy: Math.round(averageQuizAccuracy * 10) / 10,
+      lessonsCompleted,
+      currentStreak,
+      totalActivities: scores?.length || 0,
+      lastActivity: scores?.[0]?.recorded_at || null
+    }
+
+    console.log("📊 [Server Action] Estatísticas detalhadas:", stats)
+    
+    return { success: true, stats }
+  } catch (error) {
+    console.error("❌ [Server Action] Erro em getUserDetailedStats:", error)
+    return { success: false, stats: null }
   }
 }
 

@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PagePermissionGuard } from "@/components/page-permission-guard";
 
 import { useAuth } from "@/context/auth-context-custom";
+import { useRouter } from "next/navigation";
 import { 
   getActiveEssayPrompts, 
   getStudentEssays, 
@@ -50,6 +52,7 @@ interface Essay {
 
 export default function RedacaoPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [prompts, setPrompts] = useState<EssayPrompt[]>([]);
   const [studentEssays, setStudentEssays] = useState<Essay[]>([]);
   const [pendingEssays, setPendingEssays] = useState<Essay[]>([]);
@@ -119,6 +122,19 @@ export default function RedacaoPage() {
     }
   };
 
+  // Funções de navegação
+  const handleWriteEssay = (promptId: string) => {
+    router.push(`/redacao/escrever/${promptId}`);
+  };
+
+  const handleViewEssayDetails = (essayId: string) => {
+    router.push(`/redacao/detalhes/${essayId}`);
+  };
+
+  const handleCorrectEssay = (essayId: string) => {
+    router.push(`/redacao/corrigir/${essayId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 md:p-8">
@@ -130,7 +146,8 @@ export default function RedacaoPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PagePermissionGuard pageName="redacao">
+      <div className="p-4 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Cabeçalho da Página */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -323,6 +340,13 @@ export default function RedacaoPage() {
                         <Button 
                           className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                           disabled={!isPromptActiveInPeriod(prompt)}
+                          onClick={() => {
+                            if (user?.role === 'student') {
+                              handleWriteEssay(prompt.id);
+                            } else {
+                              handleViewEssayDetails(prompt.id);
+                            }
+                          }}
                         >
                           {user?.role === 'student' ? 'Escrever Redação' : 'Ver Detalhes'}
                         </Button>
@@ -407,7 +431,10 @@ export default function RedacaoPage() {
                           )}
                           
                           <div className="flex justify-end">
-                            <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                            <Button 
+                              className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                              onClick={() => handleViewEssayDetails(essay.id)}
+                            >
                               Ver Detalhes
                             </Button>
                           </div>
@@ -476,7 +503,10 @@ export default function RedacaoPage() {
                         </div>
                         
                         <div className="flex justify-end">
-                          <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                          <Button 
+                            className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                            onClick={() => handleCorrectEssay(essay.id)}
+                          >
                             Corrigir Redação
                           </Button>
                         </div>
@@ -489,6 +519,7 @@ export default function RedacaoPage() {
           </TabsContent>
         )}
       </Tabs>
-    </div>
+      </div>
+    </PagePermissionGuard>
   );
 }

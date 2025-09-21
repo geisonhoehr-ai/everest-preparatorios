@@ -47,7 +47,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Páginas permitidas para alunos
-    const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
+    const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'redacao', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
     if (userRole === 'student' && studentAllowedPages.includes(pageName)) {
       console.log('✅ Aluno tem acesso à página:', pageName)
       setHasAccess(true)

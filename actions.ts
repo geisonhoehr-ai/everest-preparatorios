@@ -1228,34 +1228,78 @@ export async function getTopicsBySubject(subjectId: number) {
 // Função para obter dados completos das matérias com estatísticas
 export async function getSubjectsWithStats(userId?: string) {
   console.log("🔍 [Server Action] getSubjectsWithStats() iniciada")
+  console.log("🔍 [Server Action] User ID recebido:", userId)
   const supabase = await getSupabase()
+  console.log("🔍 [Server Action] Supabase client criado")
   
   try {
     // Buscar todas as matérias
+    console.log("🔍 [Server Action] Executando consulta SQL...")
     const { data: subjects, error: subjectsError } = await supabase
       .from("subjects")
       .select("id, name")
       .order("name")
     
+    console.log("🔍 [Server Action] Consulta SQL executada")
+    console.log("🔍 [Server Action] Subjects encontrados:", subjects)
+    console.log("🔍 [Server Action] Erro da consulta:", subjectsError)
+    
     if (subjectsError) {
       console.error("❌ [Server Action] Erro ao buscar matérias:", subjectsError)
       return []
     }
+    
+    if (!subjects || subjects.length === 0) {
+      console.error("❌ [Server Action] Nenhuma matéria encontrada no banco de dados")
+      return []
+    }
+    
+    console.log("📋 Subjects encontrados no banco:", subjects)
+    console.log("🔍 Verificando se Português está na lista:", subjects.find(s => s.name === "Português"))
+    console.log("🔍 Verificando se Regulamentos está na lista:", subjects.find(s => s.name === "Regulamentos"))
+    console.log("🔍 Todos os nomes de subjects:", subjects.map(s => s.name))
+    console.log("🔍 Buscando por nomes que contenham 'Português':", subjects.filter(s => s.name.toLowerCase().includes('português')))
 
-    const subjectsWithStats = await Promise.all(
-      subjects.map(async (subject) => {
-        // Buscar tópicos da matéria
-        const { data: topics, error: topicsError } = await supabase
-          .from("topics")
-          .select("id, name")
-          .eq("subject_id", subject.id)
-          .order("name")
+    console.log("🚀 Iniciando processamento de", subjects.length, "matérias...")
+    
+    // Verificar se Português está na lista antes do processamento
+    const portuguesSubject = subjects.find(s => s.name === "Português")
+    if (portuguesSubject) {
+      console.log("✅ PORTUGUÊS ENCONTRADO NA LISTA ANTES DO PROCESSAMENTO:", portuguesSubject)
+    } else {
+      console.error("❌ PORTUGUÊS NÃO ENCONTRADO NA LISTA ANTES DO PROCESSAMENTO!")
+    }
+    
+    const subjectsWithStatsResults = await Promise.allSettled(
+      subjects.map(async (subject, index) => {
+        try {
+          console.log(`🔍 [${index + 1}/${subjects.length}] Processando matéria: ${subject.name} (ID: ${subject.id})`)
+          if (subject.name === "Português") {
+            console.log("🇵🇹 PROCESSANDO PORTUGUÊS - Debug especial ativado")
+            console.log("🇵🇹 ID do Português:", subject.id)
+            console.log("🇵🇹 Nome do Português:", subject.name)
+          }
+          
+          // Buscar tópicos da matéria
+          const { data: topics, error: topicsError } = await supabase
+            .from("topics")
+            .select("id, name")
+            .eq("subject_id", subject.id)
+            .order("name")
 
-        if (topicsError) {
-          console.error(`❌ [Server Action] Erro ao buscar tópicos para ${subject.name}:`, topicsError)
-        }
+          if (topicsError) {
+            console.error(`❌ [Server Action] Erro ao buscar tópicos para ${subject.name}:`, topicsError)
+            if (subject.name === "Português") {
+              console.log("🇵🇹 ERRO AO BUSCAR TÓPICOS DE PORTUGUÊS:", topicsError)
+            }
+          }
 
-        const topicsData = topics || []
+          const topicsData = topics || []
+          console.log(`📚 Tópicos encontrados para ${subject.name}:`, topicsData.length, topicsData)
+          if (subject.name === "Português") {
+            console.log("🇵🇹 TÓPICOS DE PORTUGUÊS:", topicsData)
+            console.log("🇵🇹 Quantidade de tópicos de Português:", topicsData.length)
+          }
         
         // Buscar flashcards por tópico
         let totalFlashcards = 0
@@ -1263,28 +1307,42 @@ export async function getSubjectsWithStats(userId?: string) {
         const includedItems = []
 
         for (const topic of topicsData) {
+          console.log(`🔍 Processando tópico: ${topic.name} (ID: ${topic.id})`)
+          
           const { data: flashcards, error: flashcardsError } = await supabase
             .from("flashcards")
             .select("id")
             .eq("topic_id", topic.id)
 
+          if (flashcardsError) {
+            console.error(`❌ Erro ao buscar flashcards para tópico ${topic.name}:`, flashcardsError)
+          }
+
           if (!flashcardsError && flashcards) {
             const topicFlashcardCount = flashcards.length
+            console.log(`📄 Flashcards encontrados para ${topic.name}:`, topicFlashcardCount)
             totalFlashcards += topicFlashcardCount
 
             // Calcular progresso se userId for fornecido
             let topicProgress = 0
             if (userId) {
-              const { data: progress } = await supabase
+              const { data: progress, error: progressError } = await supabase
                 .from("user_topic_progress")
                 .select("correct_answers, total_attempts")
                 .eq("user_id", userId)
                 .eq("topic_id", topic.id)
                 .single()
 
+              if (progressError && progressError.code !== 'PGRST116') {
+                console.error(`❌ Erro ao buscar progresso para tópico ${topic.name}:`, progressError)
+              }
+
               if (progress && progress.total_attempts > 0) {
                 topicProgress = Math.round((progress.correct_answers / progress.total_attempts) * 100)
                 completedFlashcards += progress.correct_answers
+                console.log(`📊 Progresso para ${topic.name}: ${topicProgress}%`)
+              } else {
+                console.log(`📊 Sem progresso para ${topic.name}`)
               }
             }
 
@@ -1292,6 +1350,21 @@ export async function getSubjectsWithStats(userId?: string) {
               title: topic.name,
               progress: topicProgress
             })
+          } else {
+            // Tópico sem flashcards - adicionar mesmo assim
+            console.log(`⚠️ Tópico ${topic.name} sem flashcards`)
+            includedItems.push({
+              title: topic.name,
+              progress: 0
+            })
+          }
+        }
+
+        // Se não há tópicos, criar dados básicos
+        if (topicsData.length === 0) {
+          console.log(`⚠️ Matéria ${subject.name} sem tópicos`)
+          if (subject.name === "Português") {
+            console.log("🇵🇹 PORTUGUÊS SEM TÓPICOS - Isso pode ser o problema!")
           }
         }
 
@@ -1302,7 +1375,7 @@ export async function getSubjectsWithStats(userId?: string) {
 
         const completedCount = includedItems.filter(item => item.progress === 100).length
 
-        return {
+        const result = {
           id: subject.id,
           title: subject.name,
           subtitle: `${topicsData.length} tópicos • ${totalFlashcards} flashcards`,
@@ -1313,10 +1386,90 @@ export async function getSubjectsWithStats(userId?: string) {
           includedItems: includedItems.slice(0, 3), // Mostrar apenas os primeiros 3
           overallProgress: averageProgress
         }
+        
+        if (subject.name === "Português") {
+          console.log("🇵🇹 RESULTADO DE PORTUGUÊS ANTES DO RETURN:", result)
+        }
+        
+          console.log(`✅ Resultado para ${subject.name}:`, result)
+          if (subject.name === "Português") {
+            console.log("🇵🇹 RESULTADO FINAL DE PORTUGUÊS:", result)
+          }
+          return result
+        } catch (error) {
+          console.error(`❌ Erro ao processar matéria ${subject.name}:`, error)
+          if (subject.name === "Português") {
+            console.log("🇵🇹 ERRO CRÍTICO AO PROCESSAR PORTUGUÊS:", error)
+          }
+          // Retornar dados básicos em caso de erro
+          return {
+            id: subject.id,
+            title: subject.name,
+            subtitle: "0 tópicos • 0 flashcards",
+            completedCount: 0,
+            totalCount: 0,
+            averageProgress: 0,
+            lessonsCompleted: 0,
+            includedItems: [],
+            overallProgress: 0
+          }
+        }
       })
     )
 
+    // Processar resultados do Promise.allSettled
+    console.log("🔍 Processando resultados do Promise.allSettled...")
+    console.log("🔍 Quantidade de resultados:", subjectsWithStatsResults.length)
+    
+    const subjectsWithStats = subjectsWithStatsResults
+      .map((result, index) => {
+        console.log(`🔍 Processando resultado ${index + 1}:`, result.status, subjects[index].name)
+        
+        if (result.status === 'fulfilled') {
+          console.log(`✅ ${subjects[index].name} processado com sucesso`)
+          if (subjects[index].name === "Português") {
+            console.log("🇵🇹 PORTUGUÊS PROCESSADO COM SUCESSO:", result.value)
+          }
+          return result.value
+        } else {
+          console.error(`❌ Erro ao processar matéria ${subjects[index].name}:`, result.reason)
+          if (subjects[index].name === "Português") {
+            console.log("🇵🇹 ERRO AO PROCESSAR PORTUGUÊS:", result.reason)
+          }
+          // Retornar dados básicos em caso de erro
+          return {
+            id: subjects[index].id,
+            title: subjects[index].name,
+            subtitle: "0 tópicos • 0 flashcards",
+            completedCount: 0,
+            totalCount: 0,
+            averageProgress: 0,
+            lessonsCompleted: 0,
+            includedItems: [],
+            overallProgress: 0
+          }
+        }
+      })
+      .filter(Boolean) // Remover valores undefined
+
     console.log("✅ [Server Action] Matérias com estatísticas carregadas:", subjectsWithStats.length)
+    console.log("✅ [Server Action] Matérias processadas:", subjectsWithStats.map(s => s.title))
+    console.log("🔍 Verificando se Português está no resultado final:", subjectsWithStats.find(s => s.title === "Português"))
+    console.log("🔍 Verificando se Regulamentos está no resultado final:", subjectsWithStats.find(s => s.title === "Regulamentos"))
+    
+    // Verificação final
+    if (subjectsWithStats.length === 0) {
+      console.error("❌ [Server Action] NENHUMA MATÉRIA FOI PROCESSADA COM SUCESSO!")
+    }
+    
+    if (!subjectsWithStats.find(s => s.title === "Português")) {
+      console.error("❌ [Server Action] PORTUGUÊS NÃO ESTÁ NO RESULTADO FINAL!")
+    }
+    
+    if (!subjectsWithStats.find(s => s.title === "Regulamentos")) {
+      console.error("❌ [Server Action] REGULAMENTOS NÃO ESTÁ NO RESULTADO FINAL!")
+    }
+    
     return subjectsWithStats
 
   } catch (error) {

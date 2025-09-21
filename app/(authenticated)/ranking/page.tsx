@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, Medal, Crown, Star, TrendingUp, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { useAuth } from "@/context/auth-context-custom"
-import { getGlobalRanking, getUserProgress } from "@/actions"
+import { getGlobalRanking, getUserProgress, addSampleScores, getUserDetailedStats } from "../../server-actions"
 
 interface RankingUser {
   user_id: string
@@ -27,12 +28,29 @@ interface UserStats {
   total_answers: number
 }
 
+interface DetailedStats {
+  totalScore: number
+  totalXP: number
+  level: number
+  flashcardsStudied: number
+  averageFlashcardQuality: number
+  quizzesCompleted: number
+  averageQuizScore: number
+  averageQuizAccuracy: number
+  lessonsCompleted: number
+  currentStreak: number
+  totalActivities: number
+  lastActivity: string | null
+}
+
 export default function RankingPage() {
   const { user } = useAuth()
   const [rankings, setRankings] = useState<RankingUser[]>([])
   const [userStats, setUserStats] = useState<UserStats | null>(null)
+  const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isAddingScores, setIsAddingScores] = useState(false)
 
   useEffect(() => {
     loadRankingData()
@@ -57,12 +75,33 @@ export default function RankingPage() {
         if (progressResult.success && progressResult.stats) {
           setUserStats(progressResult.stats)
         }
+
+        // Carregar estatísticas detalhadas
+        const detailedResult = await getUserDetailedStats(user.id)
+        if (detailedResult.success && detailedResult.stats) {
+          setDetailedStats(detailedResult.stats)
+        }
       }
     } catch (err) {
       console.error("Erro ao carregar dados do ranking:", err)
       setError("Erro ao carregar dados")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleAddSampleScores = async () => {
+    try {
+      setIsAddingScores(true)
+      const result = await addSampleScores()
+      if (result.success) {
+        // Recarregar dados após adicionar pontuações
+        await loadRankingData()
+      }
+    } catch (err) {
+      console.error("Erro ao adicionar pontuações de exemplo:", err)
+    } finally {
+      setIsAddingScores(false)
     }
   }
 
@@ -157,6 +196,9 @@ export default function RankingPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <BackButton pageName="Ranking" />
+      </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
@@ -171,10 +213,25 @@ export default function RankingPage() {
             </p>
           </div>
         </div>
-        <Button onClick={loadRankingData} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleAddSampleScores} 
+            variant="outline" 
+            size="sm"
+            disabled={isAddingScores}
+          >
+            {isAddingScores ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trophy className="h-4 w-4 mr-2" />
+            )}
+            {isAddingScores ? "Adicionando..." : "Dados de Exemplo"}
+          </Button>
+          <Button onClick={loadRankingData} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -295,12 +352,113 @@ export default function RankingPage() {
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold text-green-600 mb-2">
-              {userStats?.total_xp || 0}
+              {detailedStats?.totalScore || userStats?.total_xp || 0}
             </div>
             <div className="text-gray-600 dark:text-gray-400">Sua Pontuação</div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Estatísticas Detalhadas */}
+      {detailedStats && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Suas Estatísticas
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Acompanhe seu progresso detalhado
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600 mb-1">
+                  {detailedStats.level}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Nível Atual</div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {detailedStats.totalXP} XP
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-orange-600 mb-1">
+                  {detailedStats.flashcardsStudied}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Flashcards</div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  Qualidade: {detailedStats.averageFlashcardQuality}/5
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {detailedStats.quizzesCompleted}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Quizzes</div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  Média: {detailedStats.averageQuizAccuracy}%
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-yellow-600 mb-1">
+                  {detailedStats.currentStreak}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Sequência</div>
+                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  dias consecutivos
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-lg font-bold text-indigo-600 mb-1">
+                  {detailedStats.totalActivities}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total de Atividades</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-lg font-bold text-pink-600 mb-1">
+                  {detailedStats.lessonsCompleted}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Aulas Completadas</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-lg font-bold text-teal-600 mb-1">
+                  {detailedStats.lastActivity ? 
+                    new Date(detailedStats.lastActivity).toLocaleDateString('pt-BR') : 
+                    'Nunca'
+                  }
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Última Atividade</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

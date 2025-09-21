@@ -30,11 +30,11 @@ const statusConfig = {
   },
   'not-started': {
     label: 'Não Iniciado',
-    className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+    className: 'bg-muted text-muted-foreground'
   },
   'coming-soon': {
     label: 'Em Breve',
-    className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+    className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400'
   }
 }
 
@@ -56,19 +56,21 @@ export const TopicCard = ({
 
   return (
     <div 
-      className={`bg-white dark:bg-gray-900 rounded-3xl p-6 border border-neutral-200 dark:border-gray-700 transition-all duration-300 min-h-[300px] flex flex-col relative hover:shadow-xl cursor-pointer hover:scale-[1.02] hover:-translate-y-1 hover:border-orange-300 dark:hover:border-orange-600 ${className}`}
+      className={`bg-card border-border rounded-[2rem] p-6 border transition-all duration-300 h-[400px] flex flex-col cursor-pointer hover:scale-105 hover:shadow-xl ${className}`}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full space-y-5">
+      <div className="flex flex-col h-full space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-2">
             <span 
               className="text-xs px-3 py-1.5 rounded-full font-semibold text-white shadow-sm"
-              style={{ backgroundColor: categoryColor === 'bg-blue-500' ? 'rgb(59, 130, 246)' : 
+              style={{ 
+                backgroundColor: categoryColor === 'bg-blue-500' ? 'rgb(139, 92, 246)' : 
                                               categoryColor === 'bg-green-500' ? 'rgb(34, 197, 94)' : 
                                               categoryColor === 'bg-orange-500' ? 'rgb(249, 115, 22)' : 
-                                              categoryColor === 'bg-purple-500' ? 'rgb(139, 92, 246)' : 'rgb(59, 130, 246)' }}
+                                              categoryColor === 'bg-purple-500' ? 'rgb(139, 92, 246)' : 'rgb(139, 92, 246)'
+              }}
             >
               {category}
             </span>
@@ -79,12 +81,12 @@ export const TopicCard = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 space-y-4 min-h-0">
           <div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2 leading-tight">
+            <h3 className="font-bold text-foreground text-xl mb-2 leading-tight line-clamp-2">
               {title}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {description}
             </p>
           </div>
@@ -92,61 +94,63 @@ export const TopicCard = ({
           {/* Details */}
           <div className="space-y-2">
             {author && (
-              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <User className="h-3 w-3" />
                 <span className="font-medium">{author}</span>
               </div>
             )}
             {duration && (
-              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span className="font-medium">{duration}</span>
               </div>
             )}
-            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
               <BookOpen className="h-3 w-3" />
-              <span className="font-medium">{totalLessons} aulas</span>
-            </div>
-          </div>
-
-          {/* Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-300 font-semibold">
-                {completedLessons}/{totalLessons} aulas
-              </span>
-              <span className="text-gray-900 dark:text-white font-bold text-lg">{progress}%</span>
-            </div>
-            <div className="h-3 bg-gray-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full transition-all duration-500 ease-out"
-                style={{ 
-                  width: `${progress}%`,
-                  background: progress === 100 
-                    ? 'linear-gradient(90deg, #22c55e, #16a34a)' 
-                    : progress > 50 
-                    ? 'linear-gradient(90deg, #f97316, #ea580c)' 
-                    : progress > 0 
-                    ? 'linear-gradient(90deg, #eab308, #ca8a04)' 
-                    : 'linear-gradient(90deg, #3b82f6, #2563eb)'
-                }}
-              />
+              <span className="font-medium">{totalLessons} flashcards</span>
             </div>
           </div>
         </div>
 
-        {/* Action Button */}
-        {status !== 'coming-soon' && (
-          <Button 
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick?.()
-            }}
-          >
-            {status === 'completed' ? 'Continuar curso' : 'Iniciar curso'}
-          </Button>
-        )}
+        {/* Progress Section - Fixed at bottom */}
+        <div className="space-y-3 mt-auto">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground font-semibold">
+                {completedLessons}/{totalLessons} flashcards
+              </span>
+              <span className="text-foreground font-bold text-lg">{progress}%</span>
+            </div>
+            <div className="h-1.5 bg-muted/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{ 
+                  width: `${progress}%`,
+                  backgroundColor: progress === 100 
+                    ? '#22c55e' 
+                    : progress > 50 
+                    ? '#f97316' 
+                    : progress > 0 
+                    ? '#eab308' 
+                    : '#f97316'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Action Button - Always at bottom */}
+          {status !== 'coming-soon' && (
+            <Button 
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-3 rounded-2xl shadow-lg transition-all duration-300"
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick?.()
+              }}
+            >
+              {status === 'completed' ? 'Continuar curso' : 'Iniciar curso'}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

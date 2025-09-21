@@ -12,7 +12,12 @@ const nextConfig = {
   // Otimizações de performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizeCss: true,
+    gzipSize: true,
   },
+
+  // Configurações de output
+  outputFileTracingRoot: process.cwd(),
 
   // Configurações para modern browsers
   compiler: {
@@ -21,6 +26,14 @@ const nextConfig = {
 
   // Configurações de bundle
   webpack: (config, { dev, isServer }) => {
+    // Otimizações para desenvolvimento
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
+
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -56,9 +69,24 @@ const nextConfig = {
             chunks: 'all',
             priority: 30,
           },
+          // CSS específico
+          styles: {
+            name: 'styles',
+            test: /\.(css|scss)$/,
+            chunks: 'all',
+            enforce: true,
+          },
         },
       };
     }
+
+    // Resolver warnings de preload
+    config.optimization = {
+      ...config.optimization,
+      moduleIds: 'deterministic',
+      chunkIds: 'deterministic',
+    };
+
     return config;
   },
 
@@ -107,7 +135,7 @@ const nextConfig = {
           },
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
