@@ -117,9 +117,7 @@ export default function FlashcardsPage() {
     }
   }, [user?.id])
 
-  const handleSubjectClick = async (subjectId: string) => {
-    setSelectedSubject(subjectId)
-    setCurrentView('topics')
+  const loadTopics = async (subjectId: string) => {
     setIsLoading(true)
     
     try {
@@ -141,12 +139,18 @@ export default function FlashcardsPage() {
       )
       
       setTopics(formattedTopics)
-        } catch (error) {
+    } catch (error) {
       console.error('Erro ao carregar tópicos:', error)
       setTopics([])
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSubjectClick = async (subjectId: string) => {
+    setSelectedSubject(subjectId)
+    setCurrentView('topics')
+    await loadTopics(subjectId)
   }
 
   const loadFlashcards = async (topicId: string) => {
