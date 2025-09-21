@@ -48,6 +48,15 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
 
     // Páginas permitidas para alunos
     const studentAllowedPages = ['dashboard', 'quiz', 'flashcards', 'redacao', 'evercast', 'ranking', 'calendario', 'suporte', 'configuracoes']
+    
+    // Páginas de admin (apenas para professores e administradores)
+    const adminPages = ['database-optimization', 'flashcards-setup', 'admin']
+    if (adminPages.includes(pageName) && (userRole === 'teacher' || userRole === 'administrator')) {
+      console.log('✅ Professor/Admin tem acesso à página de admin:', pageName)
+      setHasAccess(true)
+      setIsLoading(false)
+      return
+    }
     if (userRole === 'student' && studentAllowedPages.includes(pageName)) {
       console.log('✅ Aluno tem acesso à página:', pageName)
       setHasAccess(true)

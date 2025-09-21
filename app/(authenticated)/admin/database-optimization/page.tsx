@@ -129,7 +129,7 @@ export default function DatabaseOptimizationPage() {
   const totalSteps = steps.length
 
   return (
-    <PagePermissionGuard allowedRoles={['administrator']}>
+    <PagePermissionGuard pageName="database-optimization">
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

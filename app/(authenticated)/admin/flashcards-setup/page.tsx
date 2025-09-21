@@ -134,7 +134,7 @@ export default function FlashcardsSetupPage() {
   const totalSteps = steps.length
 
   return (
-    <PagePermissionGuard allowedRoles={['administrator', 'teacher']}>
+    <PagePermissionGuard pageName="flashcards-setup">
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
