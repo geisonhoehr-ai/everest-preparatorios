@@ -4369,7 +4369,7 @@ async function getStudentDashboardStats(userId?: string) {
     
     // Calcular estatísticas
     const totalFlashcardsStudied = flashcardProgress?.length || 0
-    const averageQuizScore = quizAttempts?.length > 0 
+    const averageQuizScore = quizAttempts && quizAttempts.length > 0 
       ? Math.round(quizAttempts.reduce((sum, attempt) => sum + (attempt.score / attempt.total_questions * 100), 0) / quizAttempts.length)
       : 0
     
@@ -6567,10 +6567,10 @@ export async function getUserDetailedStats(userId: string) {
     
     // Estatísticas de quizzes
     const quizzesCompleted = quizAttempts?.length || 0
-    const averageQuizScore = quizAttempts?.length > 0
+    const averageQuizScore = quizAttempts && quizAttempts.length > 0
       ? quizAttempts.reduce((sum, qa) => sum + qa.score, 0) / quizAttempts.length
       : 0
-    const averageQuizAccuracy = quizAttempts?.length > 0
+    const averageQuizAccuracy = quizAttempts && quizAttempts.length > 0
       ? quizAttempts.reduce((sum, qa) => sum + (qa.score / qa.total_questions * 100), 0) / quizAttempts.length
       : 0
     
