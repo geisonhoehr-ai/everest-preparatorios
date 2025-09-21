@@ -75,10 +75,8 @@ export default function SettingsPage() {
 
   const loadSubjects = async () => {
     try {
-      const result = await getAllSubjects()
-      if (result.success) {
-        setSubjects(result.subjects || [])
-      }
+      const subjects = await getAllSubjects()
+      setSubjects(subjects || [])
     } catch (error) {
       console.error('Erro ao carregar assuntos:', error)
     }
@@ -86,10 +84,8 @@ export default function SettingsPage() {
 
   const loadTopics = async (subjectId: string) => {
     try {
-      const result = await getTopicsBySubject(subjectId)
-      if (result.success) {
-        setTopics(result.topics || [])
-      }
+      const topics = await getTopicsBySubject(subjectId)
+      setTopics(topics || [])
     } catch (error) {
       console.error('Erro ao carregar tópicos:', error)
     }
