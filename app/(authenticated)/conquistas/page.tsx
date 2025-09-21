@@ -28,11 +28,18 @@ interface UserAchievement {
 }
 
 interface UserStats {
-  flashcardsStudied: number
-  accuracy: number
-  currentStreak: number
-  flashcardsReviewed: number
   totalScore: number
+  totalXP: number
+  level: number
+  flashcardsStudied: number
+  averageFlashcardQuality: number
+  quizzesCompleted: number
+  averageQuizScore: number
+  averageQuizAccuracy: number
+  lessonsCompleted: number
+  currentStreak: number
+  totalActivities: number
+  lastActivity: string | null
 }
 
 const categoryIcons = {
