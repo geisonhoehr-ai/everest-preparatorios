@@ -149,26 +149,30 @@ export default function FlashcardsPage() {
     }
   }
 
-  const handleTopicClick = async (topicId: string) => {
-    setSelectedTopic(topicId)
-    setStudyFlashcards([])
-    setSelectedQuantity(null)
-    setCurrentView('flashcards')
-        setIsLoading(true)
+  const loadFlashcards = async (topicId: string) => {
+    setIsLoading(true)
     
     try {
       // Carregar flashcards reais do banco
       const flashcardsData = await getFlashcardsByTopic(topicId)
       setFlashcards(flashcardsData)
-          setCurrentCardIndex(0)
-          setShowAnswer(false)
-        } catch (error) {
-          console.error('Erro ao carregar flashcards:', error)
+      setCurrentCardIndex(0)
+      setShowAnswer(false)
+    } catch (error) {
+      console.error('Erro ao carregar flashcards:', error)
       setFlashcards([])
-        } finally {
-          setIsLoading(false)
-        }
-      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleTopicClick = async (topicId: string) => {
+    setSelectedTopic(topicId)
+    setStudyFlashcards([])
+    setSelectedQuantity(null)
+    setCurrentView('flashcards')
+    await loadFlashcards(topicId)
+  }
 
   const handleBackToSubjects = () => {
     setSelectedSubject(null)
