@@ -115,13 +115,13 @@ export default function SettingsPage() {
       
       setExportResult(result)
       
-      if (result.success) {
+      if (result.success && result.content) {
         // Criar e baixar arquivo
         const blob = new Blob([result.content], { type: 'text/plain;charset=utf-8' })
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = result.filename
+        link.download = result.filename || 'flashcards.txt'
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
