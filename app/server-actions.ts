@@ -6566,7 +6566,7 @@ export async function getUserDetailedStats(userId: string) {
     
     // Estatísticas de flashcards
     const flashcardsStudied = flashcardProgress?.length || 0
-    const averageFlashcardQuality = flashcardProgress?.length > 0 
+    const averageFlashcardQuality = flashcardProgress && flashcardProgress.length > 0 
       ? flashcardProgress.reduce((sum, fp) => sum + (fp.quality || 0), 0) / flashcardProgress.length 
       : 0
     
