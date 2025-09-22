@@ -5885,19 +5885,19 @@ export async function checkAndGrantAchievements(userId: string) {
           shouldGrant = stats.flashcardsStudied >= achievement.condition_value
           break
         case 'accuracy':
-          shouldGrant = stats.accuracy >= achievement.condition_value
+          shouldGrant = stats.averageQuizAccuracy >= achievement.condition_value
           break
         case 'streak':
           shouldGrant = stats.currentStreak >= achievement.condition_value
           break
         case 'flashcards_reviewed':
-          shouldGrant = stats.flashcardsReviewed >= achievement.condition_value
+          shouldGrant = stats.totalActivities >= achievement.condition_value
           break
         case 'total_points':
           shouldGrant = stats.totalScore >= achievement.condition_value
           break
         case 'mastery':
-          shouldGrant = stats.flashcardsStudied >= achievement.condition_value && stats.accuracy >= 80
+          shouldGrant = stats.flashcardsStudied >= achievement.condition_value && stats.averageQuizAccuracy >= 80
           break
       }
 
