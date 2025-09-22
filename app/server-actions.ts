@@ -6335,7 +6335,7 @@ export async function importFlashcardsFromTxt(content: string, userId: string) {
         results.push({ 
           flashcard, 
           status: 'error', 
-          error: `Erro no processamento: ${error.message}` 
+          error: `Erro no processamento: ${error instanceof Error ? error.message : String(error)}` 
         })
       }
     }
