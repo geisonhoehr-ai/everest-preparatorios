@@ -6070,8 +6070,8 @@ export async function exportFlashcardsToTxt(subjectId?: string, topicId?: string
 
     // Agrupar por assunto e tópico
     const groupedFlashcards = flashcards.reduce((acc, flashcard) => {
-      const subjectName = flashcard.topics?.subjects?.name || 'Sem assunto'
-      const topicName = flashcard.topics?.name || 'Sem tópico'
+      const subjectName = (flashcard.topics as any)?.subjects?.name || 'Sem assunto'
+      const topicName = (flashcard.topics as any)?.name || 'Sem tópico'
       
       if (!acc[subjectName]) {
         acc[subjectName] = {}
