@@ -5865,6 +5865,11 @@ export async function checkAndGrantAchievements(userId: string) {
     }
 
     const stats = userStats.stats
+    if (!stats) {
+      console.error("❌ [Server Action] Estatísticas do usuário não encontradas")
+      return { success: false, error: "Estatísticas não encontradas" }
+    }
+
     const granted = []
 
     // Verificar cada conquista
