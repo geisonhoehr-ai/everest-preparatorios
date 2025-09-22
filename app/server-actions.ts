@@ -5392,7 +5392,7 @@ export async function analyzeDatabaseStats() {
         byDifficulty: flashcardStats.reduce((acc, card) => {
           acc[card.difficulty] = (acc[card.difficulty] || 0) + 1
           return acc
-        }, {})
+        }, {} as any)
       }
     }
     
