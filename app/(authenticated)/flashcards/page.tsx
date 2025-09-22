@@ -111,7 +111,7 @@ export default function FlashcardsPage() {
     }
     
     if (user?.id) {
-      loadSubjects()
+    loadSubjects()
     } else {
       console.log('⚠️ User ID não disponível ainda')
     }
@@ -139,7 +139,7 @@ export default function FlashcardsPage() {
       )
       
       setTopics(formattedTopics)
-    } catch (error) {
+        } catch (error) {
       console.error('Erro ao carregar tópicos:', error)
       setTopics([])
     } finally {
@@ -154,21 +154,21 @@ export default function FlashcardsPage() {
   }
 
   const loadFlashcards = async (topicId: string) => {
-    setIsLoading(true)
+        setIsLoading(true)
     
     try {
       // Carregar flashcards reais do banco
       const flashcardsData = await getFlashcardsByTopic(topicId)
       setFlashcards(flashcardsData)
-      setCurrentCardIndex(0)
-      setShowAnswer(false)
-    } catch (error) {
-      console.error('Erro ao carregar flashcards:', error)
+          setCurrentCardIndex(0)
+          setShowAnswer(false)
+        } catch (error) {
+          console.error('Erro ao carregar flashcards:', error)
       setFlashcards([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        } finally {
+          setIsLoading(false)
+        }
+      }
 
   const handleTopicClick = async (topicId: string) => {
     setSelectedTopic(topicId)
@@ -225,6 +225,15 @@ export default function FlashcardsPage() {
       const result = await recordFlashcardResponse(user.id, currentFlashcard.id, isCorrect, quality)
       if (result.success) {
         console.log(`✅ Resposta registrada: ${isCorrect ? 'Correto' : 'Incorreto'} (Qualidade: ${quality})`)
+        
+        // Aguardar um pouco para mostrar o feedback antes de avançar
+        setTimeout(() => {
+          // Avançar automaticamente para o próximo flashcard
+          if (currentCardIndex < getCurrentFlashcardsLength() - 1) {
+            setCurrentCardIndex(currentCardIndex + 1)
+            setShowAnswer(false) // Garantir que a próxima pergunta mostre a pergunta, não a resposta
+          }
+        }, 2000) // 2 segundos para mostrar o feedback
       }
     }
   }
@@ -502,8 +511,8 @@ export default function FlashcardsPage() {
               {subjects.length > 0 ? (
                 subjects.map((subject) => (
                   <CourseCard
-                    key={subject.id}
-                    title={subject.title}
+                  key={subject.id}
+                  title={subject.title}
                     description={subject.subtitle}
                     category={subject.title}
                     status={subject.overallProgress === 100 ? 'completed' : subject.overallProgress > 0 ? 'in-progress' : 'not-started'}
@@ -512,8 +521,8 @@ export default function FlashcardsPage() {
                     completedLessons={subject.lessonsCompleted}
                     author="Prof. Tiago Costa"
                     totalFlashcards={subject.totalFlashcards || 0}
-                    onClick={() => handleSubjectClick(subject.id.toString())}
-                  />
+                  onClick={() => handleSubjectClick(subject.id.toString())}
+                />
                 ))
               ) : isLoading ? (
                 <div className="text-center py-8">
@@ -522,7 +531,7 @@ export default function FlashcardsPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500 dark:text-gray-400">Nenhuma matéria encontrada</p>
-                </div>
+            </div>
               )}
             </CourseGrid>
           </div>
@@ -571,8 +580,8 @@ export default function FlashcardsPage() {
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  {topics.find(t => t.id === selectedTopic)?.name}
-                </h2>
+                {topics.find(t => t.id === selectedTopic)?.name}
+              </h2>
                 {canEdit && (
                   <div className="flex gap-2">
                     <Button
@@ -819,14 +828,14 @@ export default function FlashcardsPage() {
                 {/* Flashcard com efeito flip */}
                 {!isCreating && !editingFlashcard && (
                   <div className="relative">
-                    <FlashcardFlip
+                <FlashcardFlip
                       question={cleanText(getCurrentFlashcard()?.question || "")}
                       answer={cleanText(getCurrentFlashcard()?.answer || "")}
-                      onFlip={(isShowingAnswer) => setShowAnswer(isShowingAnswer)}
+                  onFlip={(isShowingAnswer) => setShowAnswer(isShowingAnswer)}
                       onAnswer={handleFlashcardAnswer}
-                      className="mx-auto"
-                    />
-                    
+                  className="mx-auto"
+                />
+
                     {/* Botões de Edição no Card */}
                     {isEditMode && canEdit && (
                       <div className="absolute top-4 right-4 flex gap-2">
@@ -916,26 +925,26 @@ export default function FlashcardsPage() {
                 {/* Controles de Navegação */}
                 {!isEditMode && (
                   <div className="flex justify-center items-center gap-4 mt-8">
-                    <Button
-                      variant="outline"
-                      onClick={handlePreviousCard}
-                      disabled={currentCardIndex === 0}
-                      className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Anterior
-                    </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousCard}
+                    disabled={currentCardIndex === 0}
+                    className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/20"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
 
-                            <Button
-                              variant="outline"
-                              onClick={handleNextCard}
+                  <Button
+                    variant="outline"
+                    onClick={handleNextCard}
                               disabled={currentCardIndex === getCurrentFlashcardsLength() - 1}
-                              className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                            >
-                              Próximo
-                              <ArrowLeft className="h-4 w-4 rotate-180" />
-                            </Button>
-                  </div>
+                    className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/20"
+                  >
+                    Próximo
+                    <ArrowLeft className="h-4 w-4 rotate-180" />
+                  </Button>
+                </div>
                 )}
 
                 {/* Progresso */}
