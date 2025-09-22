@@ -35,7 +35,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Usar user.role se profile não estiver disponível
-    const userRole = profile?.role || user.role as 'administrator' | 'teacher' | 'student'
+    const userRole = (profile?.role || user.role) as 'administrator' | 'teacher' | 'student'
     console.log('👤 Role final:', userRole)
 
     // Professores e admins têm acesso total
