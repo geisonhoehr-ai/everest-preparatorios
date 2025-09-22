@@ -5828,7 +5828,7 @@ export async function createBasicAchievements() {
     return { success: true, results }
   } catch (error) {
     console.error("❌ [Server Action] Erro em createBasicAchievements:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
