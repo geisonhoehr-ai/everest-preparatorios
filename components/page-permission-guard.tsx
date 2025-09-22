@@ -36,11 +36,20 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
 
     // Usar user.role se profile não estiver disponível
     const rawRole = profile?.role || user.role
-    const userRole: 'administrator' | 'teacher' | 'student' = rawRole as 'administrator' | 'teacher' | 'student'
-    console.log('👤 Role final:', userRole)
+    console.log('👤 Role final:', rawRole)
+
+    // Função auxiliar para verificar se é admin/teacher
+    const isAdminOrTeacher = (role: string) => {
+      return role === 'teacher' || role === 'administrator'
+    }
+
+    // Função auxiliar para verificar se é student
+    const isStudent = (role: string) => {
+      return role === 'student'
+    }
 
     // Professores e admins têm acesso total
-    if (userRole === 'teacher' || userRole === 'administrator') {
+    if (isAdminOrTeacher(rawRole)) {
       console.log('✅ Professor/Admin tem acesso total à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
@@ -52,13 +61,13 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     
     // Páginas de admin (apenas para professores e administradores)
     const adminPages = ['database-optimization', 'flashcards-setup', 'admin']
-    if (adminPages.includes(pageName) && (userRole === 'teacher' || userRole === 'administrator')) {
+    if (adminPages.includes(pageName) && isAdminOrTeacher(rawRole)) {
       console.log('✅ Professor/Admin tem acesso à página de admin:', pageName)
       setHasAccess(true)
       setIsLoading(false)
       return
     }
-    if (userRole === 'student' && studentAllowedPages.includes(pageName)) {
+    if (isStudent(rawRole) && studentAllowedPages.includes(pageName)) {
       console.log('✅ Aluno tem acesso à página:', pageName)
       setHasAccess(true)
       setIsLoading(false)
@@ -66,7 +75,7 @@ export function PagePermissionGuard({ children, pageName, fallback }: PagePermis
     }
 
     // Se chegou até aqui, não tem acesso
-    console.log('❌ Acesso negado à página:', pageName, 'para role:', userRole)
+    console.log('❌ Acesso negado à página:', pageName, 'para role:', rawRole)
     setHasAccess(false)
     setIsLoading(false)
   }
