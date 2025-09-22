@@ -5595,9 +5595,9 @@ export async function getFlashcardsByTopicOptimized(topicId: string, limit = 10,
       answer: flashcard.answer,
       difficulty: flashcard.difficulty,
       created_at: flashcard.created_at,
-      topic_name: flashcard.topics?.name,
-      subject_name: flashcard.topics?.subjects?.name,
-      subject_id: flashcard.topics?.subject_id
+      topic_name: (flashcard.topics as any)?.name,
+      subject_name: (flashcard.topics as any)?.subjects?.name,
+      subject_id: (flashcard.topics as any)?.subject_id
     })) || []
 
     // Salvar no cache por 5 minutos
