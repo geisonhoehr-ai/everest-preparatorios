@@ -5422,7 +5422,7 @@ export async function analyzeDatabaseStats() {
       const byActivity = scoreStats.reduce((acc, s) => {
         acc[s.activity_type] = (acc[s.activity_type] || 0) + 1
         return acc
-      }, {})
+      }, {} as any)
       
       stats.scores = {
         total: scoreStats.length,
@@ -5443,7 +5443,7 @@ export async function analyzeDatabaseStats() {
         byRole: userStats.reduce((acc, u) => {
           acc[u.role] = (acc[u.role] || 0) + 1
           return acc
-        }, {})
+        }, {} as any)
       }
     }
     
