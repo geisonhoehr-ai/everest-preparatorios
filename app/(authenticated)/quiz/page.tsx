@@ -234,9 +234,9 @@ export default function QuizPage() {
 
   return (
     <PagePermissionGuard pageName="quiz">
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
           <BackButton pageName="Quiz" />
           {currentView === 'quizzes' && (
             <Button 
@@ -258,7 +258,7 @@ export default function QuizPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quiz</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Quiz</h1>
         </div>
 
         {currentView === 'subjects' && (

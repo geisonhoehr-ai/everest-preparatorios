@@ -94,10 +94,10 @@ export function FlashcardFlip({
       )}
 
       {/* Card Container */}
-      <div className="relative w-full h-96">
+      <div className="relative w-full h-80 sm:h-96">
         {!isFlipped ? (
           /* Front Card (Question) */
-          <div className="w-full h-full bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-500 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-gray-900/50 flex flex-col items-center justify-center p-8 text-center transition-all duration-500">
+          <div className="w-full h-full bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-500 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-gray-900/50 flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-500">
             <div className="space-y-6 w-full">
               <div className="flex items-center justify-center w-16 h-16 bg-blue-500 dark:bg-blue-600 rounded-full mx-auto">
                 <Eye className="w-8 h-8 text-white" />
@@ -115,7 +115,7 @@ export function FlashcardFlip({
           </div>
         ) : (
           /* Back Card (Answer) */
-          <div className="w-full h-full bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-500 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-gray-900/50 flex flex-col items-center justify-center p-8 text-center transition-all duration-500">
+          <div className="w-full h-full bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-500 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-gray-900/50 flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-500">
             <div className="space-y-6 w-full">
               <div className="flex items-center justify-center w-16 h-16 bg-green-500 dark:bg-green-600 rounded-full mx-auto">
                 <EyeOff className="w-8 h-8 text-white" />
@@ -135,13 +135,13 @@ export function FlashcardFlip({
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex flex-col items-center gap-4">
-        <div className="flex gap-4">
+      <div className="mt-4 sm:mt-6 flex flex-col items-center gap-3 sm:gap-4">
+        <div className="flex gap-2 sm:gap-4">
           <button
             onClick={handleFlip}
             disabled={isAnimating}
             className={cn(
-              "px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+              "px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base",
               "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
               "focus:outline-none focus:ring-4 focus:ring-orange-300"
@@ -149,12 +149,12 @@ export function FlashcardFlip({
           >
             {isFlipped ? (
               <>
-                <Eye className="w-5 h-5 mr-2" />
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Ver Pergunta
               </>
             ) : (
               <>
-                <EyeOff className="w-5 h-5 mr-2" />
+                <EyeOff className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                 Ver Resposta
               </>
             )}
@@ -165,44 +165,44 @@ export function FlashcardFlip({
               onClick={handleReset}
               disabled={isAnimating}
               className={cn(
-                "px-4 py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+                "px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base",
                 "bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700",
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
                 "focus:outline-none focus:ring-4 focus:ring-gray-300"
               )}
             >
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
         </div>
 
         {/* Answer Feedback Buttons */}
         {isFlipped && (
-          <div className="flex gap-4">
+          <div className="flex gap-2 sm:gap-4">
             <button
               onClick={() => handleAnswer(true)}
               disabled={isAnimating || showFeedback}
               className={cn(
-                "px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+                "px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base",
                 "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
                 "focus:outline-none focus:ring-4 focus:ring-green-300"
               )}
             >
-              <CheckCircle className="w-5 h-5 mr-2" />
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Correto
             </button>
             <button
               onClick={() => handleAnswer(false)}
               disabled={isAnimating || showFeedback}
               className={cn(
-                "px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg",
+                "px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base",
                 "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
                 "focus:outline-none focus:ring-4 focus:ring-red-300"
               )}
             >
-              <XCircle className="w-5 h-5 mr-2" />
+              <XCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Incorreto
             </button>
           </div>

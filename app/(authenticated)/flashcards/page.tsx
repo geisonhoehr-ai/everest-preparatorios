@@ -474,9 +474,9 @@ export default function FlashcardsPage() {
 
   return (
     <PagePermissionGuard pageName="flashcards">
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
           <BackButton pageName="Flashcards" />
           {currentView === 'topics' && (
             <Button 
@@ -498,13 +498,13 @@ export default function FlashcardsPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Flashcards</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Flashcards</h1>
         </div>
           
         {currentView === 'subjects' && (
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-8 text-gray-900 dark:text-white">Selecione uma matéria para começar</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8 text-gray-900 dark:text-white">Selecione uma matéria para começar</h2>
             </div>
 
             <CourseGrid>

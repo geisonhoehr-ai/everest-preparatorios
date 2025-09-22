@@ -196,7 +196,7 @@ export default function RankingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         <BackButton pageName="Ranking" />
       </div>
       <div className="flex items-center justify-between">
@@ -234,7 +234,7 @@ export default function RankingPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Top 3 Podium */}
         <div className="lg:col-span-1">
           <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-700">
