@@ -57,7 +57,7 @@ export function MainSidebar() {
     { title: "Comunidade", href: "/community", icon: MessageSquare, access: "teacher" },
     { title: "Livros", href: "/livros", icon: BookOpen, access: "teacher" },
     { title: "Turmas", href: "/turmas", icon: Users, access: "teacher" },
-    { title: "Administração", href: "/admin", icon: Settings, access: "admin" },
+    { title: "Administração", href: "/admin", icon: Crown, access: "admin" },
   ]
 
   // Configurações sempre por último
