@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import { createClient } from '@supabase/supabase-js'
 
 // Configuração do Supabase com Service Role Key para acesso direto às tabelas
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hnhzindsfuqnaxosujay.supabase.co'
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
 
 console.log('🔧 [AUTH_SERVICE] Configuração Supabase:', { 

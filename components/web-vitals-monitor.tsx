@@ -1,14 +1,89 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
 
+// Web Vitals types
 interface WebVitalsMetric {
   name: string
   value: number
   rating: 'good' | 'needs-improvement' | 'poor'
   delta: number
   id: string
+}
+
+// Simplified web vitals functions usando Performance API nativa
+function observeMetric(type: string, callback: (metric: any) => void) {
+  if (typeof window === 'undefined') return
+
+  switch (type) {
+    case 'LCP':
+      if ('PerformanceObserver' in window) {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries()
+          const lastEntry = entries[entries.length - 1]
+          if (lastEntry) {
+            callback({
+              name: 'LCP',
+              value: lastEntry.startTime,
+              rating: lastEntry.startTime < 2500 ? 'good' : lastEntry.startTime < 4000 ? 'needs-improvement' : 'poor',
+              id: Math.random().toString(36).substr(2, 9)
+            })
+          }
+        })
+        try {
+          observer.observe({ entryTypes: ['largest-contentful-paint'] })
+        } catch (e) {
+          console.warn('LCP observer not supported')
+        }
+      }
+      break
+
+    case 'CLS':
+      if ('PerformanceObserver' in window) {
+        let clsValue = 0
+        const observer = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) {
+              clsValue += entry.value
+            }
+          }
+          callback({
+            name: 'CLS',
+            value: clsValue,
+            rating: clsValue < 0.1 ? 'good' : clsValue < 0.25 ? 'needs-improvement' : 'poor',
+            id: Math.random().toString(36).substr(2, 9)
+          })
+        })
+        try {
+          observer.observe({ entryTypes: ['layout-shift'] })
+        } catch (e) {
+          console.warn('CLS observer not supported')
+        }
+      }
+      break
+
+    case 'FCP':
+      if ('PerformanceObserver' in window) {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries()
+          const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint')
+          if (fcpEntry) {
+            callback({
+              name: 'FCP',
+              value: fcpEntry.startTime,
+              rating: fcpEntry.startTime < 1800 ? 'good' : fcpEntry.startTime < 3000 ? 'needs-improvement' : 'poor',
+              id: Math.random().toString(36).substr(2, 9)
+            })
+          }
+        })
+        try {
+          observer.observe({ entryTypes: ['paint'] })
+        } catch (e) {
+          console.warn('FCP observer not supported')
+        }
+      }
+      break
+  }
 }
 
 export function WebVitalsMonitor() {
@@ -26,31 +101,20 @@ export function WebVitalsMonitor() {
       // Enviar para analytics em produção
       if (process.env.NODE_ENV === 'production') {
         // Google Analytics 4
-        if (typeof gtag !== 'undefined') {
-          gtag('event', metric.name, {
+        if (typeof window !== 'undefined' && window.gtag) {
+          window.gtag('event', metric.name, {
             value: Math.round(metric.value),
             metric_rating: metric.rating,
             metric_id: metric.id,
           })
         }
-
-        // Vercel Analytics
-        if (typeof window !== 'undefined' && window.va) {
-          window.va('track', 'Web Vitals', {
-            metric: metric.name,
-            value: Math.round(metric.value),
-            rating: metric.rating,
-          })
-        }
       }
     }
 
-    // Monitorar Core Web Vitals
-    getCLS(sendToAnalytics)
-    getFID(sendToAnalytics)
-    getFCP(sendToAnalytics)
-    getLCP(sendToAnalytics)
-    getTTFB(sendToAnalytics)
+    // Monitorar Core Web Vitals usando Performance API nativa
+    observeMetric('LCP', sendToAnalytics)
+    observeMetric('CLS', sendToAnalytics)
+    observeMetric('FCP', sendToAnalytics)
 
     // Performance Observer para outras métricas
     if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
@@ -97,33 +161,17 @@ export function WebVitalsMonitor() {
 // Hook personalizado para Web Vitals
 export function useWebVitals() {
   useEffect(() => {
-    const reportWebVitals = (metric: WebVitalsMetric) => {
-      const thresholds = {
-        LCP: { good: 2500, poor: 4000 },
-        FID: { good: 100, poor: 300 },
-        CLS: { good: 0.1, poor: 0.25 },
-        FCP: { good: 1800, poor: 3000 },
-        TTFB: { good: 800, poor: 1800 },
-      }
-
-      const threshold = thresholds[metric.name as keyof typeof thresholds]
-      if (threshold) {
-        let rating: 'good' | 'needs-improvement' | 'poor' = 'good'
-        if (metric.value > threshold.poor) rating = 'poor'
-        else if (metric.value > threshold.good) rating = 'needs-improvement'
-
-        // Dispatch custom event
-        window.dispatchEvent(new CustomEvent('webvital', {
-          detail: { ...metric, rating }
-        }))
+    if (typeof window !== 'undefined') {
+      // Simple performance timing usando Navigation API
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+      if (navigation) {
+        console.log('🔍 Page Load Performance:', {
+          domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart),
+          loadComplete: Math.round(navigation.loadEventEnd - navigation.loadEventStart),
+          ttfb: Math.round(navigation.responseStart - navigation.requestStart)
+        })
       }
     }
-
-    getCLS(reportWebVitals)
-    getFID(reportWebVitals)
-    getFCP(reportWebVitals)
-    getLCP(reportWebVitals)
-    getTTFB(reportWebVitals)
   }, [])
 }
 
