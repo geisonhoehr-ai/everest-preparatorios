@@ -12,11 +12,11 @@ export function ResourceOptimizer() {
         const cssLoaded = document.querySelector('link[href*="globals.css"]')?.getAttribute('rel') === 'stylesheet'
         
         if (!cssLoaded) {
-          // Carregar CSS crítico
+          // Carregar CSS crítico sem crossorigin para evitar warnings
           const link = document.createElement('link')
           link.rel = 'stylesheet'
           link.href = '/globals.css'
-          link.crossOrigin = 'anonymous'
+          link.media = 'all'
           document.head.appendChild(link)
         }
       }
@@ -26,22 +26,17 @@ export function ResourceOptimizer() {
         const fontLoaded = document.fonts.check('16px Inter')
         
         if (!fontLoaded) {
-          // Preload da fonte Inter apenas se não estiver carregada
-          const fontLink = document.createElement('link')
-          fontLink.rel = 'preload'
-          fontLink.as = 'font'
-          fontLink.type = 'font/woff2'
-          fontLink.crossOrigin = 'anonymous'
-          fontLink.href = 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2'
-          document.head.appendChild(fontLink)
+          // Carregar CSS da fonte diretamente
+          const fontCssLink = document.createElement('link')
+          fontCssLink.rel = 'stylesheet'
+          fontCssLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+          document.head.appendChild(fontCssLink)
         }
       }
 
-      // Executar otimizações com delay para evitar warnings
-      setTimeout(() => {
-        preloadCriticalResources()
-        preloadFonts()
-      }, 100)
+      // Executar otimizações imediatamente
+      preloadCriticalResources()
+      preloadFonts()
     }
 
     optimizeResources()

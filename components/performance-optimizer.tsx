@@ -10,11 +10,10 @@ export function PerformanceOptimizer({ children }: PerformanceOptimizerProps) {
   useEffect(() => {
     // Preload de recursos críticos
     const preloadCriticalResources = () => {
-      // Preload da fonte principal
+      // Carregar fonte diretamente (sem preload para evitar warnings)
       const fontLink = document.createElement('link')
-      fontLink.rel = 'preload'
+      fontLink.rel = 'stylesheet'
       fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
-      fontLink.as = 'style'
       document.head.appendChild(fontLink)
 
       // Preload de imagens críticas

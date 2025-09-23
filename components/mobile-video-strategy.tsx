@@ -104,7 +104,7 @@ export function MobileVideoStrategy({
               onLoadedData={handleLoadedData}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
-              poster={`${src.replace('.mp4', '-poster.jpg')}`}
+              poster=""
             >
               {/* Mobile: WebM preferencial, Desktop: MP4 */}
               {isMobile ? (

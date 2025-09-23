@@ -6645,6 +6645,54 @@ export async function getFlashcardsByTopic(topicId: string) {
   }
 }
 
+// Função otimizada para obter contagem de flashcards por tópico em uma única query
+export async function getFlashcardCountsBySubject(subjectId: string) {
+  console.log(`📊 [Server Action] getFlashcardCountsBySubject() para matéria: ${subjectId}`)
+  const supabase = await getSupabase()
+  
+  try {
+    // Primeiro, buscar todos os tópicos da matéria
+    const { data: topics, error: topicsError } = await supabase
+      .from("topics")
+      .select("id")
+      .eq("subject_id", subjectId)
+    
+    if (topicsError) {
+      console.error("❌ [Server Action] Erro ao buscar tópicos:", topicsError)
+      return {}
+    }
+    
+    if (!topics || topics.length === 0) {
+      console.log("📊 [Server Action] Nenhum tópico encontrado para a matéria")
+      return {}
+    }
+    
+    // Buscar flashcards para todos os tópicos de uma vez
+    const topicIds = topics.map(topic => topic.id)
+    const { data: flashcards, error: flashcardsError } = await supabase
+      .from("flashcards")
+      .select("topic_id")
+      .in("topic_id", topicIds)
+    
+    if (flashcardsError) {
+      console.error("❌ [Server Action] Erro ao buscar flashcards:", flashcardsError)
+      return {}
+    }
+    
+    // Contar flashcards por tópico
+    const counts: { [topicId: string]: number } = {}
+    flashcards?.forEach(flashcard => {
+      counts[flashcard.topic_id] = (counts[flashcard.topic_id] || 0) + 1
+    })
+    
+    console.log("✅ [Server Action] Contagens de flashcards:", counts)
+    return counts
+  } catch (error) {
+    console.error("❌ [Server Action] Erro inesperado em getFlashcardCountsBySubject:", error)
+    return {}
+  }
+}
+
 
 
 // ==================== SISTEMA COMPLETO DE REDAÇÕES ====================

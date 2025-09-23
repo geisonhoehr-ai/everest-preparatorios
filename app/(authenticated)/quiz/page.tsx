@@ -5,7 +5,7 @@ import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { SubjectCard } from "@/components/ui/subject-card"
 import { TopicCard } from "@/components/ui/topic-card"
 import { Button } from "@/components/ui/button"
-import { BackButton } from "@/components/ui/back-button"
+import { PageHeader } from "@/components/ui/breadcrumb-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, BookOpen, Play, RotateCcw, CheckCircle, XCircle, Trophy, Clock } from "lucide-react"
 import { getAllSubjects, getSubjectsWithStats, getTopicsBySubject, getAllQuizzes, getQuizWithQuestions, startQuizAttempt, submitQuestionAnswer, finishQuizAttempt } from "../../server-actions"
@@ -236,36 +236,42 @@ export default function QuizPage() {
     <PagePermissionGuard pageName="quiz">
       <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
-          <BackButton pageName="Quiz" />
-          {currentView === 'quizzes' && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleBackToSubjects}
-              className="hover:bg-orange-100 dark:hover:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          {currentView === 'quiz-taking' && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleBackToQuizzes}
-              className="hover:bg-orange-100 dark:hover:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Quiz</h1>
-        </div>
+        {currentView === 'subjects' && (
+          <PageHeader
+            title="Quiz"
+            description="Escolha uma matéria para fazer um quiz"
+            breadcrumbItems={[
+              { label: "Quiz", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
+        
+        {currentView === 'quizzes' && (
+          <PageHeader
+            title={`Quiz - ${subjects.find(s => s.id === selectedSubject)?.title}`}
+            breadcrumbItems={[
+              { label: "Quiz", href: "/quiz" },
+              { label: subjects.find(s => s.id === selectedSubject)?.title || "Matéria", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
+        
+        {currentView === 'quiz-taking' && (
+          <PageHeader
+            title={selectedQuiz?.title || "Quiz"}
+            breadcrumbItems={[
+              { label: "Quiz", href: "/quiz" },
+              { label: subjects.find(s => s.id === selectedSubject)?.title || "Matéria", href: "/quiz" },
+              { label: selectedQuiz?.title || "Quiz", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
 
         {currentView === 'subjects' && (
           <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-8 text-gray-900 dark:text-white">Selecione uma matéria para fazer quiz</h2>
-            </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
               {subjects.map((subject) => (

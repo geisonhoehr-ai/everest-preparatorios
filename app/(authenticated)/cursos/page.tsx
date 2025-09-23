@@ -2,6 +2,7 @@
 
 import { CourseCard, CourseGrid } from "@/components/ui/course-card"
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/ui/breadcrumb-nav"
 import { ArrowLeft, BookOpen } from "lucide-react"
 
 export default function CursosPage() {
@@ -77,14 +78,14 @@ export default function CursosPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Meus Cursos
-        </h1>
-        <p className="text-muted-foreground">
-          Acompanhe seu progresso e continue aprendendo
-        </p>
-      </div>
+      <PageHeader
+        title="Meus Cursos"
+        description="Acompanhe seu progresso e continue aprendendo"
+        breadcrumbItems={[
+          { label: "Cursos", current: true }
+        ]}
+        className="mb-8"
+      />
 
       {/* Navigation */}
       <div className="space-y-6">

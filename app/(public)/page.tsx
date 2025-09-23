@@ -31,17 +31,10 @@ export default function LandingPage() {
       
       {/* Preload de recursos críticos para LCP */}
       <link rel="preload" href="/professor-tiago-costa.jpg" as="image" fetchPriority="high" />
-      <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
-      
-      {/* CSS não crítico com preload */}
-      <link rel="preload" href="/globals.css" as="style" />
       
       {/* CSS Crítico Mobile-First para melhor LCP */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          *, *::before, *::after { box-sizing: border-box; }
-          html { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; -webkit-text-size-adjust: 100%; }
-          body { margin: 0; padding: 0; background: #000; color: #fff; overflow-x: hidden; }
           .hero-section { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
           .hero-content { text-align: center; z-index: 10; position: relative; padding: 1rem; }
           .hero-title { font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; background: linear-gradient(45deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -69,14 +62,13 @@ export default function LandingPage() {
               
               {/* Menu Desktop - Só aparece em telas médias e grandes */}
               <div className="desktop-menu hidden md:flex items-center space-x-4">
-                <Link href="/ciaar" aria-label="Acessar página sobre o concurso CIAAR">
-                  <Button 
-                    variant="outline" 
-                    className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                  >
-                    CIAAR
-                  </Button>
-                </Link>
+                <Button 
+                  variant="outline" 
+                  disabled
+                  className="border-gray-500 text-gray-500 cursor-not-allowed opacity-50"
+                >
+                  CIAAR
+                </Button>
                 <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Acessar área do aluno (abre em nova aba)">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
                     Área do Aluno
@@ -91,14 +83,13 @@ export default function LandingPage() {
 
               {/* Menu Mobile - Sempre visível em telas pequenas */}
               <div className="mobile-menu flex md:hidden flex-col items-center space-y-3 w-full px-2 max-w-full">
-                <Link href="/ciaar" className="w-full">
-                  <Button 
-                    variant="outline" 
-                    className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white w-full"
-                  >
-                    CIAAR
-                  </Button>
-                </Link>
+                <Button 
+                  variant="outline" 
+                  disabled
+                  className="border-gray-500 text-gray-500 cursor-not-allowed opacity-50 w-full"
+                >
+                  CIAAR
+                </Button>
                 <Link href="https://alunos.everestpreparatorios.com.br/" target="_blank" rel="noopener noreferrer" className="w-full">
                   <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white w-full">
                     Área do Aluno
@@ -587,7 +578,7 @@ export default function LandingPage() {
                 {/* Efeito de borda sutil */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl opacity-20"></div>
                 
-                <Link href="/login" className="block w-full">
+                <Link href="https://alunos.everestpreparatorios.com.br/" className="block w-full" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="relative bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/90 hover:to-slate-800/90 border-2 border-blue-400/50 hover:border-blue-300 text-blue-300 hover:text-blue-200 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-blue-500/30 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm w-full sm:w-auto">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">
@@ -1497,7 +1488,7 @@ export default function LandingPage() {
                 {/* Efeito de borda animada */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-500 rounded-2xl  opacity-50"></div>
                 
-                <Link href="/login" className="block w-full">
+                <Link href="https://alunos.everestpreparatorios.com.br/" className="block w-full" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className="relative bg-gradient-to-r from-slate-800/80 to-slate-900/80 hover:from-slate-700/90 hover:to-slate-800/90 border-2 border-blue-400/50 hover:border-blue-300 text-blue-300 hover:text-blue-200 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 font-bold shadow-2xl group-hover:shadow-blue-500/30 transition-all duration-300 group-hover:scale-105 backdrop-blur-sm w-full sm:w-auto">
                     <div className="flex items-center justify-center space-x-3">
                       <div className="relative">

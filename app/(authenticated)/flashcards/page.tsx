@@ -4,17 +4,22 @@ import { useState, useEffect } from "react"
 import { PagePermissionGuard } from "@/components/page-permission-guard"
 import { CourseCard, CourseGrid } from "@/components/ui/course-card"
 import { TopicCard } from "@/components/ui/topic-card"
+import { PageHeader } from "@/components/ui/breadcrumb-nav"
+import dynamic from "next/dynamic"
+
+// Lazy load de componentes pesados
+const FlashcardFlip = dynamic(() => import("@/components/ui/flashcard-flip").then(mod => ({ default: mod.FlashcardFlip })), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+})
 import { Button } from "@/components/ui/button"
-import { BackButton } from "@/components/ui/back-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, BookOpen, Play, RotateCcw, CheckCircle, XCircle, Eye, EyeOff, Edit, Save, X, Plus, Trash2, Loader2 } from "lucide-react"
-import { getAllSubjects, getSubjectsWithStats, getTopicsBySubject, getFlashcardsByTopic, updateFlashcard, createFlashcard, deleteFlashcard, recordFlashcardResponse, getFlashcardsForReview, getDifficultFlashcards, invalidateCache } from "../../server-actions"
+import { getAllSubjects, getSubjectsWithStats, getTopicsBySubject, getFlashcardsByTopic, getFlashcardCountsBySubject, updateFlashcard, createFlashcard, deleteFlashcard, recordFlashcardResponse, getFlashcardsForReview, getDifficultFlashcards, invalidateCache } from "../../server-actions"
 import { useAuth } from "@/context/auth-context-custom"
-import { FlashcardFlip } from "@/components/ui/flashcard-flip"
 import { cn } from "@/lib/utils"
 import { createSampleFlashcardProgress } from "../../server-actions"
 
@@ -65,6 +70,10 @@ export default function FlashcardsPage() {
   const [isCreatingTestData, setIsCreatingTestData] = useState(false)
   const [reviewFlashcards, setReviewFlashcards] = useState<any[]>([])
   const [difficultFlashcards, setDifficultFlashcards] = useState<any[]>([])
+  
+  // Cache para evitar recarregamentos desnecessários
+  const [topicsCache, setTopicsCache] = useState<{ [subjectId: string]: Topic[] }>({})
+  const [subjectsLoaded, setSubjectsLoaded] = useState(false)
 
   // Função para limpar texto corrompido
   const cleanText = (text: string) => {
@@ -91,18 +100,15 @@ export default function FlashcardsPage() {
   // Carregar subjects com estatísticas
   useEffect(() => {
     const loadSubjects = async () => {
-      console.log('🚀 INICIANDO CARREGAMENTO DE SUBJECTS...')
+      if (subjectsLoaded) return // Evitar recarregamento desnecessário
+      
       console.log('👤 User ID:', user?.id)
       try {
         setIsLoading(true)
-        console.log('📞 Chamando getSubjectsWithStats...')
         const data = await getSubjectsWithStats(user?.id)
-        console.log('📊 Subjects carregados:', data)
-        console.log('📊 Quantidade de subjects:', data.length)
-        console.log('📊 Nomes dos subjects:', data.map(s => s.title))
-        console.log('🔍 Português nos dados:', data.find(s => s.title === 'Português'))
-        console.log('🔍 Regulamentos nos dados:', data.find(s => s.title === 'Regulamentos'))
+        console.log('📊 Subjects carregados:', data.length)
         setSubjects(data)
+        setSubjectsLoaded(true)
       } catch (error) {
         console.error('❌ Erro ao carregar subjects:', error)
       } finally {
@@ -118,28 +124,33 @@ export default function FlashcardsPage() {
   }, [user?.id])
 
   const loadTopics = async (subjectId: string) => {
+    // Verificar cache primeiro
+    if (topicsCache[subjectId]) {
+      setTopics(topicsCache[subjectId])
+      return
+    }
+    
     setIsLoading(true)
     
     try {
-      // Carregar tópicos reais do banco
-      const topicsData = await getTopicsBySubject(subjectId)
+      // Carregar tópicos e contagens de flashcards em paralelo
+      const [topicsData, flashcardCounts] = await Promise.all([
+        getTopicsBySubject(subjectId),
+        getFlashcardCountsBySubject(subjectId)
+      ])
       
       // Transformar dados para o formato esperado
-      const formattedTopics = await Promise.all(
-        topicsData.map(async (topic) => {
-          // Buscar flashcards para contar
-          const flashcardsData = await getFlashcardsByTopic(topic.id)
-          return {
-            id: topic.id,
-            name: topic.name,
-            description: (topic as any).description || `Tópico de ${topic.name}`,
-            flashcardCount: flashcardsData.length
-          }
-        })
-      )
+      const formattedTopics = topicsData.map((topic) => ({
+        id: topic.id,
+        name: topic.name,
+        description: (topic as any).description || '',
+        flashcardCount: flashcardCounts[topic.id] || 0
+      }))
       
+      // Salvar no cache
+      setTopicsCache(prev => ({ ...prev, [subjectId]: formattedTopics }))
       setTopics(formattedTopics)
-        } catch (error) {
+    } catch (error) {
       console.error('Erro ao carregar tópicos:', error)
       setTopics([])
     } finally {
@@ -476,36 +487,42 @@ export default function FlashcardsPage() {
     <PagePermissionGuard pageName="flashcards">
       <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
-          <BackButton pageName="Flashcards" />
-          {currentView === 'topics' && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleBackToSubjects}
-              className="hover:bg-orange-100 dark:hover:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          {currentView === 'flashcards' && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleBackToTopics}
-              className="hover:bg-orange-100 dark:hover:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Flashcards</h1>
-        </div>
+        {currentView === 'subjects' && (
+          <PageHeader
+            title="Flashcards"
+            description="Escolha uma matéria para começar seus estudos"
+            breadcrumbItems={[
+              { label: "Flashcards", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
+        
+        {currentView === 'topics' && (
+          <PageHeader
+            title={`Tópicos de ${subjects.find(s => s.id.toString() === selectedSubject)?.title}`}
+            breadcrumbItems={[
+              { label: "Flashcards", href: "/flashcards" },
+              { label: subjects.find(s => s.id.toString() === selectedSubject)?.title || "Matéria", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
+        
+        {currentView === 'flashcards' && (
+          <PageHeader
+            title={topics.find(t => t.id === selectedTopic)?.name || "Flashcards"}
+            breadcrumbItems={[
+              { label: "Flashcards", href: "/flashcards" },
+              { label: subjects.find(s => s.id.toString() === selectedSubject)?.title || "Matéria", href: "/flashcards" },
+              { label: topics.find(t => t.id === selectedTopic)?.name || "Tópico", current: true }
+            ]}
+            className="mb-8"
+          />
+        )}
           
         {currentView === 'subjects' && (
           <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8 text-gray-900 dark:text-white">Selecione uma matéria para começar</h2>
-            </div>
 
             <CourseGrid>
               {subjects.length > 0 ? (
@@ -539,11 +556,6 @@ export default function FlashcardsPage() {
 
         {currentView === 'topics' && (
           <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">
-                Tópicos de {subjects.find(s => s.id.toString() === selectedSubject)?.title}
-              </h2>
-        </div>
 
             {isLoading ? (
               <div className="flex items-center justify-center min-h-[200px]">
@@ -558,12 +570,11 @@ export default function FlashcardsPage() {
                   <TopicCard
                     key={topic.id}
                     title={topic.name}
-                    description={topic.description || `Tópico de ${topic.name}`}
+                    description={topic.description || ''}
                     category={subjects.find(s => s.id.toString() === selectedSubject)?.title || ''}
                     categoryColor="bg-blue-500"
                     status={topic.flashcardCount > 20 ? 'completed' : topic.flashcardCount > 10 ? 'in-progress' : 'not-started'}
                     author="Prof. Tiago Costa"
-                    duration={`${topic.flashcardCount} flashcards`}
                     totalLessons={topic.flashcardCount}
                     completedLessons={topic.flashcardCount > 20 ? topic.flashcardCount : Math.floor(topic.flashcardCount * 0.6)}
                     progress={topic.flashcardCount > 20 ? 100 : topic.flashcardCount > 10 ? 60 : 0}

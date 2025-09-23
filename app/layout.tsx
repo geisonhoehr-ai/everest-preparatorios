@@ -1,12 +1,8 @@
 import type React from "react"
 import { Inter } from "next/font/google"
-import { PerformanceOptimizer } from "@/components/performance-optimizer"
-import { ResourceOptimizer } from "@/components/resource-optimizer"
 import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/context/auth-context-custom"
 import { Toaster } from "@/components/ui/toaster"
-import { ErrorBoundary } from "@/components/error-boundary"
-import { SkipLinks } from "@/components/skip-link"
+import "./globals.css"
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -37,19 +33,20 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://*.supabase.co" />
+        
+        {/* CSS Crítico mínimo para evitar FOUC */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            *, *::before, *::after { box-sizing: border-box; }
+            html { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; -webkit-text-size-adjust: 100%; }
+            body { margin: 0; padding: 0; background: #000; color: #fff; overflow-x: hidden; }
+          `
+        }} />
       </head>
       <body className={inter.className}>
-        <ResourceOptimizer />
-        <SkipLinks />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <AuthProvider>
-            <ErrorBoundary>
-              <PerformanceOptimizer>
-                {children}
-              </PerformanceOptimizer>
-            </ErrorBoundary>
-            <Toaster />
-          </AuthProvider>
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

@@ -6118,6 +6118,13 @@ body {
   background-color: hsl(var(--primary));
 }
 
+/* Custom rounded card class - Force border radius */
+.custom-rounded-card {
+  border-radius: 24px !important;
+  -webkit-border-radius: 24px !important;
+  -moz-border-radius: 24px !important;
+}
+
 .data-\[state\=on\]\:bg-accent[data-state="on"] {
   background-color: hsl(var(--accent));
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/context/auth-context-custom"
 import { Button } from "@/components/ui/button"
-import { BackButton } from "@/components/ui/back-button"
+import { PageHeader } from "@/components/ui/breadcrumb-nav"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -97,22 +97,18 @@ export default function DashboardPage() {
     <div className="flex flex-col h-full space-y-4 sm:space-y-6 px-4 sm:px-6">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-2 sm:gap-4 mb-4">
-          <BackButton pageName="Dashboard" />
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-              {getGreeting()}, {getUserFirstName()}!
-            </h1>
-            <p className="text-muted-foreground mb-4">
-              Bem-vindo ao seu painel de controle como {getUserDisplayName()}
-            </p>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Começar aprendizado
-            </Button>
-          </div>
+        <PageHeader
+          title={`${getGreeting()}, ${getUserFirstName()}!`}
+          description={`Bem-vindo ao seu painel de controle como ${getUserDisplayName()}`}
+          breadcrumbItems={[
+            { label: "Dashboard", current: true }
+          ]}
+        />
+        <div className="mt-4">
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Começar aprendizado
+          </Button>
         </div>
       </div>
 

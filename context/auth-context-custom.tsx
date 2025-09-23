@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  console.log('🚀 [AUTH_CONTEXT] AuthProvider inicializado')
+  // Remover log desnecessário que está causando spam
 
   useEffect(() => {
     let isInitialized = false

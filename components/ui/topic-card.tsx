@@ -38,6 +38,7 @@ const statusConfig = {
   }
 }
 
+// Updated: 2025-01-30 - Border radius fix v2
 export const TopicCard = ({
   title,
   description,
@@ -56,7 +57,7 @@ export const TopicCard = ({
 
   return (
     <div 
-      className={`bg-card border-border rounded-[2rem] p-6 border transition-all duration-300 h-[400px] flex flex-col cursor-pointer hover:scale-105 hover:shadow-xl ${className}`}
+      className={`bg-card border-border p-6 border transition-all duration-300 h-[400px] flex flex-col cursor-pointer hover:scale-105 hover:shadow-xl custom-rounded-card ${className}`}
       onClick={onClick}
     >
       <div className="flex flex-col h-full space-y-4">
@@ -86,9 +87,6 @@ export const TopicCard = ({
             <h3 className="font-bold text-foreground text-xl mb-2 leading-tight line-clamp-2">
               {title}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {description}
-            </p>
           </div>
 
           {/* Details */}
@@ -97,12 +95,6 @@ export const TopicCard = ({
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <User className="h-3 w-3" />
                 <span className="font-medium">{author}</span>
-              </div>
-            )}
-            {duration && (
-              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span className="font-medium">{duration}</span>
               </div>
             )}
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
